@@ -1,0 +1,70 @@
+﻿  -------------------------------------------------------------------------------
+  MSX SDCC Make Script Copyright � 2020-2023 Danilo Angelo
+  version 00.06.01 - Codename Sam
+  Profile: Release
+  Build Debug Level: 100(DBG_OUTPUT)
+  -------------------------------------------------------------------------------
+  Configuring target...
+  -----------------------------------
+  Filesystem settings...
+  Current dir: C:\Users\Danilo\Documents\msx\DEV\libs\MnemoSyne-X\mdo
+  Target file: MNEMOSX.DRV
+  Object path: Release\objs
+  Binary path: ..\..\..\projects\SCAMM\SCAMM\Release\bin
+  MSX dev path: ..\..\..
+  MSX lib path: ..\..\..\libs
+  Done configuring target.
+  -------------------------------------------------------------------------------
+  Cleaning...
+  Done cleaning.
+  -------------------------------------------------------------------------------
+  Saving target headers...
+  Done saving target headers.
+  -------------------------------------------------------------------------------
+  Configuring build events...
+  Build start action: 
+  Before compile action: 
+  After compile action: 
+  After binary generation action: 
+  Build end action: 
+  Done configuring build events...
+  -------------------------------------------------------------------------------
+  Configuring application...
+  Done configuring application.
+  -------------------------------------------------------------------------------
+  Configuring MDO support...
+  Done building MDO support files.
+  -------------------------------------------------------------------------------
+  Saving MDO headers...
+  Done saving MDO headers.
+  -------------------------------------------------------------------------------
+  Saving application headers...
+  Done saving application headers.
+  -------------------------------------------------------------------------------
+  Collecting include directories...
+  Done collecting include directories.
+  -------------------------------------------------------------------------------
+  Collecting compiled libraries...
+  Done collecting compiled libraries.
+  -------------------------------------------------------------------------------
+  Compiling libraries...
+  Done building libraries.
+  -------------------------------------------------------------------------------
+  Compiling project...
+  Done compiling project.
+  -------------------------------------------------------------------------------
+  Determining CODE-LOC...
+  FILE_START is 0xc000
+  _HEADER contains 0x0016 (22) bytes.
+  CODE-LOC determined to be 0xc016.
+  -------------------------------------------------------------------------------
+  Linking project...
+  Done linking project.
+  -------------------------------------------------------------------------------
+  Building MSX binary...
+  Done building MSX binary.
+  -------------------------------------------------------------------------------
+  Building symbol file...
+  Done building symbol file.
+  -------------------------------------------------------------------------------
+  All set for MDO project (Release). Happy MSX'ing!

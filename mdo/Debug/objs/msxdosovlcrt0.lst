@@ -1,0 +1,1431 @@
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 1
+Hexadecimal [24-Bits]
+
+
+
+                                      1 ;----------------------------------------------------------
+                                      2 ;		msxdosovlcrt0.s - by Danilo Angelo, 2023
+                                      3 ;
+                                      4 ;		Template for MDO (MSX-DOS Overlay)
+                                      5 ;----------------------------------------------------------
+                                      6 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 2
+Hexadecimal [24-Bits]
+
+
+
+                                      7 	.include "MSX/BIOS/msxbios.s"
+                                      1 ;----------------------------------------------------------
+                                      2 ;----------------------------------------------------------
+                                      3 ;		msxbios.s - by Danilo Angelo 2020-2023
+                                      4 ;		Adapted from http://www.konamiman.com/msx/msx2th/th-ap.txt
+                                      5 ;		230221: added BDOS system calls, from http://www.msxtop.msxall.com/Docs/MSXTopSecret2Continuo.pdf
+                                      6 ;
+                                      7 ;		Standard MSX variables and routines addresses
+                                      8 ;----------------------------------------------------------
+                                      9 
+                                     10 ; --- system variables ---
+                           00002D    11 BIOS_HWVER	.equ 0x002d
+                                     12 
+                                     13 ; --- main bios calls ---
+                           000000    14 BIOS_CHKRAM  .equ 0x0000
+                           000008    15 BIOS_SYNCHR  .equ 0x0008
+                           00000C    16 BIOS_RDSLT   .equ 0x000c
+                           000010    17 BIOS_CHRGTR  .equ 0x0010
+                           000014    18 BIOS_WRSLT   .equ 0x0014
+                           000018    19 BIOS_OUTDO   .equ 0x0018
+                           00001C    20 BIOS_CALSLT  .equ 0x001c
+                           000020    21 BIOS_DCOMPR  .equ 0x0020
+                           000024    22 BIOS_ENASLT  .equ 0x0024
+                           000028    23 BIOS_GETYPR  .equ 0x0028
+                           000030    24 BIOS_CALLF   .equ 0x0030
+                           000038    25 BIOS_KEYINT  .equ 0x0038
+                                     26 
+                                     27 ; I/O initialisation
+                           00003B    28 BIOS_INITIO  .equ 0x003b
+                           00003E    29 BIOS_INIFNK  .equ 0x003e
+                                     30 
+                                     31 ; VDP access
+                           000006    32 BIOS_VDPDR   .equ 0x0006
+                           000007    33 BIOS_VDPDW   .equ 0x0007
+                           000041    34 BIOS_DISSCR  .equ 0x0041
+                           000044    35 BIOS_ENASCR  .equ 0x0044
+                           000047    36 BIOS_WRTVDP  .equ 0x0047
+                           00004A    37 BIOS_RDVRM   .equ 0x004a
+                           00004D    38 BIOS_WRTVRM  .equ 0x004d
+                           000050    39 BIOS_SETRD   .equ 0x0050
+                           000053    40 BIOS_SETWRT  .equ 0x0053
+                           000056    41 BIOS_FILVRM  .equ 0x0056
+                           000059    42 BIOS_LDIRMV  .equ 0x0059
+                           00005C    43 BIOS_LDIRVM  .equ 0x005c
+                           00005F    44 BIOS_CHGMOD  .equ 0x005f
+                           000062    45 BIOS_CHGCLR  .equ 0x0062
+                           000066    46 BIOS_NMI     .equ 0x0066
+                           000069    47 BIOS_CLRSPR  .equ 0x0069
+                           00006C    48 BIOS_INITXT  .equ 0x006c
+                           00006F    49 BIOS_INIT32  .equ 0x006f
+                           000072    50 BIOS_INIGRP  .equ 0x0072
+                           000075    51 BIOS_INIMLT  .equ 0x0075
+                           000078    52 BIOS_SETTXT  .equ 0x0078
+                           00007B    53 BIOS_SETT32  .equ 0x007b
+                           00007E    54 BIOS_SETGRP  .equ 0x007e
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 3
+Hexadecimal [24-Bits]
+
+
+
+                           000081    55 BIOS_SETMLT  .equ 0x0081
+                           000084    56 BIOS_CALPAT  .equ 0x0084
+                           000087    57 BIOS_CALATR  .equ 0x0087
+                           00008A    58 BIOS_GSPSIZ  .equ 0x008a
+                           00008D    59 BIOS_GRPPRT  .equ 0x008d
+                                     60 
+                                     61 ; PSG
+                           000090    62 BIOS_GICINI  .equ 0x0090
+                           000093    63 BIOS_WRTPSG  .equ 0x0093
+                           000096    64 BIOS_RDPSG   .equ 0x0096
+                           000099    65 BIOS_STRTMS  .equ 0x0099
+                                     66 
+                                     67 ; Keyboard, CRT, printer input-output
+                           00009C    68 BIOS_CHSNS   .equ 0x009c
+                           00009F    69 BIOS_CHGET   .equ 0x009f
+                           0000A2    70 BIOS_CHPUT   .equ 0x00a2
+                           0000A5    71 BIOS_LPTOUT  .equ 0x00a5
+                           0000A8    72 BIOS_LPTSTT  .equ 0x00a8
+                           0000AB    73 BIOS_CNVCHR  .equ 0x00ab
+                           0000AE    74 BIOS_PINLIN  .equ 0x00ae
+                           0000B1    75 BIOS_INLIN   .equ 0x00b1
+                           0000B4    76 BIOS_QINLIN  .equ 0x00b4
+                           0000B7    77 BIOS_BREAKX  .equ 0x00b7
+                           0000C0    78 BIOS_BEEP    .equ 0x00c0
+                           0000C3    79 BIOS_CLS     .equ 0x00c3
+                           0000C6    80 BIOS_POSIT   .equ 0x00c6
+                           0000C9    81 BIOS_FNKSB   .equ 0x00c9
+                           0000CC    82 BIOS_ERAFNK  .equ 0x00cc
+                           0000CF    83 BIOS_DSPFNK  .equ 0x00cf
+                           0000D2    84 BIOS_TOTEXT  .equ 0x00d2
+                                     85 
+                                     86 ; Game I/O access
+                           0000D5    87 BIOS_GTSTCK  .equ 0x00d5
+                           0000D8    88 BIOS_GTTRIG  .equ 0x00d8
+                           0000DB    89 BIOS_GTPAD   .equ 0x00db
+                           0000DE    90 BIOS_GTPDL   .equ 0x00de
+                                     91 
+                                     92 ; Cassette input-output routine
+                           0000E1    93 BIOS_TAPION  .equ 0x00e1
+                           0000E4    94 BIOS_TAPIN   .equ 0x00e4
+                           0000E7    95 BIOS_TAPIOF  .equ 0x00e7
+                           0000EA    96 BIOS_TAPOON  .equ 0x00ea
+                           0000ED    97 BIOS_TAPOUT  .equ 0x00ed
+                           0000F0    98 BIOS_TAPOOF  .equ 0x00f0
+                           0000F3    99 BIOS_STMOTR  .equ 0x00f3
+                                    100 
+                                    101 ; Miscellaneous
+                           000132   102 BIOS_CHGCAP  .equ 0x0132
+                           000135   103 BIOS_CHGSND  .equ 0x0135
+                           000138   104 BIOS_RSLREG  .equ 0x0138
+                           00013B   105 BIOS_WSLREG  .equ 0x013b
+                           00013E   106 BIOS_RDVDP   .equ 0x013e
+                           000141   107 BIOS_SNSMAT  .equ 0x0141
+                           000144   108 BIOS_PHYDIO  .equ 0x0144
+                           00014A   109 BIOS_ISFLIO  .equ 0x014a
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 4
+Hexadecimal [24-Bits]
+
+
+
+                           00014D   110 BIOS_OUTDLP  .equ 0x014d
+                           000156   111 BIOS_KILBUF  .equ 0x0156
+                           000159   112 BIOS_CALBAS  .equ 0x0159
+                                    113 
+                                    114 ; Entries appended for MSX2
+                           00015C   115 BIOS_SUBROM  .equ 0x015c
+                           00015F   116 BIOS_EXTROM  .equ 0x015f
+                           000168   117 BIOS_EOL     .equ 0x0168
+                           00016E   118 BIOS_NSETRD  .equ 0x016e
+                           000171   119 BIOS_NSTWRT  .equ 0x0171
+                           000174   120 BIOS_NRDVRM  .equ 0x0174
+                           000177   121 BIOS_NWRVRM  .equ 0x0177
+                                    122 
+                                    123 ; --- subrom bios calls ---
+                           000089   124 BIOS_GRPRT   .equ 0x0089
+                           0000C9   125 BIOS_NVBXLN  .equ 0x00c9
+                           0000CD   126 BIOS_NVBXFL  .equ 0x00cd
+                           000115   127 BIOS_CLSSUB  .equ 0x0115
+                           000131   128 BIOS_VDPSTA  .equ 0x0131
+                           00013D   129 BIOS_SETPAG  .equ 0x013d
+                           000141   130 BIOS_INIPLT  .equ 0x0141
+                           000145   131 BIOS_RSTPLT  .equ 0x0145
+                           000149   132 BIOS_GETPLT  .equ 0x0149
+                           00014D   133 BIOS_SETPLT  .equ 0x014d
+                           000181   134 BIOS_PROMPT  .equ 0x0181
+                           0001AD   135 BIOS_NEWPAD  .equ 0x01ad
+                           0001B5   136 BIOS_CHGMDP  .equ 0x01b5
+                           0001BD   137 BIOS_KNJPRT  .equ 0x01bd
+                           0001F5   138 BIOS_REDCLK  .equ 0x01f5
+                           0001F9   139 BIOS_WRTCLK  .equ 0x01f9
+                                    140 
+                                    141 ; --- work area ---
+                           00F380   142 BIOS_RDPRIM  .equ 0xf380
+                           00F385   143 BIOS_WRPRIM  .equ 0xf385
+                           00F38C   144 BIOS_CLPRIM  .equ 0xf38c
+                                    145 
+                                    146 ; Starting address of assembly language program of USR function, text screen
+                           00F39A   147 BIOS_USRTAB  .equ 0xf39a
+                           00F3AE   148 BIOS_LINL40  .equ 0xf3ae
+                           00F3AF   149 BIOS_LINL32  .equ 0xf3af
+                           00F3B0   150 BIOS_LINLEN  .equ 0xf3b0
+                           00F3B1   151 BIOS_CRTCNT  .equ 0xf3b1
+                           00F3B2   152 BIOS_CLMLST  .equ 0xf3b2
+                                    153 
+                                    154 ; SCREEN 0
+                           00F3B3   155 BIOS_TXTNAM  .equ 0xf3b3
+                           00F3B5   156 BIOS_TXTCOL  .equ 0xf3b5
+                           00F3B7   157 BIOS_TXTCGP  .equ 0xf3b7
+                           00F3B9   158 BIOS_TXTATR  .equ 0xf3b9
+                           00F3BB   159 BIOS_TXTPAT  .equ 0xf3bb
+                                    160 
+                                    161 ; SCREEN 1
+                           00F3BD   162 BIOS_T32NAM  .equ 0xf3bd
+                           00F3BF   163 BIOS_T32COL  .equ 0xf3bf
+                           00F3C1   164 BIOS_T32CGP  .equ 0xf3c1
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 5
+Hexadecimal [24-Bits]
+
+
+
+                           00F3C3   165 BIOS_T32ATR  .equ 0xf3c3
+                           00F3C5   166 BIOS_T32PAT  .equ 0xf3c5
+                                    167 
+                                    168 ; SCREEN 2
+                           00F3C7   169 BIOS_GRPNAM  .equ 0xf3c7
+                           00F3C9   170 BIOS_GRPCOL  .equ 0xf3c9
+                           00F3CB   171 BIOS_GRPCGP  .equ 0xf3cb
+                           00F3CD   172 BIOS_GRPATR  .equ 0xf3cd
+                           00F3CF   173 BIOS_GRPPAT  .equ 0xf3cf
+                                    174 
+                                    175 ; SCREEN 3
+                           00F3D1   176 BIOS_MLTNAM  .equ 0xf3d1
+                           00F3D3   177 BIOS_MLTCOL  .equ 0xf3d3
+                           00F3D5   178 BIOS_MLTCGP  .equ 0xf3d5
+                           00F3D7   179 BIOS_MLTATR  .equ 0xf3d7
+                           00F3D9   180 BIOS_MLTPAT  .equ 0xf3d9
+                                    181 
+                                    182 ; Other screen settings
+                           00F3DB   183 BIOS_CLIKSW  .equ 0xf3db
+                           00F3DC   184 BIOS_CSRY    .equ 0xf3dc
+                           00F3DD   185 BIOS_CSRX    .equ 0xf3dd
+                           00F3DE   186 BIOS_CNSDFG  .equ 0xf3de
+                                    187 
+                                    188 ; Area to save VDP registers
+                           00F3DF   189 BIOS_RG0SAV  .equ 0xf3df
+                           00F3E0   190 BIOS_RG1SAV  .equ 0xf3e0
+                           00F3E1   191 BIOS_RG2SAV  .equ 0xf3e1
+                           00F3E2   192 BIOS_RG3SAV  .equ 0xf3e2
+                           00F3E3   193 BIOS_RG4SAV  .equ 0xf3e3
+                           00F3E4   194 BIOS_RG5SAV  .equ 0xf3e4
+                           00F3E5   195 BIOS_RG6SAV  .equ 0xf3e5
+                           00F3E6   196 BIOS_RG7SAV  .equ 0xf3e6
+                           00FFE7   197 BIOS_RG8SAV  .equ 0xffe7
+                           00FFE8   198 BIOS_RG9SAV  .equ 0xffe8
+                           00F3E7   199 BIOS_STATFL  .equ 0xf3e7
+                           00F3E8   200 BIOS_TRGFLG  .equ 0xf3e8
+                           00F3E9   201 BIOS_FORCLR  .equ 0xf3e9
+                           00F3EA   202 BIOS_BAKCLR  .equ 0xf3ea
+                           00F3EB   203 BIOS_BDRCLR  .equ 0xf3eb
+                           00F3EC   204 BIOS_MAXUPD  .equ 0xf3ec
+                           00F3EF   205 BIOS_MINUPD  .equ 0xf3ef
+                           00F3F2   206 BIOS_ATRBYT  .equ 0xf3f2
+                                    207 
+                                    208 ; Work area for PLAY statement
+                           00F3F3   209 BIOS_QUEUES  .equ 0xf3f3
+                           00F3F5   210 BIOS_FRCNEW  .equ 0xf3f5
+                                    211 
+                                    212 ; Work area for key input
+                           00F3F6   213 BIOS_SCNCNT  .equ 0xf3f6
+                           00F3F7   214 BIOS_REPCNT  .equ 0xf3f7
+                           00F3F8   215 BIOS_PUTPNT  .equ 0xf3f8
+                           00F3FA   216 BIOS_GETPNT  .equ 0xf3fa
+                                    217 
+                                    218 ; Parameters for Cassette
+                           00F3FC   219 BIOS_CS120   .equ 0xf3fc
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 6
+Hexadecimal [24-Bits]
+
+
+
+                           00F406   220 BIOS_LOW     .equ 0xf406
+                           00F408   221 BIOS_HIGH    .equ 0xf408
+                           00F40A   222 BIOS_HEADER  .equ 0xf40a
+                           00F40B   223 BIOS_ASPCT1  .equ 0xf40b
+                           00F40D   224 BIOS_ASPCT2  .equ 0xf40d
+                           00F40F   225 BIOS_ENDPRG  .equ 0xf40f
+                                    226 
+                                    227 ; Work used by BASIC internally
+                           00F414   228 BIOS_ERRFLG  .equ 0xf414
+                           00F415   229 BIOS_LPTPOS  .equ 0xf415
+                           00F416   230 BIOS_PRTFLG  .equ 0xf416
+                           00F417   231 BIOS_NTMSXP  .equ 0xf417
+                           00F418   232 BIOS_RAWPRT  .equ 0xf418
+                           00F419   233 BIOS_VLZADR  .equ 0xf419
+                           00F41B   234 BIOS_VLZDAT  .equ 0xf41b
+                           00F41C   235 BIOS_CURLIN  .equ 0xf41c
+                           00F41F   236 BIOS_KBUF    .equ 0xf41f
+                           00F55D   237 BIOS_BUFMIN  .equ 0xf55d
+                           00F55E   238 BIOS_BUF     .equ 0xf55e
+                           00F660   239 BIOS_ENDBUF  .equ 0xf660
+                           00F661   240 BIOS_TTYPOS  .equ 0xf661
+                           00F662   241 BIOS_DIMFLG  .equ 0xf662
+                           00F663   242 BIOS_VALTYP  .equ 0xf663
+                           00F664   243 BIOS_DORES   .equ 0xf664
+                           00F665   244 BIOS_DONUM   .equ 0xf665
+                           00F666   245 BIOS_CONTXT  .equ 0xf666
+                           00F668   246 BIOS_CONSAV  .equ 0xf668
+                           00F669   247 BIOS_CONTYP  .equ 0xf669
+                           00F66A   248 BIOS_CONLO   .equ 0xf66a
+                           00F672   249 BIOS_MEMSIZ  .equ 0xf672
+                           00F674   250 BIOS_STKTOP  .equ 0xf674
+                           00F676   251 BIOS_TXTTAB  .equ 0xf676
+                           00F768   252 BIOS_TEMPPT  .equ 0xf768
+                           00F67A   253 BIOS_TEMPST  .equ 0xf67a
+                           00F698   254 BIOS_DSCTMP  .equ 0xf698
+                           00F69B   255 BIOS_FRETOP  .equ 0xf69b
+                           00F69D   256 BIOS_TEMP3   .equ 0xf69d
+                           00F69F   257 BIOS_TEMP8   .equ 0xf69f
+                           00F6A1   258 BIOS_ENDFOR  .equ 0xf6a1
+                           00F6A5   259 BIOS_SUBFLG  .equ 0xf6a5
+                           00F6A6   260 BIOS_FLGINP  .equ 0xf6a6
+                           00F6A7   261 BIOS_TEMP    .equ 0xf6a7
+                           00F6A9   262 BIOS_PTRFLG  .equ 0xf6a9
+                           00F6AA   263 BIOS_AUTFLG  .equ 0xf6aa
+                           00F6AB   264 BIOS_AUTLIN  .equ 0xf6ab
+                           00F6AD   265 BIOS_AUTINC  .equ 0xf6ad
+                           00F6AF   266 BIOS_SAVTXT  .equ 0xf6af
+                           00F6B3   267 BIOS_ERRLIN  .equ 0xf6b3
+                           00F6B5   268 BIOS_DOT     .equ 0xf6b5
+                           00F6B7   269 BIOS_ERRTXT  .equ 0xf6b7
+                           00F6B9   270 BIOS_ONELIN  .equ 0xf6b9
+                           00F6BB   271 BIOS_ONEFLG  .equ 0xf6bb
+                           00F6BC   272 BIOS_TEMP2   .equ 0xf6bc
+                           00F6BE   273 BIOS_OLDLIN  .equ 0xf6be
+                           00F6C0   274 BIOS_OLDTXT  .equ 0xf6c0
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 7
+Hexadecimal [24-Bits]
+
+
+
+                           00F6C2   275 BIOS_VARTAB  .equ 0xf6c2
+                           00F6C4   276 BIOS_ARYTAB  .equ 0xf6c4
+                           00F6C6   277 BIOS_STREND  .equ 0xf6c6
+                           00F6C8   278 BIOS_DATPTR  .equ 0xf6c8
+                           00F6CA   279 BIOS_DEFTBL  .equ 0xf6ca
+                           00F6E4   280 BIOS_PRMSTK  .equ 0xf6e4
+                           00F6E6   281 BIOS_PRMLEN  .equ 0xf6e6
+                           00F6E8   282 BIOS_PARM1   .equ 0xf6e8
+                           00F74C   283 BIOS_PRMPRV  .equ 0xf74c
+                           00F74E   284 BIOS_PRMLN2  .equ 0xf74e
+                           00F750   285 BIOS_PARM2   .equ 0xf750
+                           00F7B4   286 BIOS_PRMFLG  .equ 0xf7b4
+                           00F7B5   287 BIOS_ARYTA2  .equ 0xf7b5
+                           00F7B7   288 BIOS_NOFUNS  .equ 0xf7b7
+                           00F7B8   289 BIOS_TEMP9   .equ 0xf7b8
+                           00F7BA   290 BIOS_FUNACT  .equ 0xf7ba
+                           00F7BC   291 BIOS_SWPTMP  .equ 0xf7bc
+                           00F7C4   292 BIOS_TRCFLG  .equ 0xf7c4
+                                    293 
+                                    294 ; Work for Math-Pack
+                           00F7C5   295 BIOS_FBUFFR  .equ 0xf7c5
+                           00F7F0   296 BIOS_DECTMP  .equ 0xf7f0
+                           00F7F2   297 BIOS_DECTM2  .equ 0xf7f2
+                           00F7F4   298 BIOS_DECCNT  .equ 0xf7f4
+                           00F7F6   299 BIOS_DAC     .equ 0xf7f6
+                           00F806   300 BIOS_HOLD8   .equ 0xf806
+                           00F836   301 BIOS_HOLD2   .equ 0xf836
+                           00F83E   302 BIOS_HOLD    .equ 0xf83e
+                           00F847   303 BIOS_ARG     .equ 0xf847
+                           00F857   304 BIOS_RNDX    .equ 0xf857
+                                    305 
+                                    306 ; Interface with BASIC USR Command
+                           00F7F8   307 BIOS_USRDATA .equ 0xf7f8
+                                    308 
+                                    309 ; Data area used by BASIC interpreter
+                           00F85F   310 BIOS_MAXFIL  .equ 0xf85f
+                           00F860   311 BIOS_FILTAB  .equ 0xf860
+                           00F862   312 BIOS_NULBUF  .equ 0xf862
+                           00F864   313 BIOS_PTRFIL  .equ 0xf864
+                           00F866   314 BIOS_RUNFLG  .equ 0xf866
+                           00F866   315 BIOS_FILNAM  .equ 0xf866
+                           00F871   316 BIOS_FILNM2  .equ 0xf871
+                           00F87C   317 BIOS_NLONLY  .equ 0xf87c
+                           00F87D   318 BIOS_SAVEND  .equ 0xf87d
+                           00F87F   319 BIOS_FNKSTR  .equ 0xf87f
+                           00F91F   320 BIOS_CGPNT   .equ 0xf91f
+                           00F922   321 BIOS_NAMBAS  .equ 0xf922
+                           00F924   322 BIOS_CGPBAS  .equ 0xf924
+                           00F926   323 BIOS_PATBAS  .equ 0xf926
+                           00F928   324 BIOS_ATRBAS  .equ 0xf928
+                           00F92A   325 BIOS_CLOC    .equ 0xf92a
+                           00F92C   326 BIOS_CMASK   .equ 0xf92c
+                           00F92D   327 BIOS_MINDEL  .equ 0xf92d
+                           00F92F   328 BIOS_MAXDEL  .equ 0xf92f
+                                    329 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 8
+Hexadecimal [24-Bits]
+
+
+
+                                    330 ; Data area used by CIRCLE statement
+                           00F931   331 BIOS_ASPECT  .equ 0xf931
+                           00F933   332 BIOS_CENCNT  .equ 0xf933
+                           00F935   333 BIOS_CLINEF  .equ 0xf935
+                           00F936   334 BIOS_CNPNTS  .equ 0xf936
+                           00F938   335 BIOS_CPLOTF  .equ 0xf938
+                           00F939   336 BIOS_CPCNT   .equ 0xf939
+                           00F93B   337 BIOS_CPNCNT8 .equ 0xf93b
+                           00F93D   338 BIOS_CPCSUM  .equ 0xf93d
+                           00F93F   339 BIOS_CSTCNT  .equ 0xf93f
+                           00F941   340 BIOS_CSCLXY  .equ 0xf941
+                           00F942   341 BIOS_CSAVEA  .equ 0xf942
+                           00F944   342 BIOS_CSAVEM  .equ 0xf944
+                           00F945   343 BIOS_CXOFF   .equ 0xf945
+                           00F947   344 BIOS_CYOFF   .equ 0xf947
+                                    345 
+                                    346 ; Data area used in PAINT statement
+                           00F949   347 BIOS_LOHMSK  .equ 0xf949
+                           00F94A   348 BIOS_LOHDIR  .equ 0xf94a
+                           00F94B   349 BIOS_LOHADR  .equ 0xf94b
+                           00F94D   350 BIOS_LOHCNT  .equ 0xf94d
+                           00F94F   351 BIOS_SKPCNT  .equ 0xf94f
+                           00F951   352 BIOS_MIVCNT  .equ 0xf951
+                           00F953   353 BIOS_PDIREC  .equ 0xf953
+                           00F954   354 BIOS_LFPROG  .equ 0xf954
+                           00F955   355 BIOS_RTPROG  .equ 0xf955
+                                    356 
+                                    357 ; Data area used in PLAY statement
+                           00F956   358 BIOS_MCLTAB  .equ 0xf956
+                           00F958   359 BIOS_MCLFLG  .equ 0xf958
+                           00F959   360 BIOS_QUETAB  .equ 0xf959
+                           00F971   361 BIOS_QUEBAK  .equ 0xf971
+                           00F975   362 BIOS_VOICAQ  .equ 0xf975
+                           00F9F5   363 BIOS_VOICBQ  .equ 0xf9f5
+                           00FA75   364 BIOS_VOICCQ  .equ 0xfa75
+                                    365 
+                                    366 ; Work area added in MSX2
+                           00FAF5   367 BIOS_DPPAGE  .equ 0xfaf5
+                           00FAF6   368 BIOS_ACPAGE  .equ 0xfaf6
+                           00FAF7   369 BIOS_AVCSAV  .equ 0xfaf7
+                           00FAF8   370 BIOS_EXBRSA  .equ 0xfaf8
+                           00FAF9   371 BIOS_CHRCNT  .equ 0xfaf9
+                           00FAFA   372 BIOS_ROMA    .equ 0xfafa
+                           00FAFC   373 BIOS_MODE    .equ 0xfafc
+                           00FAFD   374 BIOS_NORUSE  .equ 0xfafd
+                           00FAFE   375 BIOS_XSAVE   .equ 0xfafe
+                           00FB00   376 BIOS_YSAVE   .equ 0xfb00
+                           00FB02   377 BIOS_LOGOPR  .equ 0xfb02
+                                    378 
+                                    379 ; Data area used by RS-232C
+                           00FB03   380 BIOS_RSTMP   .equ 0xfb03
+                           00FB03   381 BIOS_TOCNT   .equ 0xfb03
+                           00FB04   382 BIOS_RSFCB   .equ 0xfb04
+                           00FB06   383 BIOS_RSIQLN  .equ 0xfb06
+                           00FB07   384 BIOS_MEXBIH  .equ 0xfb07
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                          Page 9
+Hexadecimal [24-Bits]
+
+
+
+                           00FB0C   385 BIOS_OLDSTT  .equ 0xfb0c
+                           00FB12   386 BIOS_OLDINT  .equ 0xfb12
+                           00FB17   387 BIOS_DEVNUM  .equ 0xfb17
+                           00FB18   388 BIOS_DATCNT  .equ 0xfb18
+                           00FB1B   389 BIOS_ERRORS  .equ 0xfb1b
+                           00FB1C   390 BIOS_FLAGS   .equ 0xfb1c
+                           00FB1D   391 BIOS_ESTBLS  .equ 0xfb1d
+                           00FB1E   392 BIOS_COMMSK  .equ 0xfb1e
+                           00FB1F   393 BIOS_LSTCOM  .equ 0xfb1f
+                           00FB20   394 BIOS_LSTMOD  .equ 0xfb20
+                                    395 
+                                    396 ; Data area used by PLAY statement
+                           00FB35   397 BIOS_PRSCNT  .equ 0xfb35
+                           00FB36   398 BIOS_SAVSP   .equ 0xfb36
+                           00FB38   399 BIOS_VOICEN  .equ 0xfb38
+                           00FB39   400 BIOS_SAVVOL  .equ 0xfb39
+                           00FB3B   401 BIOS_MCLLEN  .equ 0xfb3b
+                           00FB3C   402 BIOS_MCLPTR  .equ 0xfb3c
+                           00FB3E   403 BIOS_QUEUEN  .equ 0xfb3e
+                           00FC3F   404 BIOS_MUSICF  .equ 0xfc3f
+                           00FB40   405 BIOS_PLYCNT  .equ 0xfb40
+                                    406 
+                                    407 ; Voice static data area
+                           00FB41   408 BIOS_VCBA    .equ 0xfb41
+                           00FB66   409 BIOS_VCBB    .equ 0xfb66
+                           00FB8B   410 BIOS_VCBC    .equ 0xfb8b
+                                    411 
+                                    412 ; Data area
+                           00FBB0   413 BIOS_ENSTOP  .equ 0xfbb0
+                           00FBB1   414 BIOS_BASROM  .equ 0xfbb1
+                           00FBB2   415 BIOS_LINTTB  .equ 0xfbb2
+                           00FBCA   416 BIOS_FSTPOS  .equ 0xfbca
+                           00FBCC   417 BIOS_CODSAV  .equ 0xfbcc
+                           00FBCD   418 BIOS_FNKSW1  .equ 0xfbcd
+                           00FBCE   419 BIOS_FNKFLG  .equ 0xfbce
+                           00FBD8   420 BIOS_ONGSBF  .equ 0xfbd8
+                           00FBD9   421 BIOS_CLIKFL  .equ 0xfbd9
+                           00FBDA   422 BIOS_OLDKEY  .equ 0xfbda
+                           00FBE5   423 BIOS_NEWKEY  .equ 0xfbe5
+                           00FBF0   424 BIOS_KEYBUF  .equ 0xfbf0
+                           00FC18   425 BIOS_LINWRK  .equ 0xfc18
+                           00FC40   426 BIOS_PATWRK  .equ 0xfc40
+                           00FC48   427 BIOS_BOTTOM  .equ 0xfc48
+                           00FC4A   428 BIOS_HIMEM   .equ 0xfc4a
+                           00FC4C   429 BIOS_TRAPTBL .equ 0xfc4c
+                           00FC9A   430 BIOS_RTYCNT  .equ 0xfc9a
+                           00FC9B   431 BIOS_INTFLG  .equ 0xfc9b
+                           00FC9C   432 BIOS_PADY    .equ 0xfc9c
+                           00FC9D   433 BIOS_PADX    .equ 0xfc9d
+                           00FC9E   434 BIOS_JIFFY   .equ 0xfc9e
+                           00FCA0   435 BIOS_INTVAL  .equ 0xfca0
+                           00FCA2   436 BIOS_INTCNT  .equ 0xfca2
+                           00FCA4   437 BIOS_LOWLIM  .equ 0xfca4
+                           00FCA5   438 BIOS_WINWID  .equ 0xfca5
+                           00FCA6   439 BIOS_GRPHED  .equ 0xfca6
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 10
+Hexadecimal [24-Bits]
+
+
+
+                           00FCA7   440 BIOS_ESCCNT  .equ 0xfca7
+                           00FCA8   441 BIOS_INSFLG  .equ 0xfca8
+                           00FCA9   442 BIOS_CSRSW   .equ 0xfca9
+                           00FCAA   443 BIOS_CSTYLE  .equ 0xfcaa
+                           00FCAB   444 BIOS_CAPST   .equ 0xfcab
+                           00FCAC   445 BIOS_KANAST  .equ 0xfcac
+                           00FCAD   446 BIOS_KANAMD  .equ 0xfcad
+                           00FCAE   447 BIOS_FLBMEM  .equ 0xfcae
+                           00FCAF   448 BIOS_SCRMOD  .equ 0xfcaf
+                           00FCB0   449 BIOS_OLDSCR  .equ 0xfcb0
+                           00FCB1   450 BIOS_CASPRV  .equ 0xfcb1
+                           00FCB2   451 BIOS_BRDATR  .equ 0xfcb2
+                           00FCB3   452 BIOS_GXPOS   .equ 0xfcb3
+                           00FCB5   453 BIOS_GYPOS   .equ 0xfcb5
+                           00FCB7   454 BIOS_GRPACX  .equ 0xfcb7
+                           00FCB9   455 BIOS_GRPACY  .equ 0xfcb9
+                           00FCBB   456 BIOS_DRWFLG  .equ 0xfcbb
+                           00FCBC   457 BIOS_DRWSCL  .equ 0xfcbc
+                           00FCBD   458 BIOS_DRWANG  .equ 0xfcbd
+                           00FCBE   459 BIOS_RUNBNF  .equ 0xfcbe
+                           00FCBF   460 BIOS_SAVENT  .equ 0xfcbf
+                           00FCC0   461 BIOS_ROMSLT  .equ 0xfcc0
+                           00FCC1   462 BIOS_EXPTBL  .equ 0xfcc1
+                           00FCC5   463 BIOS_SLTTBL  .equ 0xfcc5
+                           00FCC9   464 BIOS_SLTATR  .equ 0xfcc9
+                           00FD09   465 BIOS_SLTWRK  .equ 0xfd09
+                           00FD89   466 BIOS_PROCNM  .equ 0xfd89
+                           00FD99   467 BIOS_DEVICE  .equ 0xfd99
+                                    468 
+                                    469 ; Hooks
+                           00FD9A   470 BIOS_H_KEYI  .equ 0xfd9a
+                           00FD9F   471 BIOS_H_TIMI  .equ 0xfd9f
+                           00FDA4   472 BIOS_H_CHPH  .equ 0xfda4
+                           00FDA9   473 BIOS_H_DSPC  .equ 0xfda9
+                           00FDAE   474 BIOS_H_ERAC  .equ 0xfdae
+                           00FDB3   475 BIOS_H_DSPF  .equ 0xfdb3
+                           00FDB8   476 BIOS_H_ERAF  .equ 0xfdb8
+                           00FDBD   477 BIOS_H_TOTE  .equ 0xfdbd
+                           00FDC2   478 BIOS_H_CHGE  .equ 0xfdc2
+                           00FDC7   479 BIOS_H_INIP  .equ 0xfdc7
+                           00FDCC   480 BIOS_H_KEYC  .equ 0xfdcc
+                           00FDD1   481 BIOS_H_KYEA  .equ 0xfdd1
+                           00FDD6   482 BIOS_H_NMI   .equ 0xfdd6
+                           00FDDB   483 BIOS_H_PINL  .equ 0xfddb
+                           00FDE0   484 BIOS_H_QINL  .equ 0xfde0
+                           00FDE5   485 BIOS_H_INLI  .equ 0xfde5
+                           00FDEA   486 BIOS_H_ONGO  .equ 0xfdea
+                           00FDEF   487 BIOS_H_DSKO  .equ 0xfdef
+                           00FDF4   488 BIOS_H_SETS  .equ 0xfdf4
+                           00FDF9   489 BIOS_H_NAME  .equ 0xfdf9
+                           00FDFE   490 BIOS_H_KILL  .equ 0xfdfe
+                           00FE03   491 BIOS_H_IPL   .equ 0xfe03
+                           00FE08   492 BIOS_H_COPY  .equ 0xfe08
+                           00FE0D   493 BIOS_H_CMD   .equ 0xfe0d
+                           00FE12   494 BIOS_H_DSKF  .equ 0xfe12
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 11
+Hexadecimal [24-Bits]
+
+
+
+                           00FE17   495 BIOS_H_DSKI  .equ 0xfe17
+                           00FE1C   496 BIOS_H_ATTR  .equ 0xfe1c
+                           00FE21   497 BIOS_H_LSET  .equ 0xfe21
+                           00FE26   498 BIOS_H_RSET  .equ 0xfe26
+                           00FE2B   499 BIOS_H_FIEL  .equ 0xfe2b
+                           00FE30   500 BIOS_H_MKI   .equ 0xfe30
+                           00FE35   501 BIOS_H_MKS   .equ 0xfe35
+                           00FE3A   502 BIOS_H_MKD   .equ 0xfe3a
+                           00FE3F   503 BIOS_H_CVI   .equ 0xfe3f
+                           00FE44   504 BIOS_H_CVS   .equ 0xfe44
+                           00FE49   505 BIOS_H_CVD   .equ 0xfe49
+                           00FE4E   506 BIOS_H_GETP  .equ 0xfe4e
+                           00FE53   507 BIOS_H_SETF  .equ 0xfe53
+                           00FE58   508 BIOS_H_NOFO  .equ 0xfe58
+                           00FE5D   509 BIOS_H_NULO  .equ 0xfe5d
+                           00FE62   510 BIOS_H_NTFL  .equ 0xfe62
+                           00FE67   511 BIOS_H_MERG  .equ 0xfe67
+                           00FE6C   512 BIOS_H_SAVE  .equ 0xfe6c
+                           00FE71   513 BIOS_H_BINS  .equ 0xfe71
+                           00FE76   514 BIOS_H_BINL  .equ 0xfe76
+                           00FD7B   515 BIOS_H_FILE  .equ 0xfd7b
+                           00FE80   516 BIOS_H_DGET  .equ 0xfe80
+                           00FE85   517 BIOS_H_FILO  .equ 0xfe85
+                           00FE8A   518 BIOS_H_INDS  .equ 0xfe8a
+                           00FE8F   519 BIOS_H_RSLF  .equ 0xfe8f
+                           00FE94   520 BIOS_H_SAVD  .equ 0xfe94
+                           00FE99   521 BIOS_H_LOC   .equ 0xfe99
+                           00FE9E   522 BIOS_H_LOF   .equ 0xfe9e
+                           00FEA3   523 BIOS_H_EOF   .equ 0xfea3
+                           00FEA8   524 BIOS_H_FPOS  .equ 0xfea8
+                           00FEAD   525 BIOS_H_BAKU  .equ 0xfead
+                           00FEB2   526 BIOS_H_PARD  .equ 0xfeb2
+                           00FEB7   527 BIOS_H_NODE  .equ 0xfeb7
+                           00FEBC   528 BIOS_H_POSD  .equ 0xfebc
+                           00FEC1   529 BIOS_H_DEVN  .equ 0xfec1
+                           00FEC6   530 BIOS_H_GEND  .equ 0xfec6
+                           00FECB   531 BIOS_H_RUNC  .equ 0xfecb
+                           00FED0   532 BIOS_H_CLEAR .equ 0xfed0
+                           00FED5   533 BIOS_H_LOPD  .equ 0xfed5
+                           00FEDA   534 BIOS_H_STKE  .equ 0xfeda
+                           00FEDF   535 BIOS_H_ISFL  .equ 0xfedf
+                           00FEE4   536 BIOS_H_OUTD  .equ 0xfee4
+                           00FEE9   537 BIOS_H_CRDO  .equ 0xfee9
+                           00FEEE   538 BIOS_H_DSKC  .equ 0xfeee
+                           00FEF3   539 BIOS_H_DOGR  .equ 0xfef3
+                           00FEF8   540 BIOS_H_PRGE  .equ 0xfef8
+                           00FEFD   541 BIOS_H_ERRP  .equ 0xfefd
+                           00FF02   542 BIOS_H_ERRF  .equ 0xff02
+                           00FF07   543 BIOS_H_READ  .equ 0xff07
+                           00FF0C   544 BIOS_H_MAIN  .equ 0xff0c
+                           00FF11   545 BIOS_H_DIRD  .equ 0xff11
+                           00FF16   546 BIOS_H_FINI  .equ 0xff16
+                           00FF1B   547 BIOS_H_FINE  .equ 0xff1b
+                           00FF20   548 BIOS_H_CRUN  .equ 0xff20
+                           00FF25   549 BIOS_H_CRUS  .equ 0xff25
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 12
+Hexadecimal [24-Bits]
+
+
+
+                           00FF2A   550 BIOS_H_ISRE  .equ 0xff2a
+                           00FF2F   551 BIOS_H_NTFN  .equ 0xff2f
+                           00FF34   552 BIOS_H_NOTR  .equ 0xff34
+                           00FF39   553 BIOS_H_SNGF  .equ 0xff39
+                           00FF3E   554 BIOS_H_NEWS  .equ 0xff3e
+                           00FF43   555 BIOS_H_GONE  .equ 0xff43
+                           00FF48   556 BIOS_H_CHRG  .equ 0xff48
+                           00FF4D   557 BIOS_H_RETU  .equ 0xff4d
+                           00FF52   558 BIOS_H_PRTF  .equ 0xff52
+                           00FF57   559 BIOS_H_COMP  .equ 0xff57
+                           00FF5C   560 BIOS_H_FINP  .equ 0xff5c
+                           00FF61   561 BIOS_H_TRMN  .equ 0xff61
+                           00FF66   562 BIOS_H_FRME  .equ 0xff66
+                           00FF6B   563 BIOS_H_NTPL  .equ 0xff6b
+                           00FF70   564 BIOS_H_EVAL  .equ 0xff70
+                           00FF75   565 BIOS_H_OKNO  .equ 0xff75
+                           00FF7A   566 BIOS_H_FING  .equ 0xff7a
+                           00FF7F   567 BIOS_H_ISMI  .equ 0xff7f
+                           00FF84   568 BIOS_H_WIDT  .equ 0xff84
+                           00FF89   569 BIOS_H_LIST  .equ 0xff89
+                           00FF8E   570 BIOS_H_BUFL  .equ 0xff8e
+                           00FF93   571 BIOS_H_FRQI  .equ 0xff93
+                           00FF98   572 BIOS_H_SCNE  .equ 0xff98
+                           00FF9D   573 BIOS_H_FRET  .equ 0xff9d
+                           00FFA2   574 BIOS_H_PTRG  .equ 0xffa2
+                           00FFA7   575 BIOS_H_PHYD  .equ 0xffa7
+                           00FFAC   576 BIOS_H_FORM  .equ 0xffac
+                           00FFB1   577 BIOS_H_ERRO  .equ 0xffb1
+                           00FFB6   578 BIOS_H_LPTO  .equ 0xffb6
+                           00FFBB   579 BIOS_H_LPTS  .equ 0xffbb
+                           00FFC0   580 BIOS_H_SCRE  .equ 0xffc0
+                           00FFC5   581 BIOS_H_PLAY  .equ 0xffc5
+                                    582 
+                                    583 ; For expanded BIOS
+                           00FFCA   584 BIOS_FCALL   .equ 0xffca
+                           00FFCF   585 BIOS_DISINT  .equ 0xffcf
+                           00FFD4   586 BIOS_ENAINT  .equ 0xffd4
+                                    587 
+                                    588 ; --- bdos calls ---
+                           000005   589 BDOS_SYSCAL  .equ 0x0005
+                                    590 
+                                    591 ; --- bdos variables ---
+                           00F1E6   592 BDOS_ABORTH	 .equ 0xf1e6
+                           00F23D   593 BDOS_DTA     .equ 0xf23d		; MSX TOP SECRET states this as 0xf23c
+                                    594 								; but by my experiences it's 0xf23d
+                           00F323   595 BDOS_DSKERR  .equ 0xf323
+                           00F353   596 BDOS_DPBBAS	 .equ 0xf353
+                           00F37D   597 BDOS		 .equ 0xf37d
+                                    598 
+                                    599 
+                                    600 ; I/O
+                           000001   601 BDOS_CONIN   .equ 0x01
+                           000002   602 BDOS_CONOUT  .equ 0x02
+                           000003   603 BDOS_AUXIN   .equ 0x03
+                           000004   604 BDOS_AUXOUT  .equ 0x04
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 13
+Hexadecimal [24-Bits]
+
+
+
+                           000005   605 BDOS_LSTOUT  .equ 0x05
+                           000006   606 BDOS_DIRIO   .equ 0x06
+                           000007   607 BDOS_DIRIN   .equ 0x07
+                           000008   608 BDOS_INNOE   .equ 0x08
+                           000009   609 BDOS_STROUT  .equ 0x09
+                           00000A   610 BDOS_BUFIN   .equ 0x0a
+                           00000B   611 BDOS_CONST   .equ 0x0b
+                                    612 
+                                    613 ; system
+                           000000   614 BDOS_TERM0   .equ 0x00
+                           00000C   615 BDOS_CPMVER  .equ 0x0c
+                           00000D   616 BDOS_DSKRST  .equ 0x0d
+                           00000E   617 BDOS_SELDSK  .equ 0x0e
+                           000018   618 BDOS_LOGIN   .equ 0x18
+                           000019   619 BDOS_CURDRV  .equ 0x19
+                           00001A   620 BDOS_SETDTA  .equ 0x1a
+                           00001B   621 BDOS_ALLOC   .equ 0x1b
+                           00002A   622 BDOS_GDATE   .equ 0x2a
+                           00002B   623 BDOS_SDATE   .equ 0x2b
+                           00002C   624 BDOS_GTIME   .equ 0x2c
+                           00002D   625 BDOS_STIME   .equ 0x2d
+                           00002E   626 BDOS_VERIFY  .equ 0x2e
+                                    627 
+                                    628 ; sectors
+                           00002F   629 BDOS_RDABS   .equ 0x2f
+                           000030   630 BDOS_WRABS   .equ 0x30
+                                    631 
+                                    632 ; fcb
+                           00000F   633 BDOS_FOPEN   .equ 0x0f
+                           000010   634 BDOS_FCLOSE  .equ 0x10
+                           000011   635 BDOS_SFIRST  .equ 0x11
+                           000012   636 BDOS_SNEXT   .equ 0x12
+                           000013   637 BDOS_FDEL    .equ 0x13
+                           000014   638 BDOS_RDSEQ   .equ 0x14
+                           000015   639 BDOS_WRSEQ   .equ 0x15
+                           000016   640 BDOS_FMAKE   .equ 0x16
+                           000017   641 BDOS_FREN    .equ 0x17
+                           000021   642 BDOS_RDRND   .equ 0x21
+                           000022   643 BDOS_WRRND   .equ 0x22
+                           000023   644 BDOS_FSIZE   .equ 0x23
+                           000024   645 BDOS_SETRND  .equ 0x24
+                           000026   646 BDOS_WRBLK   .equ 0x26
+                           000027   647 BDOS_RDBLK   .equ 0x27
+                           000028   648 BDOS_WRZER   .equ 0x28
+                                    649 
+                                    650 ; msxdos2
+                           000031   651 BDOS_DPARM   .equ 0x31
+                           000040   652 BDOS_FFIRST  .equ 0x40
+                           000041   653 BDOS_FNEXT   .equ 0x41
+                           000042   654 BDOS_FNEW    .equ 0x42
+                           000043   655 BDOS_OPEN    .equ 0x43
+                           000044   656 BDOS_CREATE  .equ 0x44
+                           000045   657 BDOS_CLOSE   .equ 0x45
+                           000046   658 BDOS_ENSURE  .equ 0x46
+                           000047   659 BDOS_DUP     .equ 0x47
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 14
+Hexadecimal [24-Bits]
+
+
+
+                           000048   660 BDOS_READ    .equ 0x48
+                           000049   661 BDOS_WRITE   .equ 0x49
+                           00004A   662 BDOS_SEEK    .equ 0x4a
+                           00004B   663 BDOS_IOCTL   .equ 0x4b
+                           00004C   664 BDOS_HTEST   .equ 0x4c
+                           00004D   665 BDOS_DELETE  .equ 0x4d
+                           00004E   666 BDOS_RENAME  .equ 0x4e
+                           00004F   667 BDOS_MOVE    .equ 0x4f
+                           000050   668 BDOS_ATTR    .equ 0x50
+                           000051   669 BDOS_FTIME   .equ 0x51
+                           000052   670 BDOS_HDELET  .equ 0x52
+                           000053   671 BDOS_HRENAM  .equ 0x53
+                           000054   672 BDOS_HMOVE   .equ 0x54
+                           000055   673 BDOS_HATTR   .equ 0x55
+                           000056   674 BDOS_HFTIME  .equ 0x56
+                           000057   675 BDOS_GETDTA  .equ 0x57
+                           000058   676 BDOS_GETVFY  .equ 0x58
+                           000059   677 BDOS_GETCD   .equ 0x59
+                           00005A   678 BDOS_CHDIR   .equ 0x5a
+                           00005B   679 BDOS_PARSE   .equ 0x5b
+                           00005C   680 BDOS_PFILE   .equ 0x5c
+                           00005D   681 BDOS_CHKCHR  .equ 0x5d
+                           00005E   682 BDOS_WPATH   .equ 0x5e
+                           00005F   683 BDOS_FLUSH   .equ 0x5f
+                           000060   684 BDOS_FORK    .equ 0x60
+                           000061   685 BDOS_JOIN    .equ 0x61
+                           000062   686 BDOS_TERM    .equ 0x62
+                           000063   687 BDOS_DEFAB   .equ 0x63
+                           000064   688 BDOS_DEFER   .equ 0x64
+                           000065   689 BDOS_ERROR   .equ 0x65
+                           000066   690 BDOS_EXPLN   .equ 0x66
+                           000067   691 BDOS_FORMAT  .equ 0x67
+                           000068   692 BDOS_RAMD    .equ 0x68
+                           000069   693 BDOS_BUFFER  .equ 0x69
+                           00006A   694 BDOS_ASSIGN  .equ 0x6a
+                           00006B   695 BDOS_GENV    .equ 0x6b
+                           00006C   696 BDOS_SENV    .equ 0x6c
+                           00006D   697 BDOS_FENV    .equ 0x6d
+                           00006E   698 BDOS_DSKCHK  .equ 0x6e
+                           00006F   699 BDOS_DOSVER  .equ 0x6f
+                           000070   700 BDOS_REDIR   .equ 0x70
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 15
+Hexadecimal [24-Bits]
+
+
+
+                                      8 	.include "targetconfig.s"
+                                      1 ;-------------------------------------------------
+                                      2 ; targetconfig.h created automatically by make.bat
+                                      3 ; on 09:18:40, 2024-01-31
+                                      4 ;
+                                      5 ; DO NOT BOTHER EDITING THIS.
+                                      6 ; ALL CHANGES WILL BE LOST.
+                                      7 ;-------------------------------------------------
+                                      8 
+                           000001     9 DEBUG = 1
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 16
+Hexadecimal [24-Bits]
+
+
+
+                                      9 	.include "applicationsettings.s"
+                                      1 ;-------------------------------------------------
+                                      2 ; applicationsettings.h created automatically
+                                      3 ; by make.bat
+                                      4 ; on 09:18:40, 2024-01-31
+                                      5 ;
+                                      6 ; DO NOT BOTHER EDITING THIS.
+                                      7 ; ALL CHANGES WILL BE LOST.
+                                      8 ;-------------------------------------------------
+                                      9 
+                           000001    10 GLOBALS_INITIALIZER = 1
+                           000001    11 MDO_SUPPORT = 1
+                           000000    12 VDP_PORT_FIX = 0
+                           000001    13 __SDCCCALL = 1
+                           000000    14 HEAP_SIZE = 0
+                           00C000    15 fileStart .equ 0xc000
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 17
+Hexadecimal [24-Bits]
+
+
+
+                                     10 
+                                     11 	.globl	_initialize
+                                     12 	.globl  _finalize
+                                     13     .globl  _activate
+                                     14     .globl  _deactivate
+                                     15     
+                           000001    16 .if GLOBALS_INITIALIZER
+                                     17 	.globl  l__INITIALIZER
+                                     18 	.globl  s__INITIALIZED
+                                     19 	.globl  s__INITIALIZER
+                                     20 .endif
+                                     21 
+                                     22 ;   ====================================
+                                     23 ;   ========== HEADER SEGMENT ==========
+                                     24 ;   ====================================
+                                     25 	.area   _HEADER (ABS,CON)
+      00C000                         26 	.org    #fileStart
+                                     27 
+                                     28 ;----------------------------------------------------------
+                                     29 ;	MDO Header
+                                     30 ;----------------------------------------------------------
+      00C000 4D                      31 	.db		'M'					    ; MDO ID
+      00C001 4F                      32 	.db		'O'					    ; MDO ID
+      00C002 00 00                   33 	.dw		#mdoName			    ; MDO Name
+      00C004 00 00                   34 	.dw		#mdoHooks			    ; Forward Hooks
+      00C006 00 00                   35 	.dw		#mdoHookImplementations	; Reserved
+      00C008 10 C0                   36     .dw		#onLoad				    ; Initialization routine
+      00C00A 00 00                   37 	.dw		#_finalize			    ; Finalization routine
+      00C00C 00 00                   38 	.dw		#_activate			    ; Activation (linkage) routine
+      00C00E 00 00                   39 	.dw		#_deactivate		    ; Deactivation (de-linkage) routine
+                                     40 
+                                     41 ;----------------------------------------------------------
+                                     42 ;	Initialization routine
+                                     43 ;----------------------------------------------------------
+      00C010                         44 onLoad::
+                                     45 
+                                     46 ;----------------------------------------------------------
+                                     47 ;	Step 1: Initialize globals
+                           000001    48 .if GLOBALS_INITIALIZER
+      00C010 CD 00 00         [17]   49 	call    gsinit
+                                     50 .endif
+                                     51 
+                                     52 
+                                     53 ;----------------------------------------------------------
+                                     54 ;	Step 2: VDP port fix
+                           000000    55 .if VDP_PORT_FIX
+                                     56     ld      a,(#BIOS_EXPTBL)
+                                     57     ld      hl, #BIOS_VDPDR
+                                     58     call    BIOS_RDSLT
+                                     59     ld      hl, #vdpInPortMap
+                                     60     ld      b,  a
+                                     61     call    vdpPortFix
+                                     62 
+                                     63     ld      a,(#BIOS_EXPTBL)
+                                     64     ld      hl, #BIOS_VDPDW
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 18
+Hexadecimal [24-Bits]
+
+
+
+                                     65     call    BIOS_RDSLT
+                                     66     ld      hl, #vdpOutPortMap
+                                     67     ld      b,  a
+                                     68     call    vdpPortFix
+                                     69 
+                                     70     ei
+                                     71 .endif
+                                     72 
+                                     73 
+                                     74 ;----------------------------------------------------------
+                                     75 ;	Step 3: Initialize MDO
+      00C013 C3 00 00         [10]   76     jp      _initialize
+                                     77 
+                                     78 
+                                     79 ;----------------------------------------------------------
+                                     80 ;	VDP Port Fix helper routine
+                           000000    81 .if VDP_PORT_FIX
+                                     82 vdpPortFix::
+                                     83    ld      a, (hl)     ; relative port
+                                     84    cp      #0xff
+                                     85    ret z
+                                     86    add     a, b        ; a = port
+                                     87    inc     hl
+                                     88    ld      e, (hl)
+                                     89    inc     hl
+                                     90    ld      d, (hl)     ; de = address to be fixed
+                                     91    ld      (de), a
+                                     92    inc     hl
+                                     93    jr      vdpPortFix
+                                     94 .endif
+                                     95 
+                                     96 ;----------------------------------------------------------
+                                     97 ;	Segments order
+                                     98 ;----------------------------------------------------------
+                                     99     .area _CODE
+                                    100 
+                                    101     .area _MDONAME
+                                    102     .area _MDOHOOKS
+                                    103     .area _MDOCHILDLIST
+                                    104     .area _MDOCHILDLISTFINAL
+                                    105     .area _MDOCHILDREN
+                                    106     .area _MDOHOOKIMPLEMENTATIONS
+                                    107     .area _MDOHOOKIMPLEMENTATIONSFINAL
+                                    108     .area _MDOSERVICES
+                                    109 
+                           000000   110  .if VDP_PORT_FIX
+                                    111     .area _VDPINPORTMAP
+                                    112     .area _VDPINPORTMAPFINAL
+                                    113     .area _VDPOUTPORTMAP
+                                    114     .area _VDPOUTPORTMAPFINAL
+                                    115 .endif
+                                    116 
+                                    117     .area _HOME
+                                    118     .area _GSINIT
+                                    119     .area _GSFINAL
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 19
+Hexadecimal [24-Bits]
+
+
+
+                                    120     .area _INITIALIZER
+                                    121     .area _DATA
+                                    122     .area _INITIALIZED
+                                    123     .area _HEAP
+                                    124     .area _AFTERHEAP
+                                    125 
+                                    126 ;   ==================================
+                                    127 ;   ========== MDO SEGMENTS ==========
+                                    128 ;   ==================================
+                                    129 
+                                    130 ;----------------------------------------------------------
+                                    131 ;	MDO name
+                                    132 	.area	_MDONAME
+      000000                        133 mdoName:
+                                    134 
+                                    135 ;----------------------------------------------------------
+                                    136 ;	MDO hooks
+                                    137 	.area	_MDOHOOKS
+      000000                        138 mdoHooks:
+                                    139 
+                                    140 ;----------------------------------------------------------
+                                    141 ;	MDO child list
+                                    142 	.area	_MDOCHILDLIST
+      000000                        143 mdoChildList::
+                                    144 
+                                    145     .area _MDOCHILDLISTFINAL
+      000000                        146 mdoChildListFinal::
+      000000 00 00                  147     .dw     #0
+                                    148 
+                                    149 ;----------------------------------------------------------
+                                    150 ;	MDO child
+                                    151 	.area	_MDOCHILDREN
+      000000                        152 mdoChildren:
+                                    153 
+                                    154 ;----------------------------------------------------------
+                                    155 ;	MDO Hook Implementation
+                                    156 	.area	_MDOHOOKIMPLEMENTATIONS
+      000000                        157 mdoHookImplementations::
+                                    158 
+                                    159 	.area	_MDOHOOKIMPLEMENTATIONSFINAL
+      000000                        160 mdoHookImplementationsFinal::
+      000000 00 00                  161     .dw     0
+                                    162 
+                                    163 ;----------------------------------------------------------
+                                    164 ;	MDO services
+                                    165 	.area	_MDOSERVICES
+                                    166 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 20
+Hexadecimal [24-Bits]
+
+
+
+                                    167 .include "mdoimplementation.s"
+                                      1 ;-------------------------------------------------
+                                      2 ; mdoimplementation.s created automatically
+                                      3 ; by make.bat
+                                      4 ; on 09:18:40, 2024-01-31
+                                      5 ;
+                                      6 ; DO NOT BOTHER EDITING THIS.
+                                      7 ; ALL CHANGES WILL BE LOST.
+                                      8 ;-------------------------------------------------
+                                      9 .globl s__AFTERHEAP
+                                     10 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 21
+Hexadecimal [24-Bits]
+
+
+
+                                     11 .include "../../../projects/SCAMM/SCAMM/MSX/MSX-DOS/mdostructures.s"
+                                      1 ;----------------------------------------------------------
+                                      2 ;		mdostructures.s - by Danilo Angelo, 2023
+                                      3 ;
+                                      4 ;		Overlay structures for MSX-DOS applications.
+                                      5 ;----------------------------------------------------------
+                                      6 
+                                      7 .globl	_mdoAbend
+                                      8 
+                                      9 .macro MDO_NAME	name
+                                     10 	.area _MDONAME
+                                     11 	.asciz		"name"
+                                     12 .endm
+                                     13 
+                                     14 .macro MDO_HOOK		hookname
+                                     15 	.area _MDOHOOKS
+                                     16 	 hookname:				
+                                     17 	 _'hookname'_hook::			
+                                     18 	    jp		_mdoAbend
+                                     19 .endm
+                                     20 
+                                     21 .macro MDO_HOOK_IMPLEMENTATION		hookname, routine
+                                     22 	.area _MDOHOOKIMPLEMENTATIONS
+                                     23 	.globl		_'hookname'_hook
+                                     24 	.dw			_'hookname'_hook
+                                     25 	.globl		routine
+                                     26 	.dw			routine
+                                     27 .endm
+                                     28 
+                                     29 .macro MDO_CHILD	mdoname, filename, extension, address
+                                     30 	.area _MDOCHILDLIST
+                                     31 	.dw			_'mdoname
+                                     32 
+                                     33 	.area _MDOCHILDREN
+                                     34 	_'mdoname'::
+                                     35 	mdoname'_status:	.db		#0
+                                     36 	mdoname'_filename:	.ascii	"filename"
+                                     37 	mdoname'_extension:	.ascii	"extension"
+                                     38 	mdoname'_address:	.dw		address
+                                     39 	mdoname'_name:		.asciz	"mdoname"
+                                     40 .endm
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 22
+Hexadecimal [24-Bits]
+
+
+
+                                     12 .include "../../../projects/SCAMM/SCAMM/Debug/objs/parentinterface.s"
+                           0009A6     1 PARENT_AFTERHEAP 			.gblequ 0x009A6
+                           00015E     2 _PrintDec 			.gblequ 0x0015E
+                           000385     3 __print 			.gblequ 0x00385
+                           000385     4 _print 			.gblequ 0x00385
+                           000390     5 printchar 			.gblequ 0x00390
+                           00039F     6 _color 			.gblequ 0x0039F
+                           0003E0     7 _9938Stop 			.gblequ 0x003E0
+                           0003EC     8 _HMMCSetup 			.gblequ 0x003EC
+                           0006CB     9 _setScreen 			.gblequ 0x006CB
+                           0006E8    10 _finalizeScreen 			.gblequ 0x006E8
+                           000728    11 _initMnemosyneX_hook 			.gblequ 0x00728
+                           00072B    12 _invalidate_hook 			.gblequ 0x0072B
+                           00072E    13 _render_hook 			.gblequ 0x0072E
+                           000731    14 _updateFrame_hook 			.gblequ 0x00731
+                           000734    15 _gameStart_hook 			.gblequ 0x00734
+                           000737    16 _gameEnd_hook 			.gblequ 0x00737
+                           0007D5    17 _mdoLoad 			.gblequ 0x007D5
+                           000876    18 _mdoRelease 			.gblequ 0x00876
+                           00089F    19 _mdoLink 			.gblequ 0x0089F
+                           0008CB    20 _mdoUnlink 			.gblequ 0x008CB
+                           0008F7    21 _mdoAbend 			.gblequ 0x008F7
+                           000997    22 _msgdbg 			.gblequ 0x00997
+                           0009A0    23 _ellipsis 			.gblequ 0x009A0
+                           0009A3    24 _linefeed 			.gblequ 0x009A3
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 23
+Hexadecimal [24-Bits]
+
+
+
+      000000                         13 MDO_NAME MNEMOSYNEX
+                                      1 	.area _MDONAME
+      000000 4D 4E 45 4D 4F 53 59     2 	.asciz		"MNEMOSYNEX"
+             4E 45 58 00
+      00000B                         14 MDO_HOOK_IMPLEMENTATION initMnemosyneX _initMnemosyneX
+                                      1 	.area _MDOHOOKIMPLEMENTATIONS
+                                      2 	.globl		_initMnemosyneX_hook
+      000000 28 07                    3 	.dw			_initMnemosyneX_hook
+                                      4 	.globl		_initMnemosyneX
+      000002 00 00                    5 	.dw			_initMnemosyneX
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 24
+Hexadecimal [24-Bits]
+
+
+
+                                    168 
+                                    169 
+                                    170 ;   ==================================
+                                    171 ;   ======== VDP FIX SEGMENTS ========
+                                    172 ;   ==================================
+                                    173 
+                           000000   174  .if VDP_PORT_FIX
+                                    175 ;----------------------------------------------------------
+                                    176 ;	VDP in port map
+                                    177     .area _VDPINPORTMAP
+                                    178 vdpInPortMap::
+                                    179     .area _VDPINPORTMAPFINAL
+                                    180 vdpInPortMapFinal::
+                                    181     .db     #0xff
+                                    182 
+                                    183 ;----------------------------------------------------------
+                                    184 ;	VDP out port map
+                                    185     .area _VDPOUTPORTMAP
+                                    186 vdpOutPortMap::
+                                    187     .area _VDPOUTPORTMAPFINAL
+                                    188 vdpOutPortMapFinal::
+                                    189     .db     #0xff
+                                    190 .endif
+                                    191 
+                                    192 
+                                    193 ;   =====================================
+                                    194 ;   ========== GSINIT SEGMENTS ==========
+                                    195 ;   =====================================
+                           000001   196 .if GLOBALS_INITIALIZER
+                                    197 	.area	_GSINIT
+      000000                        198 gsinit::
+      000000 01 00 00         [10]  199     ld      bc,#l__INITIALIZER
+      000003 78               [ 4]  200     ld      a,b
+      000004 B1               [ 4]  201     or      a,c
+      000005 CA 00 00         [10]  202     jp	z,  gsinit_next
+      000008 11 00 00         [10]  203     ld	    de,#s__INITIALIZED
+      00000B 21 00 00         [10]  204     ld      hl,#s__INITIALIZER
+      00000E ED B0            [21]  205     ldir
+                                    206 
+                                    207 	.area	_GSFINAL
+      000000                        208 gsinit_next:
+      000000 C9               [10]  209     ret
+                                    210 .endif
+                                    211 
+                                    212 ;   ==================================
+                                    213 ;   ========== DATA SEGMENT ==========
+                                    214 ;   ==================================
+                                    215     .area	_DATA
+      000000                        216 _heap_top::
+      000000 00 00                  217 	.dw     _HEAP_start
+                                    218 
+                                    219 ;   ==================================
+                                    220 ;   ========== HEAP SEGMENT ==========
+                                    221 ;   ==================================
+                                    222     .area	_HEAP
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 25
+Hexadecimal [24-Bits]
+
+
+
+      000000                        223 _HEAP_start::
+      000000                        224     .ds #HEAP_SIZE
+                                    225 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 26
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+    .__.$$$.=  002710 L   |     .__.ABS.=  000000 G   |     .__.CPU.=  000000 L
+    .__.H$L.=  000000 L   |     BDOS    =  00F37D     |     BDOS_ABO=  00F1E6 
+    BDOS_ALL=  00001B     |     BDOS_ASS=  00006A     |     BDOS_ATT=  000050 
+    BDOS_AUX=  000003     |     BDOS_AUX=  000004     |     BDOS_BUF=  000069 
+    BDOS_BUF=  00000A     |     BDOS_CHD=  00005A     |     BDOS_CHK=  00005D 
+    BDOS_CLO=  000045     |     BDOS_CON=  000001     |     BDOS_CON=  000002 
+    BDOS_CON=  00000B     |     BDOS_CPM=  00000C     |     BDOS_CRE=  000044 
+    BDOS_CUR=  000019     |     BDOS_DEF=  000063     |     BDOS_DEF=  000064 
+    BDOS_DEL=  00004D     |     BDOS_DIR=  000007     |     BDOS_DIR=  000006 
+    BDOS_DOS=  00006F     |     BDOS_DPA=  000031     |     BDOS_DPB=  00F353 
+    BDOS_DSK=  00006E     |     BDOS_DSK=  00F323     |     BDOS_DSK=  00000D 
+    BDOS_DTA=  00F23D     |     BDOS_DUP=  000047     |     BDOS_ENS=  000046 
+    BDOS_ERR=  000065     |     BDOS_EXP=  000066     |     BDOS_FCL=  000010 
+    BDOS_FDE=  000013     |     BDOS_FEN=  00006D     |     BDOS_FFI=  000040 
+    BDOS_FLU=  00005F     |     BDOS_FMA=  000016     |     BDOS_FNE=  000042 
+    BDOS_FNE=  000041     |     BDOS_FOP=  00000F     |     BDOS_FOR=  000060 
+    BDOS_FOR=  000067     |     BDOS_FRE=  000017     |     BDOS_FSI=  000023 
+    BDOS_FTI=  000051     |     BDOS_GDA=  00002A     |     BDOS_GEN=  00006B 
+    BDOS_GET=  000059     |     BDOS_GET=  000057     |     BDOS_GET=  000058 
+    BDOS_GTI=  00002C     |     BDOS_HAT=  000055     |     BDOS_HDE=  000052 
+    BDOS_HFT=  000056     |     BDOS_HMO=  000054     |     BDOS_HRE=  000053 
+    BDOS_HTE=  00004C     |     BDOS_INN=  000008     |     BDOS_IOC=  00004B 
+    BDOS_JOI=  000061     |     BDOS_LOG=  000018     |     BDOS_LST=  000005 
+    BDOS_MOV=  00004F     |     BDOS_OPE=  000043     |     BDOS_PAR=  00005B 
+    BDOS_PFI=  00005C     |     BDOS_RAM=  000068     |     BDOS_RDA=  00002F 
+    BDOS_RDB=  000027     |     BDOS_RDR=  000021     |     BDOS_RDS=  000014 
+    BDOS_REA=  000048     |     BDOS_RED=  000070     |     BDOS_REN=  00004E 
+    BDOS_SDA=  00002B     |     BDOS_SEE=  00004A     |     BDOS_SEL=  00000E 
+    BDOS_SEN=  00006C     |     BDOS_SET=  00001A     |     BDOS_SET=  000024 
+    BDOS_SFI=  000011     |     BDOS_SNE=  000012     |     BDOS_STI=  00002D 
+    BDOS_STR=  000009     |     BDOS_SYS=  000005     |     BDOS_TER=  000062 
+    BDOS_TER=  000000     |     BDOS_VER=  00002E     |     BDOS_WPA=  00005E 
+    BDOS_WRA=  000030     |     BDOS_WRB=  000026     |     BDOS_WRI=  000049 
+    BDOS_WRR=  000022     |     BDOS_WRS=  000015     |     BDOS_WRZ=  000028 
+    BIOS_ACP=  00FAF6     |     BIOS_ARG=  00F847     |     BIOS_ARY=  00F7B5 
+    BIOS_ARY=  00F6C4     |     BIOS_ASP=  00F40B     |     BIOS_ASP=  00F40D 
+    BIOS_ASP=  00F931     |     BIOS_ATR=  00F928     |     BIOS_ATR=  00F3F2 
+    BIOS_AUT=  00F6AA     |     BIOS_AUT=  00F6AD     |     BIOS_AUT=  00F6AB 
+    BIOS_AVC=  00FAF7     |     BIOS_BAK=  00F3EA     |     BIOS_BAS=  00FBB1 
+    BIOS_BDR=  00F3EB     |     BIOS_BEE=  0000C0     |     BIOS_BOT=  00FC48 
+    BIOS_BRD=  00FCB2     |     BIOS_BRE=  0000B7     |     BIOS_BUF=  00F55E 
+    BIOS_BUF=  00F55D     |     BIOS_CAL=  000087     |     BIOS_CAL=  000159 
+    BIOS_CAL=  000030     |     BIOS_CAL=  000084     |     BIOS_CAL=  00001C 
+    BIOS_CAP=  00FCAB     |     BIOS_CAS=  00FCB1     |     BIOS_CEN=  00F933 
+    BIOS_CGP=  00F924     |     BIOS_CGP=  00F91F     |     BIOS_CHG=  000132 
+    BIOS_CHG=  000062     |     BIOS_CHG=  00009F     |     BIOS_CHG=  0001B5 
+    BIOS_CHG=  00005F     |     BIOS_CHG=  000135     |     BIOS_CHK=  000000 
+    BIOS_CHP=  0000A2     |     BIOS_CHR=  00FAF9     |     BIOS_CHR=  000010 
+    BIOS_CHS=  00009C     |     BIOS_CLI=  00FBD9     |     BIOS_CLI=  00F3DB 
+    BIOS_CLI=  00F935     |     BIOS_CLM=  00F3B2     |     BIOS_CLO=  00F92A 
+    BIOS_CLP=  00F38C     |     BIOS_CLR=  000069     |     BIOS_CLS=  0000C3 
+    BIOS_CLS=  000115     |     BIOS_CMA=  00F92C     |     BIOS_CNP=  00F936 
+    BIOS_CNS=  00F3DE     |     BIOS_CNV=  0000AB     |     BIOS_COD=  00FBCC 
+    BIOS_COM=  00FB1E     |     BIOS_CON=  00F66A     |     BIOS_CON=  00F668 
+    BIOS_CON=  00F666     |     BIOS_CON=  00F669     |     BIOS_CPC=  00F939 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 27
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+    BIOS_CPC=  00F93D     |     BIOS_CPL=  00F938     |     BIOS_CPN=  00F93B 
+    BIOS_CRT=  00F3B1     |     BIOS_CS1=  00F3FC     |     BIOS_CSA=  00F942 
+    BIOS_CSA=  00F944     |     BIOS_CSC=  00F941     |     BIOS_CSR=  00FCA9 
+    BIOS_CSR=  00F3DD     |     BIOS_CSR=  00F3DC     |     BIOS_CST=  00F93F 
+    BIOS_CST=  00FCAA     |     BIOS_CUR=  00F41C     |     BIOS_CXO=  00F945 
+    BIOS_CYO=  00F947     |     BIOS_DAC=  00F7F6     |     BIOS_DAT=  00FB18 
+    BIOS_DAT=  00F6C8     |     BIOS_DCO=  000020     |     BIOS_DEC=  00F7F4 
+    BIOS_DEC=  00F7F2     |     BIOS_DEC=  00F7F0     |     BIOS_DEF=  00F6CA 
+    BIOS_DEV=  00FD99     |     BIOS_DEV=  00FB17     |     BIOS_DIM=  00F662 
+    BIOS_DIS=  00FFCF     |     BIOS_DIS=  000041     |     BIOS_DON=  00F665 
+    BIOS_DOR=  00F664     |     BIOS_DOT=  00F6B5     |     BIOS_DPP=  00FAF5 
+    BIOS_DRW=  00FCBD     |     BIOS_DRW=  00FCBB     |     BIOS_DRW=  00FCBC 
+    BIOS_DSC=  00F698     |     BIOS_DSP=  0000CF     |     BIOS_ENA=  00FFD4 
+    BIOS_ENA=  000044     |     BIOS_ENA=  000024     |     BIOS_END=  00F660 
+    BIOS_END=  00F6A1     |     BIOS_END=  00F40F     |     BIOS_ENS=  00FBB0 
+    BIOS_EOL=  000168     |     BIOS_ERA=  0000CC     |     BIOS_ERR=  00F414 
+    BIOS_ERR=  00F6B3     |     BIOS_ERR=  00FB1B     |     BIOS_ERR=  00F6B7 
+    BIOS_ESC=  00FCA7     |     BIOS_EST=  00FB1D     |     BIOS_EXB=  00FAF8 
+    BIOS_EXP=  00FCC1     |     BIOS_EXT=  00015F     |     BIOS_FBU=  00F7C5 
+    BIOS_FCA=  00FFCA     |     BIOS_FIL=  00F866     |     BIOS_FIL=  00F871 
+    BIOS_FIL=  00F860     |     BIOS_FIL=  000056     |     BIOS_FLA=  00FB1C 
+    BIOS_FLB=  00FCAE     |     BIOS_FLG=  00F6A6     |     BIOS_FNK=  00FBCE 
+    BIOS_FNK=  0000C9     |     BIOS_FNK=  00F87F     |     BIOS_FNK=  00FBCD 
+    BIOS_FOR=  00F3E9     |     BIOS_FRC=  00F3F5     |     BIOS_FRE=  00F69B 
+    BIOS_FST=  00FBCA     |     BIOS_FUN=  00F7BA     |     BIOS_GET=  000149 
+    BIOS_GET=  00F3FA     |     BIOS_GET=  000028     |     BIOS_GIC=  000090 
+    BIOS_GRP=  00FCB7     |     BIOS_GRP=  00FCB9     |     BIOS_GRP=  00F3CD 
+    BIOS_GRP=  00F3CB     |     BIOS_GRP=  00F3C9     |     BIOS_GRP=  00FCA6 
+    BIOS_GRP=  00F3C7     |     BIOS_GRP=  00F3CF     |     BIOS_GRP=  00008D 
+    BIOS_GRP=  000089     |     BIOS_GSP=  00008A     |     BIOS_GTP=  0000DB 
+    BIOS_GTP=  0000DE     |     BIOS_GTS=  0000D5     |     BIOS_GTT=  0000D8 
+    BIOS_GXP=  00FCB3     |     BIOS_GYP=  00FCB5     |     BIOS_HEA=  00F40A 
+    BIOS_HIG=  00F408     |     BIOS_HIM=  00FC4A     |     BIOS_HOL=  00F83E 
+    BIOS_HOL=  00F836     |     BIOS_HOL=  00F806     |     BIOS_HWV=  00002D 
+    BIOS_H_A=  00FE1C     |     BIOS_H_B=  00FEAD     |     BIOS_H_B=  00FE76 
+    BIOS_H_B=  00FE71     |     BIOS_H_B=  00FF8E     |     BIOS_H_C=  00FDC2 
+    BIOS_H_C=  00FDA4     |     BIOS_H_C=  00FF48     |     BIOS_H_C=  00FED0 
+    BIOS_H_C=  00FE0D     |     BIOS_H_C=  00FF57     |     BIOS_H_C=  00FE08 
+    BIOS_H_C=  00FEE9     |     BIOS_H_C=  00FF20     |     BIOS_H_C=  00FF25 
+    BIOS_H_C=  00FE49     |     BIOS_H_C=  00FE3F     |     BIOS_H_C=  00FE44 
+    BIOS_H_D=  00FEC1     |     BIOS_H_D=  00FE80     |     BIOS_H_D=  00FF11 
+    BIOS_H_D=  00FEF3     |     BIOS_H_D=  00FEEE     |     BIOS_H_D=  00FE12 
+    BIOS_H_D=  00FE17     |     BIOS_H_D=  00FDEF     |     BIOS_H_D=  00FDA9 
+    BIOS_H_D=  00FDB3     |     BIOS_H_E=  00FEA3     |     BIOS_H_E=  00FDAE 
+    BIOS_H_E=  00FDB8     |     BIOS_H_E=  00FF02     |     BIOS_H_E=  00FFB1 
+    BIOS_H_E=  00FEFD     |     BIOS_H_E=  00FF70     |     BIOS_H_F=  00FE2B 
+    BIOS_H_F=  00FD7B     |     BIOS_H_F=  00FE85     |     BIOS_H_F=  00FF1B 
+    BIOS_H_F=  00FF7A     |     BIOS_H_F=  00FF16     |     BIOS_H_F=  00FF5C 
+    BIOS_H_F=  00FFAC     |     BIOS_H_F=  00FEA8     |     BIOS_H_F=  00FF9D 
+    BIOS_H_F=  00FF66     |     BIOS_H_F=  00FF93     |     BIOS_H_G=  00FEC6 
+    BIOS_H_G=  00FE4E     |     BIOS_H_G=  00FF43     |     BIOS_H_I=  00FE8A 
+    BIOS_H_I=  00FDC7     |     BIOS_H_I=  00FDE5     |     BIOS_H_I=  00FE03 
+    BIOS_H_I=  00FEDF     |     BIOS_H_I=  00FF7F     |     BIOS_H_I=  00FF2A 
+    BIOS_H_K=  00FDCC     |     BIOS_H_K=  00FD9A     |     BIOS_H_K=  00FDFE 
+    BIOS_H_K=  00FDD1     |     BIOS_H_L=  00FF89     |     BIOS_H_L=  00FE99 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 28
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+    BIOS_H_L=  00FE9E     |     BIOS_H_L=  00FED5     |     BIOS_H_L=  00FFB6 
+    BIOS_H_L=  00FFBB     |     BIOS_H_L=  00FE21     |     BIOS_H_M=  00FF0C 
+    BIOS_H_M=  00FE67     |     BIOS_H_M=  00FE3A     |     BIOS_H_M=  00FE30 
+    BIOS_H_M=  00FE35     |     BIOS_H_N=  00FDF9     |     BIOS_H_N=  00FF3E 
+    BIOS_H_N=  00FDD6     |     BIOS_H_N=  00FEB7     |     BIOS_H_N=  00FE58 
+    BIOS_H_N=  00FF34     |     BIOS_H_N=  00FE62     |     BIOS_H_N=  00FF2F 
+    BIOS_H_N=  00FF6B     |     BIOS_H_N=  00FE5D     |     BIOS_H_O=  00FF75 
+    BIOS_H_O=  00FDEA     |     BIOS_H_O=  00FEE4     |     BIOS_H_P=  00FEB2 
+    BIOS_H_P=  00FFA7     |     BIOS_H_P=  00FDDB     |     BIOS_H_P=  00FFC5 
+    BIOS_H_P=  00FEBC     |     BIOS_H_P=  00FEF8     |     BIOS_H_P=  00FF52 
+    BIOS_H_P=  00FFA2     |     BIOS_H_Q=  00FDE0     |     BIOS_H_R=  00FF07 
+    BIOS_H_R=  00FF4D     |     BIOS_H_R=  00FE26     |     BIOS_H_R=  00FE8F 
+    BIOS_H_R=  00FECB     |     BIOS_H_S=  00FE94     |     BIOS_H_S=  00FE6C 
+    BIOS_H_S=  00FF98     |     BIOS_H_S=  00FFC0     |     BIOS_H_S=  00FE53 
+    BIOS_H_S=  00FDF4     |     BIOS_H_S=  00FF39     |     BIOS_H_S=  00FEDA 
+    BIOS_H_T=  00FD9F     |     BIOS_H_T=  00FDBD     |     BIOS_H_T=  00FF61 
+    BIOS_H_W=  00FF84     |     BIOS_INI=  00003E     |     BIOS_INI=  000072 
+    BIOS_INI=  000075     |     BIOS_INI=  000141     |     BIOS_INI=  00006F 
+    BIOS_INI=  00003B     |     BIOS_INI=  00006C     |     BIOS_INL=  0000B1 
+    BIOS_INS=  00FCA8     |     BIOS_INT=  00FCA2     |     BIOS_INT=  00FC9B 
+    BIOS_INT=  00FCA0     |     BIOS_ISF=  00014A     |     BIOS_JIF=  00FC9E 
+    BIOS_KAN=  00FCAD     |     BIOS_KAN=  00FCAC     |     BIOS_KBU=  00F41F 
+    BIOS_KEY=  00FBF0     |     BIOS_KEY=  000038     |     BIOS_KIL=  000156 
+    BIOS_KNJ=  0001BD     |     BIOS_LDI=  000059     |     BIOS_LDI=  00005C 
+    BIOS_LFP=  00F954     |     BIOS_LIN=  00F3AF     |     BIOS_LIN=  00F3AE 
+    BIOS_LIN=  00F3B0     |     BIOS_LIN=  00FBB2     |     BIOS_LIN=  00FC18 
+    BIOS_LOG=  00FB02     |     BIOS_LOH=  00F94B     |     BIOS_LOH=  00F94D 
+    BIOS_LOH=  00F94A     |     BIOS_LOH=  00F949     |     BIOS_LOW=  00F406 
+    BIOS_LOW=  00FCA4     |     BIOS_LPT=  0000A5     |     BIOS_LPT=  00F415 
+    BIOS_LPT=  0000A8     |     BIOS_LST=  00FB1F     |     BIOS_LST=  00FB20 
+    BIOS_MAX=  00F92F     |     BIOS_MAX=  00F85F     |     BIOS_MAX=  00F3EC 
+    BIOS_MCL=  00F958     |     BIOS_MCL=  00FB3B     |     BIOS_MCL=  00FB3C 
+    BIOS_MCL=  00F956     |     BIOS_MEM=  00F672     |     BIOS_MEX=  00FB07 
+    BIOS_MIN=  00F92D     |     BIOS_MIN=  00F3EF     |     BIOS_MIV=  00F951 
+    BIOS_MLT=  00F3D7     |     BIOS_MLT=  00F3D5     |     BIOS_MLT=  00F3D3 
+    BIOS_MLT=  00F3D1     |     BIOS_MLT=  00F3D9     |     BIOS_MOD=  00FAFC 
+    BIOS_MUS=  00FC3F     |     BIOS_NAM=  00F922     |     BIOS_NEW=  00FBE5 
+    BIOS_NEW=  0001AD     |     BIOS_NLO=  00F87C     |     BIOS_NMI=  000066 
+    BIOS_NOF=  00F7B7     |     BIOS_NOR=  00FAFD     |     BIOS_NRD=  000174 
+    BIOS_NSE=  00016E     |     BIOS_NST=  000171     |     BIOS_NTM=  00F417 
+    BIOS_NUL=  00F862     |     BIOS_NVB=  0000CD     |     BIOS_NVB=  0000C9 
+    BIOS_NWR=  000177     |     BIOS_OLD=  00FB12     |     BIOS_OLD=  00FBDA 
+    BIOS_OLD=  00F6BE     |     BIOS_OLD=  00FCB0     |     BIOS_OLD=  00FB0C 
+    BIOS_OLD=  00F6C0     |     BIOS_ONE=  00F6BB     |     BIOS_ONE=  00F6B9 
+    BIOS_ONG=  00FBD8     |     BIOS_OUT=  00014D     |     BIOS_OUT=  000018 
+    BIOS_PAD=  00FC9D     |     BIOS_PAD=  00FC9C     |     BIOS_PAR=  00F6E8 
+    BIOS_PAR=  00F750     |     BIOS_PAT=  00F926     |     BIOS_PAT=  00FC40 
+    BIOS_PDI=  00F953     |     BIOS_PHY=  000144     |     BIOS_PIN=  0000AE 
+    BIOS_PLY=  00FB40     |     BIOS_POS=  0000C6     |     BIOS_PRM=  00F7B4 
+    BIOS_PRM=  00F6E6     |     BIOS_PRM=  00F74E     |     BIOS_PRM=  00F74C 
+    BIOS_PRM=  00F6E4     |     BIOS_PRO=  00FD89     |     BIOS_PRO=  000181 
+    BIOS_PRS=  00FB35     |     BIOS_PRT=  00F416     |     BIOS_PTR=  00F864 
+    BIOS_PTR=  00F6A9     |     BIOS_PUT=  00F3F8     |     BIOS_QIN=  0000B4 
+    BIOS_QUE=  00F971     |     BIOS_QUE=  00F959     |     BIOS_QUE=  00FB3E 
+    BIOS_QUE=  00F3F3     |     BIOS_RAW=  00F418     |     BIOS_RDP=  00F380 
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 29
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+    BIOS_RDP=  000096     |     BIOS_RDS=  00000C     |     BIOS_RDV=  00013E 
+    BIOS_RDV=  00004A     |     BIOS_RED=  0001F5     |     BIOS_REP=  00F3F7 
+    BIOS_RG0=  00F3DF     |     BIOS_RG1=  00F3E0     |     BIOS_RG2=  00F3E1 
+    BIOS_RG3=  00F3E2     |     BIOS_RG4=  00F3E3     |     BIOS_RG5=  00F3E4 
+    BIOS_RG6=  00F3E5     |     BIOS_RG7=  00F3E6     |     BIOS_RG8=  00FFE7 
+    BIOS_RG9=  00FFE8     |     BIOS_RND=  00F857     |     BIOS_ROM=  00FAFA 
+    BIOS_ROM=  00FCC0     |     BIOS_RSF=  00FB04     |     BIOS_RSI=  00FB06 
+    BIOS_RSL=  000138     |     BIOS_RST=  00FB03     |     BIOS_RST=  000145 
+    BIOS_RTP=  00F955     |     BIOS_RTY=  00FC9A     |     BIOS_RUN=  00FCBE 
+    BIOS_RUN=  00F866     |     BIOS_SAV=  00F87D     |     BIOS_SAV=  00FCBF 
+    BIOS_SAV=  00FB36     |     BIOS_SAV=  00F6AF     |     BIOS_SAV=  00FB39 
+    BIOS_SCN=  00F3F6     |     BIOS_SCR=  00FCAF     |     BIOS_SET=  00007E 
+    BIOS_SET=  000081     |     BIOS_SET=  00013D     |     BIOS_SET=  00014D 
+    BIOS_SET=  000050     |     BIOS_SET=  00007B     |     BIOS_SET=  000078 
+    BIOS_SET=  000053     |     BIOS_SKP=  00F94F     |     BIOS_SLT=  00FCC9 
+    BIOS_SLT=  00FCC5     |     BIOS_SLT=  00FD09     |     BIOS_SNS=  000141 
+    BIOS_STA=  00F3E7     |     BIOS_STK=  00F674     |     BIOS_STM=  0000F3 
+    BIOS_STR=  00F6C6     |     BIOS_STR=  000099     |     BIOS_SUB=  00F6A5 
+    BIOS_SUB=  00015C     |     BIOS_SWP=  00F7BC     |     BIOS_SYN=  000008 
+    BIOS_T32=  00F3C3     |     BIOS_T32=  00F3C1     |     BIOS_T32=  00F3BF 
+    BIOS_T32=  00F3BD     |     BIOS_T32=  00F3C5     |     BIOS_TAP=  0000E4 
+    BIOS_TAP=  0000E7     |     BIOS_TAP=  0000E1     |     BIOS_TAP=  0000F0 
+    BIOS_TAP=  0000EA     |     BIOS_TAP=  0000ED     |     BIOS_TEM=  00F6A7 
+    BIOS_TEM=  00F6BC     |     BIOS_TEM=  00F69D     |     BIOS_TEM=  00F69F 
+    BIOS_TEM=  00F7B8     |     BIOS_TEM=  00F768     |     BIOS_TEM=  00F67A 
+    BIOS_TOC=  00FB03     |     BIOS_TOT=  0000D2     |     BIOS_TRA=  00FC4C 
+    BIOS_TRC=  00F7C4     |     BIOS_TRG=  00F3E8     |     BIOS_TTY=  00F661 
+    BIOS_TXT=  00F3B9     |     BIOS_TXT=  00F3B7     |     BIOS_TXT=  00F3B5 
+    BIOS_TXT=  00F3B3     |     BIOS_TXT=  00F3BB     |     BIOS_TXT=  00F676 
+    BIOS_USR=  00F7F8     |     BIOS_USR=  00F39A     |     BIOS_VAL=  00F663 
+    BIOS_VAR=  00F6C2     |     BIOS_VCB=  00FB41     |     BIOS_VCB=  00FB66 
+    BIOS_VCB=  00FB8B     |     BIOS_VDP=  000006     |     BIOS_VDP=  000007 
+    BIOS_VDP=  000131     |     BIOS_VLZ=  00F419     |     BIOS_VLZ=  00F41B 
+    BIOS_VOI=  00F975     |     BIOS_VOI=  00F9F5     |     BIOS_VOI=  00FA75 
+    BIOS_VOI=  00FB38     |     BIOS_WIN=  00FCA5     |     BIOS_WRP=  00F385 
+    BIOS_WRS=  000014     |     BIOS_WRT=  0001F9     |     BIOS_WRT=  000093 
+    BIOS_WRT=  000047     |     BIOS_WRT=  00004D     |     BIOS_WSL=  00013B 
+    BIOS_XSA=  00FAFE     |     BIOS_YSA=  00FB00     |     DEBUG   =  000001 
+    GLOBALS_=  000001     |     HEAP_SIZ=  000000     |     MDO_SUPP=  000001 
+    PARENT_A=  0009A6 G   |     VDP_PORT=  000000     |     _9938Sto=  0003E0 G
+ 11 _HEAP_st   000000 GR  |     _HMMCSet=  0003EC G   |     _PrintDe=  00015E G
+    __SDCCCA=  000001     |     __print =  000385 G   |     _activat   ****** GX
+    _color  =  00039F G   |     _deactiv   ****** GX  |     _ellipsi=  0009A0 G
+    _finaliz   ****** GX  |     _finaliz=  0006E8 G   |     _gameEnd=  000737 G
+    _gameSta=  000734 G   |   F _heap_to   000000 GR  |     _initMne   ****** GX
+    _initMne=  000728 G   |     _initial   ****** GX  |     _invalid=  00072B G
+    _linefee=  0009A3 G   |     _mdoAben=  0008F7 G   |     _mdoLink=  00089F G
+    _mdoLoad=  0007D5 G   |     _mdoRele=  000876 G   |     _mdoUnli=  0008CB G
+    _msgdbg =  000997 G   |     _print  =  000385 G   |     _render_=  00072E G
+    _setScre=  0006CB G   |     _updateF=  000731 G   |     fileStar=  00C000 
+  C gsinit     000000 GR  |   D gsinit_n   000000 R   |     l__INITI   ****** GX
+  5 mdoChild   000000 GR  |   6 mdoChild   000000 GR  |   7 mdoChild   000000 R
+  8 mdoHookI   000000 GR  |   9 mdoHookI   000000 GR  |   4 mdoHooks   000000 R
+  3 mdoName    000000 R   |   2 onLoad     00C010 GR  |     printcha=  000390 G
+    s__AFTER   ****** GX  |     s__INITI   ****** GX  |     s__INITI   ****** GX
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 30
+Hexadecimal [24-Bits]
+
+Symbol Table
+
+
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (Zilog Z80 / Hitachi HD64180 / ZX-Next / eZ80 / R800)                           Page 31
+Hexadecimal [24-Bits]
+
+Area Table
+
+   0 _CODE      size      0   flags    0
+   1 _HEADER    size      0   flags    8
+   2 _HEADER0   size     16   flags    8
+   3 _MDONAME   size      B   flags    0
+   4 _MDOHOOK   size      0   flags    0
+   5 _MDOCHIL   size      0   flags    0
+   6 _MDOCHIL   size      2   flags    0
+   7 _MDOCHIL   size      0   flags    0
+   8 _MDOHOOK   size      4   flags    0
+   9 _MDOHOOK   size      2   flags    0
+   A _MDOSERV   size      0   flags    0
+   B _HOME      size      0   flags    0
+   C _GSINIT    size     10   flags    0
+   D _GSFINAL   size      1   flags    0
+   E _INITIAL   size      0   flags    0
+   F _DATA      size      2   flags    0
+  10 _INITIAL   size      0   flags    0
+  11 _HEAP      size      0   flags    0
+  12 _AFTERHE   size      0   flags    0
+

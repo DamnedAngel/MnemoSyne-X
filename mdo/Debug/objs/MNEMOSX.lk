@@ -1,0 +1,12 @@
+-mjwx
+-i Debug\objs\MNEMOSX.ihx
+-b _CODE = 0xc016
+-b _DATA = 0x0000
+-k C:\Program Files\SDCC\bin\..\lib\z80
+-l z80
+Debug\objs\msxdosovlcrt0.rel
+Debug\objs\msxdosovl.rel
+Debug\objs\mnemosyne-x.rel
+Debug\objs\rammapper.rel
+
+-e

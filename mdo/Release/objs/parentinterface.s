@@ -1,0 +1,15 @@
+__print 			.gblequ 0x00271
+_print 			.gblequ 0x00271
+_initMnemosyneX_hook 			.gblequ 0x003E2
+_invalidate_hook 			.gblequ 0x003E5
+_render_hook 			.gblequ 0x003E8
+_updateFrame_hook 			.gblequ 0x003EB
+_gameStart_hook 			.gblequ 0x003EE
+_gameEnd_hook 			.gblequ 0x003F1
+_mdoLoad 			.gblequ 0x0048F
+_mdoRelease 			.gblequ 0x00530
+_mdoLink 			.gblequ 0x00559
+_mdoUnlink 			.gblequ 0x00585
+_mdoAbend 			.gblequ 0x005B1
+_linefeed 			.gblequ 0x00654
+PARENT_AFTERHEAP 			.gblequ 0x0C31C
