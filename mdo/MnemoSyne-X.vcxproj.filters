@@ -79,6 +79,9 @@
     <None Include="..\source\rammapper.s">
       <Filter>ASM Source Files</Filter>
     </None>
+    <None Include="..\source\config\mnemosyne-x_config.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Config\ApplicationSettings.txt">
