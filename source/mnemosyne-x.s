@@ -16,6 +16,7 @@
 .include "printdec_h.s"
 
 .globl _rnd16
+.globl _standardLoad
 
 ; ----------------------------------------------------------------
 ;	- Macros
@@ -544,7 +545,7 @@ _activateLogSeg_load:
 
 _activateLogSeg_standardLoad:
 	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
-;	call	_standardLoad
+	call	_standardLoad
 
 _activateLogSeg_updateLogsegHandler:
 	; update logSegHandler from page 3

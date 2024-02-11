@@ -3,17 +3,11 @@
 ; ----------------------------------------------------------------
 ;	240211 - DamnedAngel
 ; ----------------------------------------------------------------
-;	Standard Persistece for MnemoSyne-X
+;	Standard Persistence for MnemoSyne-X
 ; ----------------------------------------------------------------
 
 .include "msxbios.s"
-;.include "applicationsettings.s"
-;.include "printinterface.s"
-
 .include "config/mnemosyne-x_config.s"
-
-;.include "rammapper_h.s"
-;.include "printdec_h.s"
 
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
@@ -27,10 +21,11 @@
 ;	- HL: pointer to initial address of segment
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0  = Success
+;		  >0 = Error
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers, di
 ; ----------------------------------------------------------------
 _standardLoad::
 	di
@@ -77,12 +72,11 @@ _standardLoad_checkCurrentFileindex::
 	jr z,	_standardLoad_rightFileOpen
 
 _standardLoad_checkFileHandle::
-	ld		a, #0xff
-	cp		(#fileHandle)
+	ld		a, (#fileHandle)
+	cp		#0xff
 	jr z,	#_standardLoad_fileClosed
 
 _standardLoad_wrongFileOpen::
-	ld		a, (#fileHandle)
 	ld		b, a
 	ld		c, #BDOS_CLOSE
 	push	de
@@ -117,7 +111,7 @@ _standardLoad_fileClosed::
 	; reset index in memory	
 	ld		hl, #segTable
 	ld		de, #segTable + 1
-	ld		bc, 4 * 256 - 1
+	ld		bc, #4 * 256 - 1
 	ld		(hl), #0
 	ldir
 
@@ -135,21 +129,21 @@ _standardLoad_fileClosed::
 	call	BDOS_SYSCAL		; write index
 	or		a
 	jr nz,	_common_indexWriteFail
-	ld		a, #MNEMO_ERROR_NOSEGINDEX
+	ld		a, #MNEMO_WARN_NOSEGINDEX
 	ret
 
 _standardLoad_rightFileOpen::
 	ld		hl, (#pageAddr)
 	inc		hl				; (hl) = segIndex
-	ld		l, (hl)			; e = segIndex
-	ld		h, #0
+	ld		l, (hl)
+	ld		h, #0			; hl = segIndex
 	add		hl, hl
 	add		hl, hl			; hl = indexOffset = segIndex * 4
-	ld		(#indexOffset)
+	ld		(#indexOffset), hl
 	ex		de, hl
 	ld		hl, (#segTable)
 	add		hl, de			; hl = indexAddr; (hl) = segOffset (4 bytes)
-	ld		(#indexEntry), hl
+	ld		(#indexAddr), hl
 	ld		e, (hl)
 	inc		hl
 	ld		d, (hl)
@@ -161,7 +155,7 @@ _standardLoad_rightFileOpen::
 	or		e
 	or		d
 	or		h
-	jr z,	_standardLoad_noSeg
+	jr z,	_standardLoad_noSegWarn
 	xor		a
 	ld		c, #BDOS_MOVE
 	call	BDOS_SYSCAL		; pointer in beginning of segment
@@ -180,9 +174,13 @@ _standardLoad_segReadFail::
 	ld		a, #MNEMO_ERROR_SEGREADFAIL
 	ret
 
+_standardLoad_noSegWarn::
+	ld		a, #MNEMO_WARN_NOSEG
+	ret
+
 _standardLoad_badSegIndex::
 	; fix (reset) entry
-	ld		hl, (#indexEntry)
+	ld		hl, (#indexAddr)
 	xor		a
 	ld		(hl), a
 	inc		hl
@@ -202,7 +200,7 @@ saveEntry::
 	xor		a
 	ld		d, a
 	ld		e, a
-	ld		hl, (#indexEntry)
+	ld		hl, (#indexOffset)
 	ld		c, #BDOS_MOVE
 	call	BDOS_SYSCAL
 	or		a
@@ -220,32 +218,9 @@ _common_indexWriteFail::
 	ld		a, #MNEMO_ERROR_IDXWRITEFAIL
 	ret
 
-; -----------------------------------
-; FCB
-;
-;mnemoFCB::
-;mnemoFCB_drive_no::			.db		#0
-;mnemoFCB_name::				.ascii	"DATA    "
-;mnemoFCB_extension::		.ascii	"_00"
-;mnemoFCB_current_block::	.dw		#0
-;mnemoFCB_record_size::		.dw		#0
-;mnemoFCB_file_size::		.dw		#0
-;							.dw		#0
-;mnemoFCB_date::				.dw		#0
-;mnemoFCB_time::				.dw		#0
-;mnemoFCB_device_id::		.db		#0
-;mnemoFCB_dirloc::			.db		#0
-;mnemoFCB_strcls::			.dw		#0
-;mnemoFCB_clrcls::			.dw		#0
-;mnemoFCB_clsoff::			.dw		#0
-;mnemoFCB_current_record::	.db		#0
-;mnemoFCB_random_record::	.dw		#0
-							.dw		#0
-
 fileHandle::				.db		#0xff
 fileName::					.ascii	'DATA'
-fileExtension:				.asciz	'.___'
-
+fileExtension::				.asciz	'.___'
 
 ;   ==================================
 ;   ========== DATA SEGMENT ==========
