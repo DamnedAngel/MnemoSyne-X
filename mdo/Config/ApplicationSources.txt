@@ -23,5 +23,6 @@ msxdosovl.s
 ;	Additional source files
 ;	Add below additional source files for your application
 ;	using relative paths from the project folder
-../source/mnemosyne-x.s
 ../source/rammapper.s
+../source/mnemosyne-x.s
+../source/mnemosyne-x-standardpersistence.s

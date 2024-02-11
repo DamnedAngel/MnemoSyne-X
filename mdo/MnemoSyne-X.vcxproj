@@ -68,6 +68,7 @@
     <None Include="..\headers\mnemosyne-x_h.s" />
     <None Include="..\headers\rammapper_h.s" />
     <None Include="..\source\config\mnemosyne-x_config.s" />
+    <None Include="..\source\mnemosyne-x-standardpersistence.s" />
     <None Include="..\source\mnemosyne-x.s" />
     <None Include="..\source\rammapper.s" />
     <None Include="Make\make.py" />

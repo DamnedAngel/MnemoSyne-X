@@ -15,14 +15,22 @@ MNEMO_INDEX_SEGMENTS				= 5									; 1 (8kSegs/128Mb) to 8 (64ksegs/1Gb)
 MNEMO_PRIMARY_MAPPER_ONLY			= 1									; 1 ignores secondary mappers
 MNEMO_MAIN_SWAP_PAGE				= 2
 MNEMO_AUX_SWAP_PAGE					= 1
+MNEMO_SEG_HEADER_SIZE				= 8
 
 
 ; ----------------------------------------------------------------
 ;	- Error messages - TO BE MOVED TO INTERFACE HEADER!
 ; ----------------------------------------------------------------
+MNEMO_ERROR_SUCCESS					= 0
 MNEMO_ERROR_NOINDEXSEG				= 1
 MNEMO_ERROR_SEGOUTOFRANGE			= 2
 MNEMO_ERROR_NOFREEPHYSSEG			= 3
+MNEMO_ERROR_NOSEGINDEX				= 4
+MNEMO_ERROR_NOSEG					= 5	
+MNEMO_ERROR_BADSEGINDEX				= 6
+MNEMO_ERROR_SEGREADFAIL				= 7
+MNEMO_ERROR_IDXWRITEFAIL			= 8
+
 
 ; ----------------------------------------------------------------
 ;	- Segment mode - TO BE MOVED TO INTERFACE HEADER!

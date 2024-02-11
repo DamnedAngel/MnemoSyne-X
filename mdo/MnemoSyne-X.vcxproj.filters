@@ -91,6 +91,9 @@
     <None Include="..\headers\rammapper_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
+    <None Include="..\source\mnemosyne-x-standardpersistence.s">
+      <Filter>ASM Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Config\ApplicationSettings.txt">
