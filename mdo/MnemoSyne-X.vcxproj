@@ -60,10 +60,13 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\headers\mnemosyne-x.h" />
     <ClInclude Include="MSX\BIOS\msxbios.h" />
     <ClInclude Include="printinterface.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\headers\mnemosyne-x_h.s" />
+    <None Include="..\headers\rammapper_h.s" />
     <None Include="..\source\config\mnemosyne-x_config.s" />
     <None Include="..\source\mnemosyne-x.s" />
     <None Include="..\source\rammapper.s" />
@@ -86,6 +89,9 @@
     <Text Include="Config\Symbols.txt" />
     <Text Include="Config\TargetConfig_Debug.txt" />
     <Text Include="Config\TargetConfig_Release.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\source\mnemosyne-x-dirty.s" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

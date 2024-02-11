@@ -1,13 +1,10 @@
 ; ----------------------------------------------------------------
-;	mnemosyne-x_init.s
+;	mnemosyne-x.s
 ; ----------------------------------------------------------------
 ;	240123 - DamnedAngel
 ; ----------------------------------------------------------------
 ;	MnemoSyne-X: a virtual memory system for MSX.
-;	This file contains the implementation of _initMnemosyneX.
 ; ----------------------------------------------------------------
-
-.allow_undocumented
 
 .include "msxbios.s"
 .include "applicationsettings.s"
@@ -20,11 +17,10 @@
 
 .globl _rnd16
 
-
 ; ----------------------------------------------------------------
 ;	- Macros
 ; ----------------------------------------------------------------
-.macro	__PutPage PAGE
+.macro	__PutSeg PAGE
 .ifeq PAGE
 	call	__PutP0
 .else
@@ -38,13 +34,55 @@
 .endif
 .endm
 
-.macro	__PutPMain
-	__PutPage	MNEMO_MAIN_SWAP_PAGE
+.macro	__PutSegAux
+	__PutSeg MNEMO_AUX_SWAP_PAGE
 .endm
 
-.macro	__PutPAux
-	__PutPage	MNEMO_AUX_SWAP_PAGE
+.macro	__PutSegMain
+	__PutSeg MNEMO_MAIN_SWAP_PAGE
 .endm
+
+; -----
+
+.macro	__GetSeg PAGE
+.ifeq PAGE
+	call	__GetP0
+.else
+	.ifeq PAGE - 1
+	call	__GetP1
+	.else
+		.ifeq PAGE - 2
+	call	__GetP2
+		.else
+	call	__GetP3
+		.endif
+	.endif
+.endif
+.endm
+
+.macro	__GetSegAux
+	__GetSeg MNEMO_AUX_SWAP_PAGE
+.endm
+
+.macro	__GetSegMain
+	__GetSeg MNEMO_MAIN_SWAP_PAGE
+.endm
+
+; -----
+
+.macro	__GetSlot PAGE
+	ld		h, #PAGE * 0b01000000
+	call	_getSlot
+.endm
+
+.macro	__GetSlotAux
+	__GetSlot MNEMO_AUX_SWAP_PAGE
+.endm
+
+.macro	__GetSlotMain
+	__GetSlot MNEMO_MAIN_SWAP_PAGE
+.endm
+	
 
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
@@ -66,7 +104,6 @@
 ;   - All registers
 ; ----------------------------------------------------------------
 _initMnemosyneX::
-	di 
 	push	ix
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -87,6 +124,7 @@ _initMnemosyneX::
 	ld		a, (hl)
 	ld		(#_primaryMapperSlot), a
 
+	call	_savePageConfig
 
 	; set mapper query tag
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -101,9 +139,7 @@ _initMnemosyneX_setQueryTag:
 
 	print	okMsg
 
-
 	; allocate index segments
-	call	_saveMemoryMap
 	print	allocatingIndexSegmentsMsg
 	ld		hl, #segTableSegment
 	ld		b, #MNEMO_INDEX_SEGMENTS + 1
@@ -139,8 +175,7 @@ _initMnemosyneX_indexSegAllocLoop::
 
 	; Set Segment Table segment in Aux Page
 	ld		hl, #segTableSegment
-	_DirtySwitchAux
-;	call	_switchAuxPage		; TODO: USE FAST VERSION!
+	call	_switchAuxPage
 
 	; segments allocation loop
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
@@ -166,8 +201,7 @@ _initMnemosyneX_segAllocLoop::
 	; mark segment's header with logSegNumber = 0xffff (invalid) ;;'
 	push	hl
 	dec		hl						; hl = pSegHandler
-	_DirtySwitchMain
-;	call	_switchMainPage		; TODO: USE FAST VERSION!
+	call	_switchMainPage
 	ld		hl, #0xffff				; invalid logSegNumber
 	ld		(#MNEMO_MAIN_SWAP_PAGE_ADDR), hl	; mark
 	pop		hl
@@ -211,9 +245,8 @@ _initMnemosyneX_cont:
 	print	megaBytesMsg
 
 _initMnemosyneX_end:
-	call	_restoreMemoryMap
+	call	_restorePageConfig
 	pop		ix
-	ei
 	ret
 
 
@@ -230,18 +263,18 @@ _initMnemosyneX_end:
 ;   - All registers
 ; ----------------------------------------------------------------
 _activateLogSeg::
-	di
 	push	ix
-	call	_saveMemoryMap
 
 	xor		a
 	ld		(#logSegLoaded), a
-
 	ld		(#pLogSegHandler), hl
+
+	call	_savePageConfig
 
 	; copy logSegHandler to page 3
 	ld		de, #logSegHandler
-	ld		bc, (#(logSegHandler_end - logSegHandler))
+	ld		bc, #(logSegHandler_end - logSegHandler)
+	ld		hl, (#pLogSegHandler)
 	ldir
 
 	; transform logSegNumber in pLogSegTableSegment & pLogSegTableItem
@@ -250,28 +283,25 @@ _activateLogSeg::
 	sla		l
 	rl		h
 	rl		a
-.ifne	(MNEMO_MAIN_SWAP_PAGE & 2)
-	sll		h
-.else
 	sla		h
-.endif
 	rl		a
-.ifne	(MNEMO_MAIN_SWAP_PAGE & 1)
-	sll		h
-.else
-	sla		h
+.ifne	(MNEMO_AUX_SWAP_PAGE & 2)
+	inc		h
 .endif
+	sla		h
 	rl		a				; a = logSegTableSegIndex
-;	ld		(#logSegTableSegIndex), a
+.ifne	(MNEMO_AUX_SWAP_PAGE & 1)
+	inc		h
+.endif
 	rrc		h
-	rrc		h				; hl = pLogSegTableItem (page 2)
+	rrc		h				; hl = pLogSegTableItem (AUX page)
 	ld		(#pLogSegTableItem), hl
 	
 	cp		#(MNEMO_INDEX_SEGMENTS - 1)
-	jp c,	_activateLogSeg_segOutOfRangeError
+	jp nc,	_activateLogSeg_segOutOfRangeError
 
 	; activate proper logSegTableSegment
-	ld		hl, #segIndexTable;
+	ld		hl, #segIndexTable
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	add		a, a
 .endif
@@ -281,8 +311,7 @@ _activateLogSeg::
 	sub		l   
 	ld		h, a			; hl = pLogSegTableSegment
 	ld		(#pLogSegTableSegment), hl		; To do: Check whether this is really needed.
-	_DirtySwitchAux
-;	call	_switchAuxPage		; TODO: USE FAST VERSION!
+	call	_switchAuxPage
 
 	; find pSegHandler
 	ld		hl, (#pLogSegTableItem)
@@ -291,7 +320,7 @@ _activateLogSeg::
 	ld		h, (hl)
 	ld		l, a			; hl = LogSegTable.pSegHandler
 	ld		(#pSegHandler), hl
-	
+
 	; check whether pSegHandler is valid
 	; 1. Verify whether pSegHandler is even
 	and		#1
@@ -299,10 +328,10 @@ _activateLogSeg::
 
 	; 2. Verify whether pSegHandler >= SegTable start
 	xor		a				; clear carry flag
-	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR + 1
+	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
 	adc		hl, de			
-	jr nc,	_activateLogSeg_activateSegTableForSearch		; not valid
+	jr c,	_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; 3. Verify whether pSegHandler <= SegTable end
 	xor		a				; clear carry flag
@@ -311,18 +340,16 @@ _activateLogSeg::
 	ex		de, hl
 	sbc		hl, de
 	adc		hl, de			
-	jr c,	_activateLogSeg_activateSegTableForSearch		; not valid
+	jr nc,	_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; activate setTableSegment
 	push	hl
 	ld		hl, #segTableSegment
-	_DirtySwitchAux
-;	call	_switchAuxPage		; TODO: USE FAST VERSION!
+	call	_switchAuxPage
 
 	; activate target segment
 	pop		hl
-	_DirtySwitchMain
-;	call	_switchMainPage		; TODO: USE FAST VERSION!
+	call	_switchMainPage
 
 	; check if target segment contains correct logSegNumber
 	; (equal to logSegHandler.logSegNumber)
@@ -342,8 +369,7 @@ _activateLogSeg::
 
 _activateLogSeg_activateSegTableForSearch:
 	ld		hl, #segTableSegment
-	_DirtySwitchAux
-;	call	_switchAuxPage		; TODO: USE FAST VERSION!
+	call	_switchAuxPage
 
 _activateLogSeg_searchFreeSeg:
 	; define random starting point for free segment search
@@ -352,12 +378,10 @@ _activateLogSeg_searchFreeSeg:
 	ld		c, a
 	exx
 	ld		c, a
-	exx
 	ld		a, (#_numberPhysicalSegs + 1)
 	ld		b, a
 	exx
 	ld		b, a
-	exx
 	or		a				; reset carry flag
 
 _activateLogSeg_rndLoop:
@@ -376,15 +400,11 @@ _activateLogSeg_rndLoop:
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
 	add		hl, de			; hl = p(SegHandler.mapperSlot)
 	ld		de, #0xffff		; invalid pSegHandler
-	ld		c, #3			; best status
+	ld		c, #0x30			; best status
 
 _activateLogSeg_searchLoop:
 	ld		a, (hl)
 	and		#0b00110000		; seg status
-	srl		a
-	srl		a
-	srl		a
-	srl		a				; status candidate
 	cp		c
 	jr nc,	_activateLogSeg_searchLoop_cont1
 
@@ -398,7 +418,7 @@ _activateLogSeg_searchLoop:
 _activateLogSeg_searchLoop_cont1:
 	dec		hl
 	ld		a, h
-	sub		#>MNEMO_MAIN_SWAP_PAGE
+	sub		#<MNEMO_AUX_SWAP_PAGE
 	or		l
 	jr nz,	_activateLogSeg_searchLoop_cont2
 	ld		hl, (#afterSegTable)
@@ -415,7 +435,7 @@ _activateLogSeg_searchLoop_cont2:
 
 	; end of segTable
 	ld		a, c
-	cp		#3
+	cp		#0x30
 	jp z,	_activateLogSeg_noFreePhysSegError
 
 _activateLogSeg_activateSegment:
@@ -425,8 +445,7 @@ _activateLogSeg_activateSegment:
 	ex		de, hl
 	ld		(#pSegHandler), hl
 	; activate segment
-	_DirtySwitchMain
-;	call	_switchMainPage		; TODO: USE FAST VERSION!
+	call	_switchMainPage
 
 	; check whether selected segment should be saved
 	; check logSegNumber
@@ -437,7 +456,6 @@ _activateLogSeg_activateSegment:
 	inc		hl
 	cp		(hl)
 	jr z,	_activateLogSeg_updateSegmentHeader	; invalid segment, skip save
-
 _activateLogSeg_checkWriteMode:
 	ld		a, (#MNEMO_SEGHDR_SEGMODE)
 	ld		b, a
@@ -460,7 +478,7 @@ _activateLogSeg_save:
 	ld		d, (hl)					; de = custom save routine
 	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
 ;	push	de						; prepare call
-	ret								; call de
+	ret								; call de (THIS IS NOT A REAL RET!)
 
 _activateLogSeg_standardSave:
 	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
@@ -469,8 +487,8 @@ _activateLogSeg_standardSave:
 _activateLogSeg_updateSegmentHeader:
 	ld		hl, (#logSegNumber)
 	ld		(#MNEMO_SEGHDR_LOGSEGNUMBER), hl
-	ld		hl, (#logSegMode)
-	ld		(#MNEMO_SEGHDR_SEGMODE), hl
+	ld		a, (#logSegMode)
+	ld		(#MNEMO_SEGHDR_SEGMODE), a
 	ld		hl, (#pSaveSeg)
 	ld		(#MNEMO_SEGHDR_PSAVESEG), hl
 
@@ -486,9 +504,8 @@ _activateLogSeg_updateSegTable:
 
 _activateLogSeg_updateLogSegTable:
 	exx
-	ld		hl, (#segTableSegment)
-	_DirtySwitchAux
-;	call	_switchAuxPage		; TODO: USE FAST VERSION!
+	ld		hl, (#pLogSegTableSegment)
+	call	_switchAuxPage
 	exx
 	dec		hl
 	ex		de, hl
@@ -501,12 +518,12 @@ _activateLogSeg_checkReadMode:
 	ld		a, (#logSegMode)
 	ld		b, a
 	and		#3
-	jr z,	_activateLogSeg_end		; Mode 0 (TEMPMEM): no load
+	jr z,	_activateLogSeg_updateLogsegHandler	; Mode 0 (TEMPMEM): no load
 	cp		#MNEMO_SEGMODE_FORCEDREAD
-	jr z,	_activateLogSeg_load	; Mode 2 (FORCEREAD): load 
-	ld		a, (#logSegLoaded)		; Mode 1 (READ) or 3 (READWRITE)
-	or		a						;	If segment in memory,
-	jr z,	_activateLogSeg_end		;	no load.
+	jr z,	_activateLogSeg_load				; Mode 2 (FORCEREAD): load 
+	ld		a, (#logSegLoaded)					; Mode 1 (READ) or 3 (READWRITE)
+	or		a									;	If segment in memory,
+	jr z,	_activateLogSeg_updateLogsegHandler	;	no load.
 
 _activateLogSeg_load:
 	; check if custom write routine
@@ -515,7 +532,7 @@ _activateLogSeg_load:
 	jr z,	_activateLogSeg_standardLoad
 	
 	; custom load
-	ld		hl, #_activateLogSeg_end
+	ld		hl, #_activateLogSeg_updateLogsegHandler
 	push	hl						; return point
 	ld		hl, (#pLoadSeg)
 	ld		e, (hl)
@@ -523,119 +540,31 @@ _activateLogSeg_load:
 	ld		d, (hl)					; de = custom load routine
 	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
 ;	push	de						; prepare call
-	ret								; call de
+	ret								; call de (THIS IS NOT A REAL RET!)
 
 _activateLogSeg_standardLoad:
 	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
 ;	call	_standardLoad
 
-_activateLogSeg_end:
-	call	_restoreMemoryMap
-
+_activateLogSeg_updateLogsegHandler:
 	; update logSegHandler from page 3
 	ld		hl, #logSegHandler
 	ld		de, (pLogSegHandler)
-	ld		bc, (#(logSegHandler_params - logSegHandler))
+	ld		bc, #(logSegHandler_params - logSegHandler)
 	ldir
 
+_activateLogSeg_end:
+	call _restorePageConfig
 	pop		ix
-	ei
 	ret
 
 _activateLogSeg_segOutOfRangeError:
 	ld		a, #MNEMO_ERROR_SEGOUTOFRANGE
-_activateLogSeg_errorEnd:
-	call	_restoreMemoryMap
-	pop		ix
-	ei
-	ret
+	jr		_activateLogSeg_end
 
 _activateLogSeg_noFreePhysSegError:
 	ld		a, #MNEMO_ERROR_NOFREEPHYSSEG
-	jr		_activateLogSeg_errorEnd
-
-; ----------------------------------------------------------------
-;	- Save memory map
-; ----------------------------------------------------------------
-; INPUTS:
-;	- None
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - Memory map variables
-; ----------------------------------------------------------------
-_saveMemoryMap::
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	in		a, (#0xa8)
-	ld		(#primarySlots), a
-	ld		a, (#0xffff)
-	cpl
-	ld		(#secondarySlots), a
-.endif
-	call	__GetP0
-	ld		(#segmentP0), a
-	call	__GetP1
-	ld		(#segmentP1), a
-	call	__GetP2
-	ld		(#segmentP2), a
-	ret
-
-; ----------------------------------------------------------------
-;	- Restore memory map
-; ----------------------------------------------------------------
-; INPUTS:
-;	- None
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - Memory map restored from variables
-; ----------------------------------------------------------------
-_restoreMemoryMap::
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	ld		a, (#primarySlots)
-	out		(#0xa8), a
-	ld		a, (#secondarySlots)
-	ld		(#0xffff), a
-.endif
-	ld		a, (#segmentP0)
-	call	__PutP0
-	ld		a, (#segmentP1)
-	call	__PutP1
-	ld		a, (#segmentP2)
-	call	__PutP2
-	ret
-
-; ----------------------------------------------------------------
-;	- Enable a segment from a Segment Handler in main page
-; ----------------------------------------------------------------
-; INPUTS:
-;	- HL: pointer to Segment handler
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - All registers
-; ----------------------------------------------------------------
-_switchMainPage::
-	ld		a, (hl)			; segNumber
-	__PutPMain
-
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	ld		a, (#usePrimaryMapperOnly)
-	or		a
-	ret nz
-	inc		hl
-	ld		a, (hl)			; slotid
-	ld		h, #MNEMO_MAIN_SWAP_PAGE << 6	; Page
-	jp		BIOS_ENASLT		; select slot
-.else
-	ret
-.endif
+	jr		_activateLogSeg_end
 
 ; ----------------------------------------------------------------
 ;	- Enable a segment from a Segment Handler in aux page
@@ -651,7 +580,7 @@ _switchMainPage::
 ; ----------------------------------------------------------------
 _switchAuxPage::
 	ld		a, (hl)			; segNumber
-	__PutPAux
+	__PutSegAux
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#usePrimaryMapperOnly)
@@ -666,17 +595,7 @@ _switchAuxPage::
 .endif
 
 ; ----------------------------------------------------------------
-;	- Enable a segment from a Segment Handler in page 0
-;		BYPASSING THE BIOS!
-;	- To use this in a block of code:
-;	1. di
-;	2. _saveMemoryMap
-;	3. _dirtySwith at will
-;	4. _restoreMemoryMap
-;	5. ei
-;	OBS: AVOID BIOS CALLS IN THE BLOCK!
-;		 BIOS WILL NOT KNOW THAT THE PAGE HAS BEEN SWITCHED!
-;		 THUS ALSO DONT USE NORMAL _switch ROUTINES IN THE BLOCK!  
+;	- Enable a segment from a Segment Handler in main page
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- HL: pointer to Segment handler
@@ -685,168 +604,139 @@ _switchAuxPage::
 ;   - None
 ;
 ; CHANGES:
-;   - HL, BC, A
+;   - All registers
 ; ----------------------------------------------------------------
-_dirtySwitchP0::
-	; switch segment
+_switchMainPage::
 	ld		a, (hl)			; segNumber
-	out		(0xfc), a
+	__PutSegMain
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#usePrimaryMapperOnly)
 	or		a
 	ret nz
-
-	; switch primary slot
 	inc		hl
 	ld		a, (hl)			; slotid
-	ld		b, a
-	and		#0b00000011
-	ld		c, a
-	in		a, (#0xa8)
-	and		#0b11111100
-	or		c
-	out		(#0xa8), a
-	ld		a, #0x80
-	or		b
-	ret z
-
-	; switch secondary slot
-	ld		a, b			; slotid
-	and		#0b00001100
-	srl		a
-	srl		a
-	ld		c, a
-	ld		a, (#0xffff)			; slotid
-	cpl
-	and		#0b11111100
-	or		c
-	ld		(#0xffff), a
+	ld		h, #MNEMO_MAIN_SWAP_PAGE << 6	; Page
+	jp		BIOS_ENASLT		; select slot
+.else
+	ret
 .endif
+
+; ----------------------------------------------------------------
+;	- Save AUX and MAIN pages configurations
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+_savePageConfig::
+	__GetSegAux
+	ld		hl, #auxSegHandler
+	ld		(hl), a
+
+	__GetSlotAux
+	ld		hl, #(auxSegHandler + 1)
+	ld		(hl), a
+
+	__GetSegMain
+	ld		hl, #mainSegHandler
+	ld		(hl), a
+
+	__GetSlotMain
+	ld		hl, #(mainSegHandler + 1)
+	ld		(hl), a
+
 	ret
 
 ; ----------------------------------------------------------------
-;	- Enable a segment from a Segment Handler in page 1
-;		BYPASSING THE BIOS!
-;	- To use this in a block of code:
-;	1. di
-;	2. _saveMemoryMap
-;	3. _dirtySwith at will
-;	4. _restoreMemoryMap
-;	5. ei
-;	OBS: AVOID BIOS CALLS IN THE BLOCK!
-;		 BIOS WILL NOT KNOW THAT THE PAGE HAS BEEN SWITCHED!
-;		 THUS ALSO DONT USE NORMAL _switch ROUTINES IN THE BLOCK!  
+;	- Restore AUX and MAIN pages configurations
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- HL: pointer to Segment handler
+;	- None
 ;
 ; OUTPUTS:
 ;   - None
 ;
 ; CHANGES:
-;   - HL, BC, A
+;   - All registers
 ; ----------------------------------------------------------------
-_dirtySwitchP1::
-	; switch segment
-	ld		a, (hl)			; segNumber
-	out		(0xfd), a
+_restorePageConfig::
+	ld		hl, #auxSegHandler
+	call	_switchAuxPage
 
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	ld		a, (#usePrimaryMapperOnly)
-	or		a
-	ret nz
-
-	; switch primary slot
-	inc		hl
-	ld		a, (hl)			; slotid
-	ld		b, a
-	and		#0b00000011
-	sla		a
-	sla		a
-	ld		c, a
-	in		a, (#0xa8)
-	and		#0b11110011
-	or		c
-	out		(#0xa8), a
-	ld		a, #0x80
-	or		b
-	ret z
-
-	; switch secondary slot
-	ld		a, b			; slotid
-	and		#0b00001100
-	ld		c, a
-	ld		a, (#0xffff)			; slotid
-	cpl
-	and		#0b11110011
-	or		c
-	ld		(#0xffff), a
-.endif
+	ld		hl, #mainSegHandler
+	call	_switchMainPage
+	
 	ret
 
 ; ----------------------------------------------------------------
-;	- Enable a segment from a Segment Handler in page 2
-;		BYPASSING THE BIOS!
-;	- To use this in a block of code:
-;	1. di
-;	2. _saveMemoryMap
-;	3. _dirtySwith at will
-;	4. _restoreMemoryMap
-;	5. ei
-;	OBS: AVOID BIOS CALLS IN THE BLOCK!
-;		 BIOS WILL NOT KNOW THAT THE PAGE HAS BEEN SWITCHED!
-;		 THUS ALSO DONT USE NORMAL _switch ROUTINES IN THE BLOCK!  
+;	- Get slot ID of any page
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- HL: pointer to Segment handler
+;	- h: memory address high byte (bits 6-7: page)
 ;
 ; OUTPUTS:
-;   - None
+;   - a: slot ID formatted F000SSPP
 ;
 ; CHANGES:
-;   - HL, BC, A
+;   - f, bc, de
 ; ----------------------------------------------------------------
-_dirtySwitchP2::
-	; switch segment
-	ld		a, (hl)			; segNumber
-	out		(0xfe), a
-
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	ld		a, (#usePrimaryMapperOnly)
-	or		a
-	ret nz
-
-	; switch primary slot
-	inc		hl
-	ld		a, (hl)			; slotid
-	ld		b, a
-	and		#0b00000011
-	sla		a
-	sla		a
-	sla		a
-	sla		a
-	ld		c, a
+_getSlot::
+;	call	BIOS_RSLREG
 	in		a, (#0xa8)
-	and		#0b11001111
-	or		c
-	out		(#0xa8), a
-	ld		a, #0x80
-	or		b
-	ret z
+	bit		7, h
+	jr z,	_getSlot_primaryShiftContinue
+	rrca
+	rrca
+	rrca
+	rrca
 
-	; switch secondary slot
-	ld		a, b			; slotid
-	and		#0b00001100
-	sla		a
-	sla		a
+_getSlot_primaryShiftContinue:
+	bit		6, h
+	jr z,	_getSlot_primaryShiftDone
+	rrca
+	rrca
+
+_getSlot_primaryShiftDone:
+	and		#0b00000011
 	ld		c, a
-	ld		a, (#0xffff)			; slotid
-	cpl
-	and		#0b11001111
+	ld		b, #0
+	ex		de, hl
+	ld		hl, #BIOS_EXPTBL
+	add		hl, bc
+	ex		de, hl
+	ld		a, (de)
+	and		#0x80
 	or		c
-	ld		(#0xffff), a
-.endif
+	ret p
+
+	ld		c, a
+	inc		de  ; move to SLTTBL
+	inc		de
+	inc		de
+	inc		de
+	ld		a, (de)
+	bit		7, h
+	jr z,	_getSlot_secondaryShiftContinue
+	rrca
+	rrca
+	rrca
+	rrca
+
+_getSlot_secondaryShiftContinue:
+	bit		6, h
+	jr nz,	_getSlot_secondaryShiftDone
+	rlca
+	rlca
+
+_getSlot_secondaryShiftDone:
+	and		#0x00001100
+	or		c
 	ret
 
 ; ----------------------------------------------------------------
@@ -867,7 +757,7 @@ okMsg::							.asciz " [OK]\n\r"
 ;   ==================================
 ;   ========== DATA SEGMENT ==========
 ;   ==================================
-    .area	_DATA
+	.area	_DATA
 
 pLogSegHandler:				.ds 2
 
@@ -908,10 +798,5 @@ pSegIndex:					.ds 2
 pLogSegTableSegment:		.ds 2
 logSegLoaded:				.ds 1
 
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-primarySlots:				.ds 1
-secondarySlots:				.ds 1
-.endif
-segmentP0:					.ds 1
-segmentP1:					.ds 1
-segmentP2:					.ds 1
+auxSegHandler:				.ds 2
+mainSegHandler:				.ds 2

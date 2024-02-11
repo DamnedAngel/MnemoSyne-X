@@ -21,10 +21,12 @@ typedef unsigned char (*SaveSeg) (unsigned page);
 
 typedef struct {
 	SEGHANDLER segHandler;
+	SEGHANDLER* pSegHandler;
+	void* pLogSegTableItem;
 	unsigned int logSegNumber;
-	unsigned char mode;
-	LoadSeg loadSeg;
-	SaveSeg saveSeg;
+	unsigned char segMode;
+	LoadSeg pLoadSeg;
+	SaveSeg pSaveSeg;
 } LOGSEGHANDLER;
 
 /*

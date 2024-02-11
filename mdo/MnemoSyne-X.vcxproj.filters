@@ -50,6 +50,9 @@
     <ClInclude Include="printinterface.h">
       <Filter>C Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\headers\mnemosyne-x.h">
+      <Filter>C Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="MSX\BIOS\msxbios.s">
@@ -80,6 +83,12 @@
       <Filter>ASM Source Files</Filter>
     </None>
     <None Include="..\source\config\mnemosyne-x_config.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\headers\mnemosyne-x_h.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\headers\rammapper_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
   </ItemGroup>
@@ -114,5 +123,10 @@
     <Text Include="Config\MDOSettings.txt">
       <Filter>Project Config</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\source\mnemosyne-x-dirty.s">
+      <Filter>ASM Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
