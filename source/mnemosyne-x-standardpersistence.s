@@ -9,6 +9,8 @@
 .include "msxbios.s"
 .include "config/mnemosyne-x_config.s"
 
+.NOFIL		.equ	0xD7
+
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
 ;   ==================================
@@ -30,12 +32,13 @@
 _standardLoad::
 	di
 	ld		(#pageAddr), hl
+	inc		hl
 
 _standardLoad_convertLSNibble::
 	ld		bc, #'0'*256+0x0a
 	ld		d, #0x0f
 	ld		a, (hl)
-	or		d
+	and		d
 	cp		c
 	jr c,	_standardLoad_convertLSNibbleSubA
 	add		a, #'A'-'0'
@@ -52,7 +55,7 @@ _standardLoad_convertMSNibble::
 	rlca
 	rlca
 	rlca
-	or		d
+	and		d
 	cp		c
 	jr c,	_standardLoad_convertMSNibbleSubA
 	add		a, #'A'-'0'
@@ -69,7 +72,7 @@ _standardLoad_checkCurrentFileindex::
 	jr nz,	_standardLoad_checkFileHandle
 	ld		a, (#fileExtension + 3)
 	sub		e
-	jr z,	_standardLoad_rightFileOpen
+	jp z,	_standardLoad_rightFileOpen
 
 _standardLoad_checkFileHandle::
 	ld		a, (#fileHandle)
@@ -82,20 +85,45 @@ _standardLoad_wrongFileOpen::
 	push	de
 	call	BDOS_SYSCAL
 	pop		de
+	ld		a, #0xff
+	ld		(#fileHandle), a
 
 _standardLoad_fileClosed::
 	; adjust file extension
-	ld		hl, (#fileExtension + 2)
+	ld		hl, #fileExtension + 2
 	ld		(hl), d
 	inc		hl
 	ld		(hl), e
 
-	; open file
+_standardLoad_openFile::
 	ld		de, #fileName
 	xor		a
 	ld		b, a
 	ld		c, #BDOS_OPEN
 	call	BDOS_SYSCAL
+	or		a
+	jr z,	_standardLoad_storeHandle
+	cp		#.NOFIL
+	jr nz,	_standardLoad_fileOpenFail
+
+_standardLoad_createFile::
+	ld		de, #fileName
+	xor		a
+	ld		b, a
+	ld		c, #BDOS_CREATE
+	call	BDOS_SYSCAL
+	or		a
+	jr z,	_standardLoad_openFile
+
+_standardLoad_fileOpenFail::
+	ld		hl, #fileExtension + 2
+	ld		(hl), #'_'
+	inc		hl
+	ld		(hl), #'_'
+	ld		a, #MNEMO_ERROR_FILEOPENFAIL
+	ret
+
+_standardLoad_storeHandle::
 	ld		a, b
 	ld		(#fileHandle), a
 
@@ -115,14 +143,18 @@ _standardLoad_fileClosed::
 	ld		(hl), #0
 	ldir
 
-	; create index
+	; save index
+	ld		a, (#fileHandle)
+	ld		b, a
 	xor		a
 	ld		d, a
 	ld		e, a
 	ld		h, a
 	ld		l, a
-	ld		c, #BDOS_MOVE
+	ld		c, #BDOS_SEEK
 	call	BDOS_SYSCAL		; pointer in beginning of file
+	ld		a, (#fileHandle)
+	ld		b, a
 	ld		de, #segTable
 	ld		hl, #256 * 4
 	ld		c, #BDOS_WRITE
@@ -156,13 +188,17 @@ _standardLoad_rightFileOpen::
 	or		d
 	or		h
 	jr z,	_standardLoad_noSegWarn
+	ld		a, (#fileHandle)
+	ld		b, a
 	xor		a
-	ld		c, #BDOS_MOVE
+	ld		c, #BDOS_SEEK
 	call	BDOS_SYSCAL		; pointer in beginning of segment
 	or		a
 	jr nz,	_standardLoad_segReadFail
 
 _standardLoad_readSegment::
+	ld		a, (#fileHandle)
+	ld		b, a
 	ld		de, #pageAddr + MNEMO_SEG_HEADER_SIZE
 	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ld		c, #BDOS_READ
@@ -201,11 +237,13 @@ saveEntry::
 	ld		d, a
 	ld		e, a
 	ld		hl, (#indexOffset)
-	ld		c, #BDOS_MOVE
+	ld		c, #BDOS_SEEK
 	call	BDOS_SYSCAL
 	or		a
 	jr nz,	_common_indexWriteFail
 	; write entry
+	ld		a, (#fileHandle)
+	ld		b, a
 	ld		hl, (#indexAddr)
 	ex		de, hl
 	ld		hl, #4

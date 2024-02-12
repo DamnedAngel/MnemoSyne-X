@@ -331,7 +331,7 @@ _activateLogSeg::
 	xor		a				; clear carry flag
 	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
-	adc		hl, de			
+	add		hl, de			
 	jr c,	_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; 3. Verify whether pSegHandler <= SegTable end
@@ -340,7 +340,7 @@ _activateLogSeg::
 	ld		hl, (#afterSegTable)
 	ex		de, hl
 	sbc		hl, de
-	adc		hl, de			
+	add		hl, de			
 	jr nc,	_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; activate setTableSegment
@@ -354,12 +354,13 @@ _activateLogSeg::
 
 	; check if target segment contains correct logSegNumber
 	; (equal to logSegHandler.logSegNumber)
+	; TODO: compare HL to DE with SBC/sub
 	ld		hl, (#logSegNumber)
-	ld		a, (#MNEMO_MAIN_SWAP_PAGE)
+	ld		a, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
 	cp		(hl)
 	jr nz, 	_activateLogSeg_searchFreeSeg		; nope
 	inc		hl
-	ld		a, (#MNEMO_MAIN_SWAP_PAGE + 1)
+	ld		a, (#MNEMO_MAIN_SWAP_PAGE_ADDR + 1)
 	cp		(hl)
 	jr nz,	_activateLogSeg_searchFreeSeg		; nope
 
@@ -450,6 +451,7 @@ _activateLogSeg_activateSegment:
 
 	; check whether selected segment should be saved
 	; check logSegNumber
+	; TODO: compare HL to DE with SBC/sub
 	ld		hl, #MNEMO_SEGHDR_LOGSEGNUMBER
 	ld		a, #0xff
 	cp		(hl)
@@ -477,12 +479,12 @@ _activateLogSeg_save:
 	ld		e, (hl)
 	inc		hl
 	ld		d, (hl)					; de = custom save routine
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	push	de						; prepare call
 	ret								; call de (THIS IS NOT A REAL RET!)
 
 _activateLogSeg_standardSave:
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	call	_standardSave
 
 _activateLogSeg_updateSegmentHeader:
@@ -503,17 +505,16 @@ _activateLogSeg_updateSegTable:
 	ld		(hl), a
 	ld		(#mapperSlot), a
 
-_activateLogSeg_updateLogSegTable:
-	exx
-	ld		hl, (#pLogSegTableSegment)
-	call	_switchAuxPage
-	exx
-	dec		hl
-	ex		de, hl
-	ld		hl, (#pLogSegTableItem)
-	ld		(hl), e
-	inc		hl
-	ld		(hl), d
+;_activateLogSeg_updateLogSegTable:
+;	exx
+;	ld		hl, (#pLogSegTableSegment)
+;	call	_switchAuxPage
+;	exx
+;	dec		hl
+;	ex		de, hl
+;	ld		(hl), e
+;	inc		hl
+;	ld		(hl), d
 
 _activateLogSeg_checkReadMode:
 	ld		a, (#logSegMode)
@@ -524,7 +525,7 @@ _activateLogSeg_checkReadMode:
 	jr z,	_activateLogSeg_load				; Mode 2 (FORCEREAD): load 
 	ld		a, (#logSegLoaded)					; Mode 1 (READ) or 3 (READWRITE)
 	or		a									;	If segment in memory,
-	jr z,	_activateLogSeg_updateLogsegHandler	;	no load.
+	jr nz,	_activateLogSeg_updateLogsegHandler	;	no load.
 
 _activateLogSeg_load:
 	; check if custom write routine
@@ -539,12 +540,12 @@ _activateLogSeg_load:
 	ld		e, (hl)
 	inc		hl
 	ld		d, (hl)					; de = custom load routine
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	push	de						; prepare call
 	ret								; call de (THIS IS NOT A REAL RET!)
 
 _activateLogSeg_standardLoad:
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 	call	_standardLoad
 
 _activateLogSeg_updateLogsegHandler:
