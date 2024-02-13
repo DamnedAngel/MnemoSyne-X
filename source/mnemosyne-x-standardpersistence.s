@@ -160,20 +160,20 @@ _standardLoad_storeHandle::
 	ld		c, #BDOS_WRITE
 	call	BDOS_SYSCAL		; write index
 	or		a
-	jr nz,	_common_indexWriteFail
+	jp nz,	_common_indexWriteFail
 	ld		a, #MNEMO_WARN_NOSEGINDEX
 	ret
 
 _standardLoad_rightFileOpen::
 	ld		hl, (#pageAddr)
-	inc		hl				; (hl) = segIndex
+;	inc		hl				; (hl) = segIndex
 	ld		l, (hl)
 	ld		h, #0			; hl = segIndex
 	add		hl, hl
 	add		hl, hl			; hl = indexOffset = segIndex * 4
 	ld		(#indexOffset), hl
 	ex		de, hl
-	ld		hl, (#segTable)
+	ld		hl, #segTable
 	add		hl, de			; hl = indexAddr; (hl) = segOffset (4 bytes)
 	ld		(#indexAddr), hl
 	ld		e, (hl)
@@ -188,6 +188,7 @@ _standardLoad_rightFileOpen::
 	or		d
 	or		h
 	jr z,	_standardLoad_noSegWarn
+	ex		de, hl
 	ld		a, (#fileHandle)
 	ld		b, a
 	xor		a
@@ -199,7 +200,10 @@ _standardLoad_rightFileOpen::
 _standardLoad_readSegment::
 	ld		a, (#fileHandle)
 	ld		b, a
-	ld		de, #pageAddr + MNEMO_SEG_HEADER_SIZE
+	ld		hl, (#pageAddr)
+	ld		de, #MNEMO_SEG_HEADER_SIZE
+	add		hl, de
+	ex		de, hl
 	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ld		c, #BDOS_READ
 	call	BDOS_SYSCAL		; pointer in beginning of segment
@@ -257,7 +261,7 @@ _common_indexWriteFail::
 	ret
 
 fileHandle::				.db		#0xff
-fileName::					.ascii	'DATA'
+fileName::					.ascii	'THETRIAL'
 fileExtension::				.asciz	'.___'
 
 ;   ==================================

@@ -7,10 +7,6 @@
     <Filter Include="Project Config">
       <UniqueIdentifier>{dd93d829-192d-46c9-8f5b-f39bb2d68324}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="ASM Source Files">
       <UniqueIdentifier>{52835113-377d-4d52-ba1a-d14fcb244687}</UniqueIdentifier>
     </Filter>
