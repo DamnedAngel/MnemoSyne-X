@@ -13,6 +13,8 @@ from mnemologger import MnemoLogger
 
 
 class MnemoBank:
+    outputDir = "."
+
     def __init__(self, number: int):
         self.number=number
         self.segments = []
@@ -53,7 +55,7 @@ class MnemoBank:
         data=index+data
 
         MnemoLogger.log(f"Saving {fileName}... ", ident=False, time=False, end="")
-        with open(fileName, "wb") as file:
+        with open(MnemoBank.outputDir + "\\" + fileName, "wb") as file:
             file.write(data)
         MnemoLogger.log(f"Done!", ident=False, time=False)
 
@@ -63,7 +65,7 @@ class MnemoBank:
         fileName=f"{name}.{ext}.h"
 
         MnemoLogger.log (f"Saving {fileName}... ", end="")
-        with open(fileName, "w", encoding="ascii") as file:
+        with open(MnemoBank.outputDir + "\\" + fileName, "w", encoding="ascii") as file:
             file.write(f"// --------------------------------\n")
             file.write(f"// MnemoSyne-X Memory Bank {self.number}\n")
             file.write(f"// --------------------------------\n")
@@ -80,7 +82,7 @@ class MnemoBank:
         fileName=f"{name}.{ext}_h.s"
 
         MnemoLogger.log (f"Saving {fileName}... ", end="")
-        with open(fileName, "w", encoding="ascii") as file:
+        with open(MnemoBank.outputDir + "\\" + fileName, "w", encoding="ascii") as file:
             file.write(f"; --------------------------------\n")
             file.write(f"; MnemoSyne-X Memory Bank {self.number}\n")
             file.write(f"; --------------------------------\n")

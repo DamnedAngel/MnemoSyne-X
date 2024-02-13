@@ -42,6 +42,9 @@
     <Filter Include="ASM Header Files\MSX\VDP">
       <UniqueIdentifier>{442c8cf3-2879-4985-8ded-19250a0c1dea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Memory Bank Builder">
+      <UniqueIdentifier>{b69f69b9-feff-4e03-893a-f662429a16ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MSX\BIOS\msxbios.h">
@@ -94,6 +97,24 @@
     <None Include="..\source\mnemosyne-x-standardpersistence.s">
       <Filter>ASM Source Files</Filter>
     </None>
+    <None Include="..\datafile\mnemo.py">
+      <Filter>Memory Bank Builder</Filter>
+    </None>
+    <None Include="..\datafile\mnemobank.py">
+      <Filter>Memory Bank Builder</Filter>
+    </None>
+    <None Include="..\datafile\mnemoexception.py">
+      <Filter>Memory Bank Builder</Filter>
+    </None>
+    <None Include="..\datafile\mnemologger.py">
+      <Filter>Memory Bank Builder</Filter>
+    </None>
+    <None Include="..\datafile\mnemoresource.py">
+      <Filter>Memory Bank Builder</Filter>
+    </None>
+    <None Include="..\datafile\mnemosegment.py">
+      <Filter>Memory Bank Builder</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Config\ApplicationSettings.txt">
@@ -125,6 +146,9 @@
     </Text>
     <Text Include="Config\MDOSettings.txt">
       <Filter>Project Config</Filter>
+    </Text>
+    <Text Include="..\datafile\mnemosynexdata.txt">
+      <Filter>Memory Bank Builder</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>

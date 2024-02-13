@@ -134,13 +134,16 @@ def process (tokens):
 # -------
 # PROGRAM
 # -------
-if not len(sys.argv) == 3:
-    print ("Usage: python mnemo.py <MAP FILE> <MSX PAGE>")
-    exit(0)
-
 print("MnemoSyne-X: a virtual memory system for MSX.")
 print("Data file builder")
 print("---------------------------------------------")
+
+if (len(sys.argv) < 3) or (len(sys.argv) > 4):
+    print ("Usage: python mnemo.py <MAP FILE> <MSX PAGE>")
+    exit(0)
+
+if len(sys.argv) == 4:
+    MnemoBank.outputDir = sys.argv[3]
 
 memoryMapFile = sys.argv[1]
 try:

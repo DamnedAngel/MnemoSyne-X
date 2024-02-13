@@ -65,6 +65,12 @@
     <ClInclude Include="printinterface.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\datafile\mnemo.py" />
+    <None Include="..\datafile\mnemobank.py" />
+    <None Include="..\datafile\mnemoexception.py" />
+    <None Include="..\datafile\mnemologger.py" />
+    <None Include="..\datafile\mnemoresource.py" />
+    <None Include="..\datafile\mnemosegment.py" />
     <None Include="..\headers\mnemosyne-x_h.s" />
     <None Include="..\headers\rammapper_h.s" />
     <None Include="..\source\config\mnemosyne-x_config.s" />
@@ -80,6 +86,7 @@
     <None Include="printinterface.s" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="..\datafile\mnemosynexdata.txt" />
     <Text Include="Config\ApplicationSettings.txt" />
     <Text Include="Config\ApplicationSources.txt" />
     <Text Include="Config\BuildEvents.txt" />
