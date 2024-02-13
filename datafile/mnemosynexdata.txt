@@ -1,0 +1,25 @@
+; ----------------------------------------------------------------
+;	mnemosynexdata.txt
+; ----------------------------------------------------------------
+;	240211 - DamnedAngel
+; ----------------------------------------------------------------
+;	MnemoSyne-X memory map example file
+; ----------------------------------------------------------------
+
+FILENAME		DATA
+
+SEGMENT			32768
+SEGMENTNAME		smnemo1
+
+RESOURCE		mnemo						mnemo.py
+RESOURCE		mnemoResource				mnemoresource.py
+
+
+NEXTSEGMENT
+NEXTSEGMENT
+RESOURCE		mnemoLogger					mnemologger.py
+RESOURCE		mnemoFile					mnemobank.py
+
+SEGMENT			0
+SEGMENTNAME		smnemo3
+RESOURCE		mnemoSegment				mnemosegment.py
