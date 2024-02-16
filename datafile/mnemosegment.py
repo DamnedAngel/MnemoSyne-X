@@ -44,7 +44,7 @@ class MnemoSegment:
 
     def addSplitResource(self, resource:MnemoResource, alignment) -> MnemoResource:
         free = self.free()
-        if resource.getSize > free:
+        if resource.getSize() > free:
             if resource.instance is None:
                 myInstance=0
             else:

@@ -303,10 +303,10 @@ _activateLogSeg::
 
 	; activate proper logSegTableSegment
 	ld		hl, #segIndexTable
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	add		a, a
-.endif
-	add		a, l
+;.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+;	add		a, a
+;.endif
+	add		a, l			;TODO: ld e, a + ld d, #0 + add hl, de
 	ld		l, a
 	adc		a, h
 	sub		l   
@@ -520,12 +520,12 @@ _activateLogSeg_checkReadMode:
 	ld		a, (#logSegMode)
 	ld		b, a
 	and		#3
-	jr z,	_activateLogSeg_updateLogsegHandler	; Mode 0 (TEMPMEM): no load
+	jr z,	_activateLogSeg_end					; Mode 0 (TEMPMEM): no load
 	cp		#MNEMO_SEGMODE_FORCEDREAD
 	jr z,	_activateLogSeg_load				; Mode 2 (FORCEREAD): load 
 	ld		a, (#logSegLoaded)					; Mode 1 (READ) or 3 (READWRITE)
 	or		a									;	If segment in memory,
-	jr nz,	_activateLogSeg_updateLogsegHandler	;	no load.
+	jr nz,	_activateLogSeg_end					;	no load.
 
 _activateLogSeg_load:
 	; check if custom write routine
@@ -534,7 +534,7 @@ _activateLogSeg_load:
 	jr z,	_activateLogSeg_standardLoad
 	
 	; custom load
-	ld		hl, #_activateLogSeg_updateLogsegHandler
+	ld		hl, #_activateLogSeg_end
 	push	hl						; return point
 	ld		hl, (#pLoadSeg)
 	ld		e, (hl)
@@ -548,15 +548,15 @@ _activateLogSeg_standardLoad:
 	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 	call	_standardLoad
 
-_activateLogSeg_updateLogsegHandler:
+_activateLogSeg_end:
+	call _restorePageConfig
+
 	; update logSegHandler from page 3
 	ld		hl, #logSegHandler
 	ld		de, (pLogSegHandler)
 	ld		bc, #(logSegHandler_params - logSegHandler)
 	ldir
 
-_activateLogSeg_end:
-	call _restorePageConfig
 	pop		ix
 	ret
 
@@ -638,20 +638,20 @@ _switchMainPage::
 ; ----------------------------------------------------------------
 _savePageConfig::
 	__GetSegAux
-	ld		hl, #auxSegHandler
+	ld		hl, #auxSegHandler			; TODO: ld (nn), a
 	ld		(hl), a
 
 	__GetSlotAux
 	ld		hl, #(auxSegHandler + 1)
 	ld		(hl), a
 
-	__GetSegMain
-	ld		hl, #mainSegHandler
-	ld		(hl), a
+;	__GetSegMain
+;	ld		hl, #mainSegHandler
+;	ld		(hl), a
 
-	__GetSlotMain
-	ld		hl, #(mainSegHandler + 1)
-	ld		(hl), a
+;	__GetSlotMain
+;	ld		hl, #(mainSegHandler + 1)
+;	ld		(hl), a
 
 	ret
 
@@ -671,8 +671,8 @@ _restorePageConfig::
 	ld		hl, #auxSegHandler
 	call	_switchAuxPage
 
-	ld		hl, #mainSegHandler
-	call	_switchMainPage
+;	ld		hl, #mainSegHandler
+;	call	_switchMainPage
 	
 	ret
 

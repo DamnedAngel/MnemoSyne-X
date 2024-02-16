@@ -35,5 +35,5 @@ class MnemoResource:
         if self.instance is None:
             return self.name
         else:
-            return self.name + self.instance
+            return f"{self.name}_{str(self.instance)}"
 
