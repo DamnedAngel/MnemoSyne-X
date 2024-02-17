@@ -9,81 +9,16 @@
 .include "msxbios.s"
 .include "applicationsettings.s"
 .include "printinterface.s"
-
-.include "config/mnemosyne-x_config.s"
+.include "printdec_h.s"
 
 .include "rammapper_h.s"
-.include "printdec_h.s"
+
+.include "config/mnemosyne-x_config.s"
+.include "mnemosyne-x-macros_h.s"
+
 
 .globl _rnd16
 .globl _standardLoad
-
-; ----------------------------------------------------------------
-;	- Macros
-; ----------------------------------------------------------------
-.macro	__PutSeg PAGE
-.ifeq PAGE
-	call	__PutP0
-.else
-	.ifeq PAGE - 1
-	call	__PutP1
-	.else
-		.ifeq PAGE - 2
-	call	__PutP2
-		.endif
-	.endif
-.endif
-.endm
-
-.macro	__PutSegAux
-	__PutSeg MNEMO_AUX_SWAP_PAGE
-.endm
-
-.macro	__PutSegMain
-	__PutSeg MNEMO_MAIN_SWAP_PAGE
-.endm
-
-; -----
-
-.macro	__GetSeg PAGE
-.ifeq PAGE
-	call	__GetP0
-.else
-	.ifeq PAGE - 1
-	call	__GetP1
-	.else
-		.ifeq PAGE - 2
-	call	__GetP2
-		.else
-	call	__GetP3
-		.endif
-	.endif
-.endif
-.endm
-
-.macro	__GetSegAux
-	__GetSeg MNEMO_AUX_SWAP_PAGE
-.endm
-
-.macro	__GetSegMain
-	__GetSeg MNEMO_MAIN_SWAP_PAGE
-.endm
-
-; -----
-
-.macro	__GetSlot PAGE
-	ld		h, #PAGE * 0b01000000
-	call	_getSlot
-.endm
-
-.macro	__GetSlotAux
-	__GetSlot MNEMO_AUX_SWAP_PAGE
-.endm
-
-.macro	__GetSlotMain
-	__GetSlot MNEMO_MAIN_SWAP_PAGE
-.endm
-	
 
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
@@ -142,8 +77,13 @@ _initMnemosyneX_setQueryTag:
 
 	; allocate index segments
 	print	allocatingIndexSegmentsMsg
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		hl, #bufferSegment
+	ld		b, #MNEMO_INDEX_SEGMENTS + 2
+.else
 	ld		hl, #segTableSegment
 	ld		b, #MNEMO_INDEX_SEGMENTS + 1
+.endif
 
 _initMnemosyneX_indexSegAllocLoop::
 	exx
@@ -304,7 +244,7 @@ _activateLogSeg::
 	; activate proper logSegTableSegment
 	ld		hl, #segIndexTable
 ;.ifeq MNEMO_PRIMARY_MAPPER_ONLY
-;	add		a, a
+	add		a, a			; unit is segHandler, but in primary mapper only the slot is not used
 ;.endif
 	add		a, l			;TODO: ld e, a + ld d, #0 + add hl, de
 	ld		l, a
@@ -354,14 +294,10 @@ _activateLogSeg::
 
 	; check if target segment contains correct logSegNumber
 	; (equal to logSegHandler.logSegNumber)
-	; TODO: compare HL to DE with SBC/sub
 	ld		hl, (#logSegNumber)
-	ld		a, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
-	cp		(hl)
-	jr nz, 	_activateLogSeg_searchFreeSeg		; nope
-	inc		hl
-	ld		a, (#MNEMO_MAIN_SWAP_PAGE_ADDR + 1)
-	cp		(hl)
+	ex		de, hl
+	ld		hl, (#MNEMO_SEGHDR_LOGSEGNUMBER)
+	sbc		hl, de
 	jr nz,	_activateLogSeg_searchFreeSeg		; nope
 
 	; logSeg already loaded
@@ -479,12 +415,12 @@ _activateLogSeg_save:
 	ld		e, (hl)
 	inc		hl
 	ld		d, (hl)					; de = custom save routine
-	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
+;	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	push	de						; prepare call
 	ret								; call de (THIS IS NOT A REAL RET!)
 
 _activateLogSeg_standardSave:
-	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
+;	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	call	_standardSave
 
 _activateLogSeg_updateSegmentHeader:
@@ -505,18 +441,19 @@ _activateLogSeg_updateSegTable:
 	ld		(hl), a
 	ld		(#mapperSlot), a
 
-;_activateLogSeg_updateLogSegTable:
-;	exx
-;	ld		hl, (#pLogSegTableSegment)
-;	call	_switchAuxPage
-;	exx
-;	dec		hl
-;	ex		de, hl
-;	ld		(hl), e
-;	inc		hl
-;	ld		(hl), d
+_activateLogSeg_updateLogSegTable::
+	exx
+	ld		hl, (#pLogSegTableSegment)
+	call	_switchAuxPage
+	exx
+	dec		hl
+	ex		de, hl
+	ld		hl, (#pLogSegTableItem)
+	ld		(hl), e
+	inc		hl
+	ld		(hl), d
 
-_activateLogSeg_checkReadMode:
+_activateLogSeg_checkReadMode::
 	ld		a, (#logSegMode)
 	ld		b, a
 	and		#3
@@ -528,7 +465,7 @@ _activateLogSeg_checkReadMode:
 	jr nz,	_activateLogSeg_end					;	no load.
 
 _activateLogSeg_load:
-	; check if custom write routine
+	; check if custom load routine
 	ld		a, b
 	and		#MNEMO_SEGMODE_CUSTOMREAD
 	jr z,	_activateLogSeg_standardLoad
@@ -540,12 +477,12 @@ _activateLogSeg_load:
 	ld		e, (hl)
 	inc		hl
 	ld		d, (hl)					; de = custom load routine
-	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
+;	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	push	de						; prepare call
 	ret								; call de (THIS IS NOT A REAL RET!)
 
 _activateLogSeg_standardLoad:
-	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
+;	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 	call	_standardLoad
 
 _activateLogSeg_end:
@@ -781,13 +718,14 @@ _primaryMapperSlot::		.ds 1
 _numberPhysicalSegs::		.ds 2
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
+bufferSegment::				.ds 2
 segTableSegment::			.ds 2
 segIndexTable::				.ds MNEMO_INDEX_SEGMENTS * 2
 .else
 segTableSegment::			.ds 1
-
 segIndexTable::				.ds MNEMO_INDEX_SEGMENTS
 .endif
+
 afterSegTable::				.ds 2
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -802,3 +740,6 @@ logSegLoaded:				.ds 1
 
 auxSegHandler:				.ds 2
 mainSegHandler:				.ds 2
+
+mainPageAddr::				.ds	2	; TODO: Decide whether this is going to be used
+auxPageAddr::				.ds	2	; TODO: Decide whether this is going to be used

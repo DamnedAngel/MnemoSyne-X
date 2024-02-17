@@ -8,8 +8,16 @@
 
 .include "msxbios.s"
 .include "config/mnemosyne-x_config.s"
+.include "mnemosyne-x-macros_h.s"
 
 .NOFIL		.equ	0xD7
+
+.globl		_switchAuxPage
+
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+.globl		bufferSegment
+.globl		usePrimaryMapperOnly
+.endif
 
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
@@ -20,7 +28,7 @@
 ;	- Standard segment load routine for MnemoSine-X
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- HL: pointer to initial address of segment
+;	- None
 ;
 ; OUTPUTS:
 ;   - A:  0  = Success
@@ -31,8 +39,10 @@
 ; ----------------------------------------------------------------
 _standardLoad::
 	di
-	ld		(#pageAddr), hl
-	inc		hl
+;	ld		(#pageAddr), hl
+;	inc		hl
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR + 1
+
 
 _standardLoad_convertLSNibble::
 	ld		bc, #'0'*256+0x0a
@@ -165,7 +175,7 @@ _standardLoad_storeHandle::
 	ret
 
 _standardLoad_rightFileOpen::
-	ld		hl, (#pageAddr)
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	inc		hl				; (hl) = segIndex
 	ld		l, (hl)
 	ld		h, #0			; hl = segIndex
@@ -198,15 +208,34 @@ _standardLoad_rightFileOpen::
 	jr nz,	_standardLoad_segReadFail
 
 _standardLoad_readSegment::
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		a, (#usePrimaryMapperOnly)
+	or		a
+	jr nz,	_standardLoad_readOnPrimaryMapper
+
+	ld		hl, #bufferSegment
+	call	_switchAuxPage
+
+	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+	jr		_standardLoad_doRead
+.endif
+
+_standardLoad_readOnPrimaryMapper:
+	ld		de, #MNEMO_MAIN_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+
+_standardLoad_doRead::
+	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ld		a, (#fileHandle)
 	ld		b, a
-	ld		hl, (#pageAddr)
-	ld		de, #MNEMO_SEG_HEADER_SIZE
-	add		hl, de
-	ex		de, hl
-	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ld		c, #BDOS_READ
 	call	BDOS_SYSCAL		; pointer in beginning of segment
+
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		de, #MNEMO_MAIN_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+	ld		bc, #1024*16 - MNEMO_SEG_HEADER_SIZE
+	ldir
+.endif
 	or		a
 	ret z
 
@@ -269,7 +298,6 @@ fileExtension::				.asciz	'.___'
 ;   ==================================
 	.area	_DATA
 
-pageAddr::					.ds		2
 segTable::					.ds		256 * 4
 indexOffset::				.ds		2
 indexAddr::					.ds		2
