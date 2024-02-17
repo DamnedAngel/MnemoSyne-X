@@ -216,12 +216,12 @@ _standardLoad_readSegment::
 	ld		hl, #bufferSegment
 	call	_switchAuxPage
 
-	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+	ld		de, #MNEMO_AUX_SEGPAYLOAD
 	jr		_standardLoad_doRead
 .endif
 
 _standardLoad_readOnPrimaryMapper:
-	ld		de, #MNEMO_MAIN_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardLoad_doRead::
 	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
@@ -231,8 +231,8 @@ _standardLoad_doRead::
 	call	BDOS_SYSCAL		; pointer in beginning of segment
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
-	ld		de, #MNEMO_MAIN_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
-	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR + #MNEMO_SEG_HEADER_SIZE
+	ld		de, #MNEMO_MAIN_SEGPAYLOAD
+	ld		hl, #MNEMO_AUX_SEGPAYLOAD
 	ld		bc, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ldir
 .endif

@@ -22,7 +22,7 @@
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-.globl _initMnemosynex
+.globl _initMnemoSyneX
 
 ; ----------------------------------------------------------------
 ;	- Activates a logical segment

@@ -44,9 +44,9 @@ typedef struct {
 ; ----------------------------------------------------------------
 */
 #ifdef MNEMO_PRIMARY_MAPPER_ONLY
-extern void initMnemosyneX(void) __sdcccall(1);
+extern void initMnemoSyneX(void) __sdcccall(1);
 #else
-extern unsigned char initMnemosyneX(bool) __sdcccall(1);
+extern unsigned char initMnemoSyneX(bool) __sdcccall(1);
 #endif
 
 /*

@@ -16,7 +16,6 @@
 .include "config/mnemosyne-x_config.s"
 .include "mnemosyne-x-macros_h.s"
 
-
 .globl _rnd16
 .globl _standardLoad
 
@@ -39,7 +38,7 @@
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_initMnemosyneX::
+_initMnemoSyneX::
 	push	ix
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -60,15 +59,16 @@ _initMnemosyneX::
 	ld		a, (hl)
 	ld		(#_primaryMapperSlot), a
 
+	ld		hl, #pageConfigGlobalBuffer
 	call	_savePageConfig
 
 	; set mapper query tag
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#usePrimaryMapperOnly)
 	dec		a						; a = 0 => primary mapper only
-	jr z,	_initMnemosyneX_setQueryTag
+	jr z,	_initMnemoSyneX_setQueryTag
 	ld		a, #0b00100000			; Try to specified slot and, if it failed, try another slot (if any)
-_initMnemosyneX_setQueryTag:
+_initMnemoSyneX_setQueryTag:
 	or		(hl)					; primary mapper slot
 	ld		(#mapperQueryTag), a
 .endif
@@ -85,13 +85,13 @@ _initMnemosyneX_setQueryTag:
 	ld		b, #MNEMO_INDEX_SEGMENTS + 1
 .endif
 
-_initMnemosyneX_indexSegAllocLoop::
+_initMnemoSyneX_indexSegAllocLoop::
 	exx
 	xor		a						; user segment
 	ld		l, a					; primary mapper only
 	call	_AllocateSegment		; alternate regs are preserved
 	ld		a, #MNEMO_ERROR_NOINDEXSEG
-	jp c,	_initMnemosyneX_end		; No more available segments
+	jp c,	_initMnemoSyneX_end		; No more available segments
 	
 	; save segHandler
 	ld		a, e
@@ -105,13 +105,13 @@ _initMnemosyneX_indexSegAllocLoop::
 	inc		hl
 .endif
 
-	djnz	_initMnemosyneX_indexSegAllocLoop
+	djnz	_initMnemoSyneX_indexSegAllocLoop
 
 	print	okMsg
 
 	; allocate all available segments
 	; Note: allocate all other segments needed
-	; by the application BEFORE calling _initMnemosyneX!
+	; by the application BEFORE calling _initMnemoSyneX!
 	print	allocatingSegmentsMsg
 
 	; Set Segment Table segment in Aux Page
@@ -121,7 +121,7 @@ _initMnemosyneX_indexSegAllocLoop::
 	; segments allocation loop
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
 	push	hl
-_initMnemosyneX_segAllocLoop::
+_initMnemoSyneX_segAllocLoop::
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#mapperQueryTag)
 	ld		l, a					; which mappers
@@ -132,7 +132,7 @@ _initMnemosyneX_segAllocLoop::
 .endif
 	call	_AllocateSegment
 	pop		hl						; hl => next entry in segmentTable
-	jr c,	_initMnemosyneX_cont	; No more available segments
+	jr c,	_initMnemoSyneX_cont	; No more available segments
 
 	; save entry in segmentTable
 	ld		(hl), e
@@ -148,13 +148,13 @@ _initMnemosyneX_segAllocLoop::
 	pop		hl
 	inc		hl						; next table entry
 
-_initMnemosyneX_printDash:
+_initMnemoSyneX_printDash:
 	ld		a, #'-'
 	push	hl
 	call	printchar
-	jr		_initMnemosyneX_segAllocLoop
+	jr		_initMnemoSyneX_segAllocLoop
 
-_initMnemosyneX_cont:
+_initMnemoSyneX_cont:
 	ld		(#afterSegTable), hl
 	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
@@ -185,9 +185,31 @@ _initMnemosyneX_cont:
 	call	_PrintDec
 	print	megaBytesMsg
 
-_initMnemosyneX_end:
+_initMnemoSyneX_end:
+	ld		hl, #pageConfigGlobalBuffer
 	call	_restorePageConfig
 	pop		ix
+	ret
+
+	
+; ----------------------------------------------------------------
+;	- Finalize MnemoSyne-X.
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   -None
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+_finalizeMnemoSyneX::
+	; TODO: Decide whether to deallocate segments.
+	; In principle, that is not needed, since MSX-DOS will
+	; deallocate them automatically.
+	ld		hl, #pageConfigGlobalBuffer
+	call	_restorePageConfig
 	ret
 
 
@@ -210,7 +232,8 @@ _activateLogSeg::
 	ld		(#logSegLoaded), a
 	ld		(#pLogSegHandler), hl
 
-	call	_savePageConfig
+	ld		hl, #auxSegHandlerTemp
+	call	_saveAuxPageConfig
 
 	; copy logSegHandler to page 3
 	ld		de, #logSegHandler
@@ -486,7 +509,8 @@ _activateLogSeg_standardLoad:
 	call	_standardLoad
 
 _activateLogSeg_end:
-	call _restorePageConfig
+	ld		hl, #auxSegHandlerTemp
+	call	_switchAuxPage
 
 	; update logSegHandler from page 3
 	ld		hl, #logSegHandler
@@ -565,38 +589,77 @@ _switchMainPage::
 ;	- Save AUX and MAIN pages configurations
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- None
+;	- HL: pBuffer (4 bytes)
 ;
 ; OUTPUTS:
 ;   - None
 ;
 ; CHANGES:
-;   - All registers
+;   - All secondary registers; HL+=3
 ; ----------------------------------------------------------------
 _savePageConfig::
-	__GetSegAux
-	ld		hl, #auxSegHandler			; TODO: ld (nn), a
-	ld		(hl), a
+	call	_saveAuxPageConfig
+	inc		hl
+	jr		_saveMainPageConfig
 
-	__GetSlotAux
-	ld		hl, #(auxSegHandler + 1)
-	ld		(hl), a
-
-;	__GetSegMain
-;	ld		hl, #mainSegHandler
-;	ld		(hl), a
-
-;	__GetSlotMain
-;	ld		hl, #(mainSegHandler + 1)
-;	ld		(hl), a
-
+; ----------------------------------------------------------------
+;	- Save Aux Page configuration
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pSegHandler
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All secondary registers; HL+=1
+; ----------------------------------------------------------------
+_saveAuxPageConfig::
+	exx
+ 	__GetSegAux
+	exx
+ 	ld		(hl), a
+ 
+	exx
+ 	__GetSlotAux
+	exx
+	inc		hl
+ 	ld		(hl), a
+ 
 	ret
+
+; ----------------------------------------------------------------
+;	- Save Main Page configuration
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pSegHandler
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All secondary registers; HL+=1
+; ----------------------------------------------------------------
+_saveMainPageConfig::
+	exx
+	__GetSegMain
+	exx
+	ld		(hl), a
+
+	exx
+	__GetSlotMain
+	exx
+	inc		hl
+	ld		(hl), a
+ 
+ 	ret
+
 
 ; ----------------------------------------------------------------
 ;	- Restore AUX and MAIN pages configurations
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- None
+;	- HL: pBuffer (4 bytes; 2 x segHandler)
 ;
 ; OUTPUTS:
 ;   - None
@@ -605,13 +668,13 @@ _savePageConfig::
 ;   - All registers
 ; ----------------------------------------------------------------
 _restorePageConfig::
-	ld		hl, #auxSegHandler
+	push	hl
 	call	_switchAuxPage
-
-;	ld		hl, #mainSegHandler
-;	call	_switchMainPage
-	
-	ret
+	pop		hl
+	inc		hl
+	inc		hl
+	jp		_switchMainPage
+ 
 
 ; ----------------------------------------------------------------
 ;	- Get slot ID of any page
@@ -738,8 +801,12 @@ pSegIndex:					.ds 2
 pLogSegTableSegment:		.ds 2
 logSegLoaded:				.ds 1
 
-auxSegHandler:				.ds 2
-mainSegHandler:				.ds 2
+pageConfigTempBuffer::
+	auxSegHandlerTemp::		.ds 2
+	mainSegHandlerTemp::	.ds 2
+pageConfigGlobalBuffer::
+	auxSegHandlerGlobal::	.ds 2
+	mainSegHandlerGlobal::	.ds 2
 
 mainPageAddr::				.ds	2	; TODO: Decide whether this is going to be used
 auxPageAddr::				.ds	2	; TODO: Decide whether this is going to be used
