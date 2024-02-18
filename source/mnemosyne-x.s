@@ -261,7 +261,7 @@ _activateLogSeg::
 	rrc		h				; hl = pLogSegTableItem (AUX page)
 	ld		(#pLogSegTableItem), hl
 	
-	cp		#(MNEMO_INDEX_SEGMENTS - 1)
+	cp		#(MNEMO_INDEX_SEGMENTS)
 	jp nc,	_activateLogSeg_segOutOfRangeError
 
 	; activate proper logSegTableSegment
@@ -317,6 +317,7 @@ _activateLogSeg::
 
 	; check if target segment contains correct logSegNumber
 	; (equal to logSegHandler.logSegNumber)
+	xor		a
 	ld		hl, (#logSegNumber)
 	ex		de, hl
 	ld		hl, (#MNEMO_SEGHDR_LOGSEGNUMBER)
