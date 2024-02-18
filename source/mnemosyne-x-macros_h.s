@@ -86,3 +86,4 @@
 .macro	__GetSlotMain
 	__GetSlot MNEMO_MAIN_SWAP_PAGE
 .endm
+
