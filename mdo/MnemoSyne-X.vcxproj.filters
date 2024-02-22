@@ -111,7 +111,7 @@
     <None Include="..\datafile\mnemosegment.py">
       <Filter>Memory Bank Builder</Filter>
     </None>
-    <None Include="..\source\mnemosyne-x-macros_h.s">
+    <None Include="..\source\mnemosyne-x-internal_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
   </ItemGroup>

@@ -28,6 +28,7 @@ MDO_NAME						MNEMOSYNEX
 MDO_HOOK_IMPLEMENTATION			initMnemoSyneX		_initMnemoSyneX
 MDO_HOOK_IMPLEMENTATION			finalizeMnemoSyneX	_finalizeMnemoSyneX
 MDO_HOOK_IMPLEMENTATION			activateLogSeg		_activateLogSeg
+MDO_HOOK_IMPLEMENTATION			mnemo_releaseLogSeg	_mnemo_releaseLogSeg
 MDO_HOOK_IMPLEMENTATION			switchMainPage		_switchMainPage
 MDO_HOOK_IMPLEMENTATION			switchAuxPage		_switchAuxPage
 

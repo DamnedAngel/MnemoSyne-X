@@ -11,5 +11,6 @@
 ;[MSX_LIB_PATH]\fusion-c\header
 .\MSX\BIOS
 ..\headers
+..\source\config
 ..\..\damnlib
 

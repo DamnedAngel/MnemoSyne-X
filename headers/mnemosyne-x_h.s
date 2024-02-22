@@ -10,6 +10,111 @@
 .include "mnemosyne-x_config.s"
 
 ; ----------------------------------------------------------------
+;	- Error messages
+; ----------------------------------------------------------------
+MNEMO_ERROR_SUCCESS					= 0
+MNEMO_ERROR_NOINDEXSEG				= 1
+MNEMO_ERROR_SEGOUTOFRANGE			= 2
+MNEMO_ERROR_NOFREEPHYSSEG			= 3
+MNEMO_ERROR_FILEOPENFAIL			= 4
+MNEMO_WARN_NOSEG					= 5	
+MNEMO_ERROR_BADSEGINDEX				= 6
+MNEMO_ERROR_SEGREADFAIL				= 7
+MNEMO_ERROR_IDXWRITEFAIL			= 8
+MNEMO_WARN_OUTDATEDPSEGHANDLER		= 9
+MNEMO_ERROR_READONLYSEG				= 10
+MNEMO_ERROR_SEGWRITEFAIL			= 11
+
+
+; ----------------------------------------------------------------
+;	- Segment mode
+; ----------------------------------------------------------------
+MNEMO_SEGMODE_MASK					= 0b00000011
+
+MNEMO_SEGMODE_TEMP					= 0
+MNEMO_SEGMODE_READ					= 1
+MNEMO_SEGMODE_FORCEDREAD			= 2
+MNEMO_SEGMODE_READWRITE				= 3
+
+MNEMO_SEGMODE_CUSTOMREAD			= 4
+MNEMO_SEGMODE_CUSTOMWRITE			= 8
+
+
+; ----------------------------------------------------------------
+;	- LogSegHandlers offsets
+; ----------------------------------------------------------------
+MNEMO_LOGSEGHOFFSET_SEGHANDLER			= 0
+MNEMO_LOGSEGHOFFSET_PSEGHANDLER			= 2
+MNEMO_LOGSEGHOFFSET_PLOGSEGTABLEITEM	= 4
+MNEMO_LOGSEGHOFFSET_LOGSEGNUMBER		= 6
+MNEMO_LOGSEGHOFFSET_SEGMODE				= 8
+MNEMO_LOGSEGHOFFSET_PLOADSEG			= 9
+MNEMO_LOGSEGHOFFSET_PSAVESEG			= 11
+
+
+; ----------------------------------------------------------------
+;	- allocation status
+; ----------------------------------------------------------------
+MNEMO_ALLOC_MASK						= 0b00110000
+MNEMO_ALLOC_KEEPPRIORITY0				= 0b00000000	; lowest priority
+MNEMO_ALLOC_KEEPPRIORITY1				= 0b00010000	
+MNEMO_ALLOC_KEEPPRIORITY2				= 0b00100000	; hightes priority
+MNEMO_ALLOC_INUSE						= 0b00110000	
+
+
+; ----------------------------------------------------------------
+;	- Segment header offsets - TO BE MOVED TO INTERFACE HEADER!
+; ----------------------------------------------------------------
+MNEMO_SEG_HEADER_SIZE				= 8
+
+MNEMO_SEGHDROFFSET_LOGSEGNUMBER		= 0
+MNEMO_SEGHDROFFSET_SEGMODE			= 2
+MNEMO_SEGHDROFFSET_PSAVESEG			= 3
+
+MNEMO_SEGPAYLOAD_OFFSET				= MNEMO_SEG_HEADER_SIZE
+
+
+; ----------------------------------------------------------------
+;	- Derivative Configuration.
+; ----------------------------------------------------------------
+.ifne MNEMO_MAIN_SWAP_PAGE - 1
+MNEMO_MAIN_SWAP_PAGE				= 2
+.endif
+MNEMO_AUX_SWAP_PAGE					= 3 - MNEMO_MAIN_SWAP_PAGE
+
+MNEMO_MAX_LOGICAL_MEMORY			= MNEMO_INDEX_SEGMENTS * 128		; in Mbytes				
+MNEMO_MAIN_SWAP_PAGE_ADDR			= 0x4000 * MNEMO_MAIN_SWAP_PAGE
+MNEMO_AUX_SWAP_PAGE_ADDR			= 0x4000 * MNEMO_AUX_SWAP_PAGE
+
+MNEMO_MAIN_SEGPAYLOAD				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGPAYLOAD_OFFSET
+MNEMO_AUX_SEGPAYLOAD				= MNEMO_AUX_SWAP_PAGE_ADDR + MNEMO_SEGPAYLOAD_OFFSET
+
+
+; ----------------------------------------------------------------
+;	- Dirty Page Switch macros - TO BE MOVED TO INTERFACE HEADER!
+; ----------------------------------------------------------------
+.macro	_DirtySwitch	PAGE
+.ifeq	(PAGE - 2)
+	call	_dirtySwitchP2
+.else
+	.ifeq	(PAGE - 1)
+	call	_dirtySwitchP1
+	.else
+	call	_dirtySwitchP0
+	.endif
+.endif
+.endm
+
+.macro	_DirtySwitchMain
+	_DirtySwitch	MNEMO_MAIN_SWAP_PAGE
+.endm
+
+.macro	_DirtySwitchAux
+	_DirtySwitch	MNEMO_AUX_SWAP_PAGE
+.endm
+
+
+; ----------------------------------------------------------------
 ;	- Get number of Managed Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:
@@ -72,7 +177,23 @@
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-.globl _initMnemoSyneX
+;.globl _initMnemoSyneX
+
+
+; ----------------------------------------------------------------
+;	- Finalize MnemoSyne-X.
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   -None
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+;.globl _finalizeMnemoSyneX
+
 
 ; ----------------------------------------------------------------
 ;	- Activates a logical segment
@@ -86,25 +207,10 @@
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-.globl _activateLogSeg
+;.globl _activateLogSeg
 
 ; ----------------------------------------------------------------
-;	- Releases a segment related to a logical segment number
-; ----------------------------------------------------------------
-; INPUTS:
-;	- A: Release priority (0 - 2)
-;	- DE: logical segment number
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - A, DE, HL
-; ----------------------------------------------------------------
-.globl _releaseSeg
-
-; ----------------------------------------------------------------
-;	- Releases a segment from a logical segment handler
+;	- Releases segment from a logSegHandler pointed by DE
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- A: Release priority (0 - 2)
@@ -116,25 +222,10 @@
 ; CHANGES:
 ;   - A, DE, HL
 ; ----------------------------------------------------------------
-.globl _releaseLogSeg
+;.globl _mnemo_releaseLogSeg
 
 ; ----------------------------------------------------------------
-;	- Releases a segment related to a logical segment number in HL
-; ----------------------------------------------------------------
-; INPUTS:
-;	- A: Release priority (0 - 2)
-;	- HL: logical segment number
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - A, DE, HL
-; ----------------------------------------------------------------
-.globl _releaseSeg_HL
-
-; ----------------------------------------------------------------
-;	- Releases a segment from a logical segment handler in HL
+;	- Releases segment from a logSegHandler pointed by HL
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- A: Release priority (0 - 2)
@@ -146,8 +237,7 @@
 ; CHANGES:
 ;   - A, DE, HL
 ; ----------------------------------------------------------------
-.globl _releaseLogSeg
-
+;.globl mnemo_releaseLogSegHL
 
 ; ----------------------------------------------------------------
 ;	- Get number of Free Physical Segments
@@ -161,10 +251,5 @@
 ; CHANGES:
 ;   - DE
 ; ----------------------------------------------------------------
-.globl _mnemoGetUsedSegments::
-	__mnemoGetUsedSegments
-	ex		de, hl
-	__mnemoGetManagedSegments
-	or		a					; set carry flag
-	sbc		hl, de
-	ret
+;.globl _mnemoGetUsedSegments
+

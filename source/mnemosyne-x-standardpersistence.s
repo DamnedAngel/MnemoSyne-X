@@ -7,14 +7,15 @@
 ; ----------------------------------------------------------------
 
 .include "msxbios.s"
-.include "config/mnemosyne-x_config.s"
-.include "mnemosyne-x-macros_h.s"
+.include "mnemosyne-x-internal_h.s"
 
 .NOFIL		.equ	0xD7
 
 .globl		_switchAuxPage
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
+.globl		primaryMapperSlot
+.globl		mapperSlot
 .globl		bufferSegment
 .globl		usePrimaryMapperOnly
 .endif
@@ -25,7 +26,11 @@
 	.area _CODE
 
 ; ----------------------------------------------------------------
-;	- Standard segment load routine for MnemoSine-X
+; ----------------------- SERVICES -------------------------------
+; ----------------------------------------------------------------
+
+; ----------------------------------------------------------------
+;	- Delivers bank file to persistence routines
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- None
@@ -37,29 +42,26 @@
 ; CHANGES:
 ;   - All registers, di
 ; ----------------------------------------------------------------
-_standardLoad::
+persistCommon::
 	di
-;	ld		(#pageAddr), hl
-;	inc		hl
+
+persistCommon_convertLSNibble::
 	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR + 1
-
-
-_standardLoad_convertLSNibble::
 	ld		bc, #'0'*256+0x0a
 	ld		d, #0x0f
 	ld		a, (hl)
 	and		d
 	cp		c
-	jr c,	_standardLoad_convertLSNibbleSubA
+	jr c,	persistCommon_convertLSNibbleSubA
 	add		a, #'A'-'0'
 
-_standardLoad_convertLSNibbleSubA::
+persistCommon_convertLSNibbleSubA::
 	add		a, b
 
-_standardLoad_convertLSNibbleEnd::
+persistCommon_convertLSNibbleEnd::
 	ld		e, a
 
-_standardLoad_convertMSNibble::
+persistCommon_convertMSNibble::
 	ld		a, (hl)
 	rlca
 	rlca
@@ -67,29 +69,29 @@ _standardLoad_convertMSNibble::
 	rlca
 	and		d
 	cp		c
-	jr c,	_standardLoad_convertMSNibbleSubA
+	jr c,	persistCommon_convertMSNibbleSubA
 	add		a, #'A'-'0'
 
-_standardLoad_convertMSNibbleSubA::
+persistCommon_convertMSNibbleSubA::
 	add		a, b
 
-_standardLoad_convertMSNibbleEnd::
+persistCommon_convertMSNibbleEnd::
 	ld		d, a
 
-_standardLoad_checkCurrentFileindex::
+persistCommon_checkCurrentFileindex::
 	ld		a, (#fileExtension + 2)
 	sub		d
-	jr nz,	_standardLoad_checkFileHandle
+	jr nz,	persistCommon_checkFileHandle
 	ld		a, (#fileExtension + 3)
 	sub		e
-	jp z,	_standardLoad_rightFileOpen
+	jp z,	persistCommon_rightFileOpen
 
-_standardLoad_checkFileHandle::
+persistCommon_checkFileHandle::
 	ld		a, (#fileHandle)
 	cp		#0xff
-	jr z,	#_standardLoad_fileClosed
+	jr z,	#persistCommon_fileClosed
 
-_standardLoad_wrongFileOpen::
+persistCommon_wrongFileOpen::
 	ld		b, a
 	ld		c, #BDOS_CLOSE
 	push	de
@@ -98,34 +100,34 @@ _standardLoad_wrongFileOpen::
 	ld		a, #0xff
 	ld		(#fileHandle), a
 
-_standardLoad_fileClosed::
+persistCommon_fileClosed::
 	; adjust file extension
 	ld		hl, #fileExtension + 2
 	ld		(hl), d
 	inc		hl
 	ld		(hl), e
 
-_standardLoad_openFile::
+persistCommon_openFile::
 	ld		de, #fileName
 	xor		a
 	ld		b, a
 	ld		c, #BDOS_OPEN
 	call	BDOS_SYSCAL
 	or		a
-	jr z,	_standardLoad_storeHandle
+	jr z,	persistCommon_storeHandle
 	cp		#.NOFIL
-	jr nz,	_standardLoad_fileOpenFail
+	jr nz,	persistCommon_fileOpenFail
 
-_standardLoad_createFile::
+persistCommon_createFile::
 	ld		de, #fileName
 	xor		a
 	ld		b, a
 	ld		c, #BDOS_CREATE
 	call	BDOS_SYSCAL
 	or		a
-	jr z,	_standardLoad_openFile
+	jr z,	persistCommon_openFile
 
-_standardLoad_fileOpenFail::
+persistCommon_fileOpenFail::
 	ld		hl, #fileExtension + 2
 	ld		(hl), #'_'
 	inc		hl
@@ -133,7 +135,7 @@ _standardLoad_fileOpenFail::
 	ld		a, #MNEMO_ERROR_FILEOPENFAIL
 	ret
 
-_standardLoad_storeHandle::
+persistCommon_storeHandle::
 	ld		a, b
 	ld		(#fileHandle), a
 
@@ -143,7 +145,7 @@ _standardLoad_storeHandle::
 	ld		c, #BDOS_READ
 	call	BDOS_SYSCAL
 	or		a
-	jr z,	_standardLoad_rightFileOpen
+	jr z,	persistCommon_rightFileOpen
 
 	; bad or non-existent index table. (Re)create it.
 	; reset index in memory	
@@ -170,11 +172,9 @@ _standardLoad_storeHandle::
 	ld		c, #BDOS_WRITE
 	call	BDOS_SYSCAL		; write index
 	or		a
-	jp nz,	_common_indexWriteFail
-	ld		a, #MNEMO_WARN_NOSEGINDEX
-	ret
+	jp nz,	persistCommon_indexWriteFail
 
-_standardLoad_rightFileOpen::
+persistCommon_rightFileOpen::
 	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
 ;	inc		hl				; (hl) = segIndex
 	ld		l, (hl)
@@ -197,7 +197,10 @@ _standardLoad_rightFileOpen::
 	or		e
 	or		d
 	or		h
-	jr z,	_standardLoad_noSegWarn
+	ld		a, #MNEMO_WARN_NOSEG
+	ret z
+
+persistCommon_searchSegInFile::
 	ex		de, hl
 	ld		a, (#fileHandle)
 	ld		b, a
@@ -205,13 +208,84 @@ _standardLoad_rightFileOpen::
 	ld		c, #BDOS_SEEK
 	call	BDOS_SYSCAL		; pointer in beginning of segment
 	or		a
-	jr nz,	_standardLoad_segReadFail
+	ret z
+
+persistCommon_badSegIndex::
+	; fix (reset) entry
+	ld		hl, (#indexAddr)
+	xor		a
+	ld		(hl), a
+	inc		hl
+	ld		(hl), a
+	inc		hl
+	ld		(hl), a
+	inc		hl
+	ld		(hl), a			; entry reset
+	call	persistCommon_saveEntry
+	ld		a, #MNEMO_ERROR_BADSEGINDEX
+	ret
+	
+persistCommon_saveEntry::
+	; point to entry
+	ld		a, (#fileHandle)
+	ld		b, a
+	xor		a
+	ld		d, a
+	ld		e, a
+	ld		hl, (#indexOffset)
+	ld		c, #BDOS_SEEK
+	call	BDOS_SYSCAL
+	or		a
+	jr nz,	persistCommon_indexWriteFail
+	; write entry
+	ld		a, (#fileHandle)
+	ld		b, a
+	ld		hl, (#indexAddr)
+	ex		de, hl
+	ld		hl, #4
+	ld		c, #BDOS_WRITE
+	call	BDOS_SYSCAL		; write index
+	or		a
+	ret z
+
+persistCommon_indexWriteFail::
+	ld		a, #MNEMO_ERROR_IDXWRITEFAIL
+	ret
+
+
+; ----------------------------------------------------------------
+; ----------------------- ENGINE ---------------------------------
+; ----------------------------------------------------------------
+
+; ----------------------------------------------------------------
+;	- Standard segment load routine for MnemoSine-X
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - A:  0  = Success
+;		  >0 = Error
+;
+; CHANGES:
+;   - All registers, di
+; ----------------------------------------------------------------
+_standardLoad::
+	call	persistCommon
+	ret nz
 
 _standardLoad_readSegment::
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#usePrimaryMapperOnly)
 	or		a
-	jr nz,	_standardLoad_readOnPrimaryMapper
+	jr nz,	_standardLoad_readToMainPage
+
+	; check whether seg is on primary mapper anyway
+	ld		a, (#mapperSlot)
+	and		#~MNEMO_ALLOC_MASK
+	ld		hl, #primaryMapperSlot
+	or		(hl)
+	jr z,	_standardLoad_readToMainPage
 
 	ld		hl, #bufferSegment
 	call	_switchAuxPage
@@ -220,7 +294,7 @@ _standardLoad_readSegment::
 	jr		_standardLoad_doRead
 .endif
 
-_standardLoad_readOnPrimaryMapper:
+_standardLoad_readToMainPage:
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardLoad_doRead::
@@ -238,56 +312,109 @@ _standardLoad_doRead::
 .endif
 	or		a
 	ret z
-
-_standardLoad_segReadFail::
 	ld		a, #MNEMO_ERROR_SEGREADFAIL
 	ret
 
-_standardLoad_noSegWarn::
-	ld		a, #MNEMO_WARN_NOSEG
-	ret
+; ----------------------------------------------------------------
+;	- Standard segment save routine for MnemoSine-X
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - A:  0  = Success
+;		  >0 = Error
+;
+; CHANGES:
+;   - All registers, di
+; ----------------------------------------------------------------
+_standardSave::
+	; assert seg is marked as readwrite
+	ld		a, (#MNEMO_SEGHDR_SEGMODE)
+	and		#MNEMO_SEGMODE_MASK
+	cp		#MNEMO_SEGMODE_READWRITE
+	ld		a, #MNEMO_ERROR_READONLYSEG
+	ret nz
 
-_standardLoad_badSegIndex::
-	; fix (reset) entry
-	ld		hl, (#indexAddr)
-	xor		a
-	ld		(hl), a
-	inc		hl
-	ld		(hl), a
-	inc		hl
-	ld		(hl), a
-	inc		hl
-	ld		(hl), a			; entry reset
-	call	saveEntry
-	ld		a, #MNEMO_ERROR_BADSEGINDEX
-	ret
+	call	persistCommon
+	ld		(#temp1), a
+	or		a
+	jr z,	_standardSave_saveSegment
+	cp		#MNEMO_WARN_NOSEG
+	ret nz
 
-saveEntry::
-	; point to entry
+	; first time saving this segment. Go to EOF
 	ld		a, (#fileHandle)
 	ld		b, a
-	xor		a
-	ld		d, a
-	ld		e, a
-	ld		hl, (#indexOffset)
+	ld		d, #0
+	ld		e, d
+	ld		h, d
+	ld		l, d
+	ld		a, #2
 	ld		c, #BDOS_SEEK
 	call	BDOS_SYSCAL
+	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
+	ret nz
+
+	; temporarily save offset
+	ld		b, h
+	ld		c, l
+	ld		hl, #temp4
+	ld		(hl), e
+	inc		hl
+	ld		(hl), d
+	inc		hl
+	ld		(hl), c
+	inc		hl
+	ld		(hl), b
+
+_standardSave_saveSegment::
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		a, (#usePrimaryMapperOnly)
 	or		a
-	jr nz,	_common_indexWriteFail
-	; write entry
+	jr nz,	_standardSave_saveFromMainPage
+
+	; check whether seg is on primary mapper anyway
+	ld		a, (#mapperSlot)
+	and		#~MNEMO_ALLOC_MASK
+	ld		hl, #primaryMapperSlot
+	or		(hl)
+	jr z,	_standardSave_saveFromMainPage
+
+	ld		hl, #bufferSegment
+	call	_switchAuxPage
+
+	ld		de, #MNEMO_AUX_SEGPAYLOAD
+	ld		hl, #MNEMO_MAIN_SEGPAYLOAD
+	ld		bc, #1024*16 - MNEMO_SEG_HEADER_SIZE
+	ldir
+
+	ld		de, #MNEMO_AUX_SEGPAYLOAD
+	jr		_standardSave_doSave
+.endif
+
+_standardSave_saveFromMainPage:
+	ld		de, #MNEMO_MAIN_SEGPAYLOAD
+
+_standardSave_doSave::
+	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ld		a, (#fileHandle)
 	ld		b, a
-	ld		hl, (#indexAddr)
-	ex		de, hl
-	ld		hl, #4
 	ld		c, #BDOS_WRITE
-	call	BDOS_SYSCAL		; write index
+	call	BDOS_SYSCAL		; pointer in beginning of segment
+	or		a
+	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
+	ret nz	
+	ld		a, (#temp1)
 	or		a
 	ret z
 
-_common_indexWriteFail::
-	ld		a, #MNEMO_ERROR_IDXWRITEFAIL
-	ret
+_standardSave_saveIndex::
+	ld		de, (#indexAddr)
+	ld		hl, #temp4
+	ld		bc, #4
+	ldir
+	jp		persistCommon_saveEntry
 
 fileHandle::				.db		#0xff
 fileName::					.ascii	'THETRIAL'
@@ -301,3 +428,5 @@ fileExtension::				.asciz	'.___'
 segTable::					.ds		256 * 4
 indexOffset::				.ds		2
 indexAddr::					.ds		2
+temp1::						.ds		1
+temp4::						.ds		4
