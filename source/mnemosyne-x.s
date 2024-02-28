@@ -107,7 +107,7 @@ mnemo_allocationInitialServices::
 	; copy logSegHandler to page 3
 	ld		de, #logSegHandler
 	ld		bc, #(logSegHandler_end - logSegHandler)
-	ld		hl, (#pLogSegHandler)
+;	ld		hl, (#pLogSegHandler)
 	ldir
 
 	ld		hl, #auxSegHandlerTemp
@@ -586,12 +586,13 @@ _activateLogSeg_checkReadMode::
 	ld		a, (#logSegMode)
 	ld		b, a
 	and		#3
-	jr z,	_activateLogSeg_end					; Mode 0 (TEMPMEM): no load
+	jr z,	_activateLogSeg_restoreAuxSeg		; Mode 0 (TEMPMEM): no load
 	cp		#MNEMO_SEGMODE_FORCEDREAD
 	jr z,	_activateLogSeg_load				; Mode 2 (FORCEREAD): load 
 	ld		a, (#logSegLoaded)					; Mode 1 (READ) or 3 (READWRITE)
 	or		a									;	If segment in memory,
-	jr nz,	_activateLogSeg_end					;	no load.
+	ld		a, #0
+	jr nz,	_activateLogSeg_restoreAuxSeg		;	no load.
 
 _activateLogSeg_load:
 	; check if custom load routine
@@ -600,7 +601,7 @@ _activateLogSeg_load:
 	jr z,	_activateLogSeg_standardLoad
 	
 	; custom load
-	ld		hl, #_activateLogSeg_end
+	ld		hl, #_activateLogSeg_restoreAuxSeg
 	push	hl						; return point
 	ld		hl, (#pLoadSeg)
 	ld		e, (hl)
@@ -610,19 +611,27 @@ _activateLogSeg_load:
 ;	push	de						; prepare call
 	ret								; call de (THIS IS NOT A REAL RET!)
 
-_activateLogSeg_standardLoad:
+_activateLogSeg_standardLoad::
 	call	_standardLoad
 
-_activateLogSeg_end:
+_activateLogSeg_restoreAuxSeg::
+	push	af
 	ld		hl, #auxSegHandlerTemp
 	call	_switchAuxPage
+	pop		af
+	or		a
+	jr z,	_activateLogSeg_updateLogSegHandler
+	cp		#MNEMO_ERROR_SEGREADFAIL
+	jr nz,	_activateLogSeg_end
 
+_activateLogSeg_updateLogSegHandler::
 	; update logSegHandler from page 3
 	ld		hl, #logSegHandler
 	ld		de, (pLogSegHandler)
 	ld		bc, #(logSegHandler_params - logSegHandler)
 	ldir
 
+_activateLogSeg_end::
 	pop		ix
 	ret
 
@@ -692,7 +701,7 @@ mnemo_releaseLogSegHL_cont::
 	cp		e
 	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
 
-	; update release priority
+	; update release priority in temp structure
 	exx
 	ld		hl, #releasePriority
 	or		(hl)
@@ -710,7 +719,6 @@ mnemo_releaseLogSegHL_cont::
 
 	pop		ix
 	ret
-
 
 mnemo_releaseLogSegHL_outdatedSegHandler::
 	ld		a, #MNEMO_WARN_OUTDATEDPSEGHANDLER

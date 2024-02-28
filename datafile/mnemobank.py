@@ -48,8 +48,14 @@ class MnemoBank:
                 index=index+segSize.to_bytes(4, "little")
             else:
                 pos = len(data)+1024
-                bPos = pos.to_bytes(4, "little")
-                index=index+bPos
+                posLo = pos & 0xffff
+                posHi = pos >> 16
+                bPosLo = posLo.to_bytes(2, "little")
+                bPosHi = posHi.to_bytes(2, "little")
+#                print (f"{hex (pos)}, {hex(posLo)}, {hex(posHi)}")
+                index = index + bPosHi + bPosLo
+#                bPos = pos.to_bytes(4, "little")
+#                index=index+bPos
                 data=data+segment.getData()
 
         data=index+data

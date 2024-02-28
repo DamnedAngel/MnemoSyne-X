@@ -110,7 +110,6 @@ persistCommon_fileClosed::
 persistCommon_openFile::
 	ld		de, #fileName
 	xor		a
-	ld		b, a
 	ld		c, #BDOS_OPEN
 	call	BDOS_SYSCAL
 	or		a
@@ -201,7 +200,7 @@ persistCommon_rightFileOpen::
 	ret z
 
 persistCommon_searchSegInFile::
-	ex		de, hl
+;	ex		de, hl
 	ld		a, (#fileHandle)
 	ld		b, a
 	xor		a
@@ -284,7 +283,8 @@ _standardLoad_readSegment::
 	ld		a, (#mapperSlot)
 	and		#~MNEMO_ALLOC_MASK
 	ld		hl, #primaryMapperSlot
-	or		(hl)
+	sub		(hl)
+	ld		(#isSecondaryMapper), a
 	jr z,	_standardLoad_readToMainPage
 
 	ld		hl, #bufferSegment
@@ -294,7 +294,7 @@ _standardLoad_readSegment::
 	jr		_standardLoad_doRead
 .endif
 
-_standardLoad_readToMainPage:
+_standardLoad_readToMainPage::
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardLoad_doRead::
@@ -303,16 +303,20 @@ _standardLoad_doRead::
 	ld		b, a
 	ld		c, #BDOS_READ
 	call	BDOS_SYSCAL		; pointer in beginning of segment
+	ld		a, #MNEMO_ERROR_SEGREADFAIL
+	ret nz
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		a, (#isSecondaryMapper)
+	or		a
+	jr z,	_standardLoad_end
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 	ld		hl, #MNEMO_AUX_SEGPAYLOAD
 	ld		bc, #1024*16 - MNEMO_SEG_HEADER_SIZE
 	ldir
+_standardLoad_end::
 .endif
-	or		a
-	ret z
-	ld		a, #MNEMO_ERROR_SEGREADFAIL
+	xor		a
 	ret
 
 ; ----------------------------------------------------------------
@@ -378,7 +382,8 @@ _standardSave_saveSegment::
 	ld		a, (#mapperSlot)
 	and		#~MNEMO_ALLOC_MASK
 	ld		hl, #primaryMapperSlot
-	or		(hl)
+	sub		(hl)
+	ld		(#isSecondaryMapper), a
 	jr z,	_standardSave_saveFromMainPage
 
 	ld		hl, #bufferSegment
@@ -428,5 +433,6 @@ fileExtension::				.asciz	'.___'
 segTable::					.ds		256 * 4
 indexOffset::				.ds		2
 indexAddr::					.ds		2
+isSecondaryMapper::			.ds		1
 temp1::						.ds		1
 temp4::						.ds		4
