@@ -621,7 +621,7 @@ _activateLogSeg_restoreAuxSeg::
 	pop		af
 	or		a
 	jr z,	_activateLogSeg_updateLogSegHandler
-	cp		#MNEMO_ERROR_SEGREADFAIL
+	cp		#MNEMO_WARN_NOSEG
 	jr nz,	_activateLogSeg_end
 
 _activateLogSeg_updateLogSegHandler::

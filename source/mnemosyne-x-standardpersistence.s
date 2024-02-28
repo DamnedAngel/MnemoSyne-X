@@ -271,6 +271,7 @@ persistCommon_indexWriteFail::
 ; ----------------------------------------------------------------
 _standardLoad::
 	call	persistCommon
+	or		a
 	ret nz
 
 _standardLoad_readSegment::
