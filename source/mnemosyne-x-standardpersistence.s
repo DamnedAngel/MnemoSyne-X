@@ -137,6 +137,8 @@ persistCommon_fileOpenFail::
 persistCommon_storeHandle::
 	ld		a, b
 	ld		(#fileHandle), a
+	ld		a, (#MNEMO_SEGHDR_LOGSEGNUMBER + 1)
+	ld		(#bankNumber), a
 
 	; load segment index table
 	ld		de, #segTable
@@ -282,7 +284,7 @@ _standardLoad_readSegment::
 
 	; check whether seg is on primary mapper anyway
 	ld		a, (#mapperSlot)
-	and		#~MNEMO_ALLOC_MASK
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	ld		hl, #primaryMapperSlot
 	sub		(hl)
 	ld		(#isSecondaryMapper), a
@@ -324,7 +326,8 @@ _standardLoad_end::
 ;	- Standard segment save routine for MnemoSine-X
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- None
+;	- A:  0 = Dont check bank
+;		  >0 = Only save if correct bank is active
 ;
 ; OUTPUTS:
 ;   - A:  0  = Success
@@ -334,6 +337,23 @@ _standardLoad_end::
 ;   - All registers, di
 ; ----------------------------------------------------------------
 _standardSave::
+	or		a
+	jr z,	_standardSave_assertReadWrite
+
+	; check file open
+	ld		a, (#fileHandle)
+	inc		a
+	ld		a, #MNEMO_WARN_BANKNOTACTIVE
+	ret c
+
+	; check file open
+	ld		a, (#MNEMO_SEGHDR_LOGSEGNUMBER + 1)
+	ld		hl, #bankNumber
+	cp		(hl)
+	ld		a, #MNEMO_WARN_BANKNOTACTIVE
+	ret nz
+
+_standardSave_assertReadWrite::
 	; assert seg is marked as readwrite
 	ld		a, (#MNEMO_SEGHDR_SEGMODE)
 	and		#MNEMO_SEGMODE_MASK
@@ -345,7 +365,7 @@ _standardSave::
 	ld		(#temp1), a
 	or		a
 	jr z,	_standardSave_saveSegment
-	cp		#MNEMO_WARN_NOSEG
+	bit		MNEMO_ERROR_BIT, a
 	ret nz
 
 	; first time saving this segment. Go to EOF
@@ -381,7 +401,7 @@ _standardSave_saveSegment::
 
 	; check whether seg is on primary mapper anyway
 	ld		a, (#mapperSlot)
-	and		#~MNEMO_ALLOC_MASK
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	ld		hl, #primaryMapperSlot
 	sub		(hl)
 	ld		(#isSecondaryMapper), a
@@ -437,3 +457,4 @@ indexAddr::					.ds		2
 isSecondaryMapper::			.ds		1
 temp1::						.ds		1
 temp4::						.ds		4
+bankNumber::				.ds		1

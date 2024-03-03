@@ -101,7 +101,6 @@ mnemo_getSlot_secondaryShiftDone:
 ;   - All regs
 ; ----------------------------------------------------------------
 mnemo_allocationInitialServices::
-	ld		(#logSegLoaded), a
 	ld		(#pLogSegHandler), hl
 
 	; copy logSegHandler to page 3
@@ -110,8 +109,95 @@ mnemo_allocationInitialServices::
 ;	ld		hl, (#pLogSegHandler)
 	ldir
 
+mnemo_allocationInitialServices2::
+	ld		(#logSegLoaded), a
+
+mnemo_allocationInitialServices3::
 	ld		hl, #auxSegHandlerTemp
 	jp		_saveAuxPageConfig
+
+
+; ----------------------------------------------------------------
+;	- Common save
+; ----------------------------------------------------------------
+; INPUTS:
+;	- B:  0 = Dont check bank
+;		  >0 = Only save if correct bank is active
+;	- HL: pSegHandler
+;
+; OUTPUTS:
+;   - A: return code
+;	- if A = 0:
+;		- 
+;		- pSegHandler->mapperSlot marked as flushed
+;
+; CHANGES:
+;   - All regs, segment selected in Main Page
+; ----------------------------------------------------------------
+mnemo_commonSave::
+	ld		(#pSegHandler), hl
+
+	; check if ready for flushing
+	inc		hl
+	ld		a, (hl)
+	ld		c, a
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE
+	ld		a, #MNEMO_WARN_SEGINUSE
+	ret z
+	bit		MNEMO_FLUSH_BIT, c
+	ld		a, #MNEMO_WARN_ALREADYFLUSHED
+	ret nz
+
+	; activate main segment
+	dec		hl
+	call	_switchMainPage
+
+	; check whether logSegNumber is valid
+	ld		hl, (#MNEMO_SEGHDR_LOGSEGNUMBER)
+	ld		de, #0xffff
+	or		a
+	sbc		hl, de
+	ld		a, #MNEMO_WARN_INVALIDSEG
+	ret z
+
+	; check whether segment is 'writable'
+	ld		a, (#MNEMO_SEGHDR_SEGMODE)
+	ld		b, a
+	and		#MNEMO_SEGMODE_MASK
+	cp		#MNEMO_SEGMODE_READWRITE
+	ld		a, #MNEMO_WARN_NOWRITABLESEG
+	ret z
+
+	; check if custom write routine
+	ld		a, (#MNEMO_SEGHDR_SEGMODE)
+	bit		MNEMO_SEGMODE_CUSTOMWRITEBIT, a
+	ld		a, b
+	jr nz,	mnemo_commonSave_customSave
+	
+	; standard Save
+	call	_standardSave
+
+mnemo_commonSave_markFlushed:
+	ld		hl, (#pSegHandler)
+	inc		hl
+	ld		a, (hl)
+	or		#MNEMO_FLUSH
+	ld		(hl), a
+	ret
+
+mnemo_commonSave_customSave:
+	ld		hl, #mnemo_commonSave_markFlushed
+	push	hl						; prepare return
+
+	ld		hl, (#MNEMO_SEGHDR_PSAVESEG)
+	ld		e, (hl)
+	inc		hl
+	ld		d, (hl)					; de = custom save routine
+	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
+	push	de						; prepare call
+	ret								; call de (THIS IS NOT A REAL RET!)
+
 
 ; ----------------------------------------------------------------
 ; ----------------------- ENGINE ---------------------------------
@@ -218,7 +304,7 @@ _initMnemoSyneX_indexSegAllocLoop::
 
 	; segments allocation loop
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
-	ld		(#afterSegTable), hl	; not really nPhysicalSegs yet, but will be transformed into it later
+	ld		(#afterSegTable), hl
 _initMnemoSyneX_segAllocLoop::
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#mapperQueryTag)
@@ -263,6 +349,7 @@ _initMnemoSyneX_inPhysSegCounter:
 .endif
 
 _initMnemoSyneX_cont:
+	or		a
 	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
 	srl		h
@@ -405,7 +492,7 @@ _activateLogSeg::
 	add		hl, de			
 	jr nc,	_activateLogSeg_activateSegTableForSearch		; not valid
 
-	; activate setTableSegment
+	; activate segTableSegment
 	push	hl
 	ld		hl, #segTableSegment
 	call	_switchAuxPage
@@ -503,47 +590,13 @@ _activateLogSeg_activateSegment:
 	; update logSegHandler with segHandler
 	; de = p(SegHandler.mapperSlot)
 	dec		de				; de = pSegHandler
-	ex		de, hl
-	ld		(#pSegHandler), hl
-	; activate segment
-	call	_switchMainPage
+	ex		de, hl			; hl = pSegHandler
 
-	; check whether selected segment should be saved
-	; check logSegNumber
-	; TODO: compare HL to DE with SBC/sub
-	ld		hl, #MNEMO_SEGHDR_LOGSEGNUMBER
-	ld		a, #0xff
-	cp		(hl)
-	jr nz,	_activateLogSeg_checkWriteMode
-	inc		hl
-	cp		(hl)
-	jr z,	_activateLogSeg_updateSegmentHeader	; invalid segment, skip save
-_activateLogSeg_checkWriteMode:
-	ld		a, (#MNEMO_SEGHDR_SEGMODE)
-	ld		b, a
-	and		#3				; test RW mode
-	cp		#MNEMO_SEGMODE_READWRITE
-	jr nz,	_activateLogSeg_updateSegmentHeader	; no write, skip save
-
-_activateLogSeg_save:
-	; check if custom write routine
-	ld		a, b
-	and		#MNEMO_SEGMODE_CUSTOMWRITE
-	jr z,	_activateLogSeg_standardSave
-	
-	; custom save
-	ld		hl, #_activateLogSeg_updateSegmentHeader
-	push	hl						; return point
-	ld		hl, (#MNEMO_SEGHDR_PSAVESEG)
-	ld		e, (hl)
-	inc		hl
-	ld		d, (hl)					; de = custom save routine
-	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
-	push	de						; prepare call
-	ret								; call de (THIS IS NOT A REAL RET!)
-
-_activateLogSeg_standardSave:
-	call	_standardSave
+	; save
+	ld		b, #0			; dont check bank
+	call	mnemo_commonSave
+	bit		MNEMO_ERROR_BIT, a
+	jr nz,	_activateLogSeg_restoreAuxSeg
 
 _activateLogSeg_updateSegmentHeader:
 	ld		hl, (#logSegNumber)
@@ -559,7 +612,7 @@ _activateLogSeg_updateSegTable:
 	ld		(#segNumber), a
 	inc		hl
 	ld		a, (hl)
-	and		#~MNEMO_ALLOC_MASK
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	or		#MNEMO_ALLOC_INUSE		; In use
 	ld		(hl), a
 	ld		(#mapperSlot), a
@@ -619,9 +672,7 @@ _activateLogSeg_restoreAuxSeg::
 	ld		hl, #auxSegHandlerTemp
 	call	_switchAuxPage
 	pop		af
-	or		a
-	jr z,	_activateLogSeg_updateLogSegHandler
-	cp		#MNEMO_WARN_NOSEG
+	bit		MNEMO_ERROR_BIT, a
 	jr nz,	_activateLogSeg_end
 
 _activateLogSeg_updateLogSegHandler::
@@ -655,7 +706,7 @@ _activateLogSeg_noFreePhysSegError:
 ;   - None
 ;
 ; CHANGES:
-;   - A, DE, HL
+;   - All registers
 ; ----------------------------------------------------------------
 _mnemo_releaseLogSeg::
 	ex		de, hl
@@ -668,10 +719,10 @@ _mnemo_releaseLogSeg::
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - None
+;   - A: Error code
 ;
 ; CHANGES:
-;   - A, DE, HL
+;   - All registers
 ; ----------------------------------------------------------------
 mnemo_releaseLogSegHL::
 	push	ix
@@ -694,10 +745,10 @@ mnemo_releaseLogSegHL_cont::
 	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
 	inc		hl
 	ld		a, (hl)
-	and		#~MNEMO_ALLOC_MASK
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	ld		e, a
 	ld		a, (#mapperSlot)
-	and		#~MNEMO_ALLOC_MASK
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	cp		e
 	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
 
@@ -716,14 +767,111 @@ mnemo_releaseLogSegHL_cont::
 	inc		hl
 	ld		a, (#mapperSlot)
 	ld		(hl), a
+	xor		a
 
+mnemo_releaseLogSegHL_end::
+	push	af
+	ld		hl, #auxSegHandlerTemp
+	call	_switchAuxPage
+	pop		af
 	pop		ix
 	ret
 
 mnemo_releaseLogSegHL_outdatedSegHandler::
 	ld		a, #MNEMO_WARN_OUTDATEDPSEGHANDLER
+	jr		mnemo_releaseLogSegHL_end
+
+; ----------------------------------------------------------------
+;	- Releases all active segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Release priority (0 - 2)
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+_mnemo_releaseAll::
+	push	ix
+
+	call	mnemo_allocationInitialServices2
+
+	ld		hl, #segTableSegment
+	call	_switchAuxPage
+	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR + 1
+	ld		a, (#releasePriority)
+	ld		b, a
+	ld		de, (#afterSegTable)
+
+_mnemo_releaseAll_loop::
+	; check if active
+	ld		a, (hl)
+	ld		c, a
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE
+	jr nz,	_mnemo_releaseAll_next	; already released; do nothing
+	
+	; update release priority
+	ld		a, c
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
+	or		b
+	ld		(hl), a
+
+_mnemo_releaseAll_next::
+	inc		hl
+	inc		hl
+	or		a						; reset carry
+	sbc		hl, de
+	add		hl, de
+	jr c,	_mnemo_releaseAll_loop
+
+	ld		hl, #auxSegHandlerTemp
+	call	_switchAuxPage
 	pop		ix
 	ret
+
+
+; ----------------------------------------------------------------
+;	- Flushes all pending, released segments to disk
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - A: Error code
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+_mnemo_flushAll::
+	push	ix
+
+	call	mnemo_allocationInitialServices3
+
+	ld		hl, #segTableSegment
+	call	_switchAuxPage
+	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
+
+_mnemo_flushAll_loop::
+	ld		b, #0
+	push	hl
+	call	mnemo_commonSave
+	pop		hl
+	bit		MNEMO_ERROR_BIT, a
+	jr nz,	mnemo_releaseLogSegHL_end
+
+_mnemo_flush_next::
+	inc		hl
+	inc		hl
+	or		a							; reset carry
+	ld		de, (#afterSegTable)
+	sbc		hl, de
+	add		hl, de
+	jr c,	_mnemo_flushAll_loop
+
+	jp		mnemo_releaseLogSegHL_end		; same ending
 
 ; ----------------------------------------------------------------
 ;	- Enable a segment from a Segment Handler in aux page

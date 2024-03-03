@@ -10,20 +10,34 @@
 .include "mnemosyne-x_config.s"
 
 ; ----------------------------------------------------------------
-;	- Error messages
+;	- Warning codes
 ; ----------------------------------------------------------------
-MNEMO_ERROR_SUCCESS					= 0
-MNEMO_ERROR_NOINDEXSEG				= 1
-MNEMO_ERROR_SEGOUTOFRANGE			= 2
-MNEMO_ERROR_NOFREEPHYSSEG			= 3
-MNEMO_ERROR_FILEOPENFAIL			= 4
-MNEMO_WARN_NOSEG					= 5	
-MNEMO_ERROR_BADSEGINDEX				= 6
-MNEMO_ERROR_SEGREADFAIL				= 7
-MNEMO_ERROR_IDXWRITEFAIL			= 8
-MNEMO_WARN_OUTDATEDPSEGHANDLER		= 9
-MNEMO_ERROR_READONLYSEG				= 10
-MNEMO_ERROR_SEGWRITEFAIL			= 11
+MNEMO_SUCCESS						= 0x00
+
+MNEMO_WARN_NOSEG					= 0x01
+MNEMO_WARN_OUTDATEDPSEGHANDLER		= 0x02
+MNEMO_WARN_BANKNOTACTIVE			= 0x03
+MNEMO_WARN_SEGINUSE					= 0x04		; warning group 1 start. Do no split! -> ref: _mnemo_flushAll
+MNEMO_WARN_ALREADYFLUSHED			= 0x05		; warning group 1. Do no split!
+MNEMO_WARN_INVALIDSEG				= 0x06		; warning group 1. Do no split!
+MNEMO_WARN_NOWRITABLESEG			= 0x07		; warning group 1 end. Do no split!
+
+; ----------------------------------------------------------------
+;	- Error codes
+; ----------------------------------------------------------------
+MNEMO_ERROR_MASK					= 0b10000000
+MNEMO_ERROR_BIT						= 7
+
+MNEMO_ERROR_SUCCESS					= 0xb0
+MNEMO_ERROR_NOINDEXSEG				= 0x81
+MNEMO_ERROR_SEGOUTOFRANGE			= 0x82
+MNEMO_ERROR_NOFREEPHYSSEG			= 0x83
+MNEMO_ERROR_FILEOPENFAIL			= 0x84
+MNEMO_ERROR_BADSEGINDEX				= 0x85
+MNEMO_ERROR_SEGREADFAIL				= 0x86
+MNEMO_ERROR_IDXWRITEFAIL			= 0x87
+MNEMO_ERROR_READONLYSEG				= 0x88
+MNEMO_ERROR_SEGWRITEFAIL			= 0x89
 
 
 ; ----------------------------------------------------------------
@@ -38,6 +52,10 @@ MNEMO_SEGMODE_READWRITE				= 3
 
 MNEMO_SEGMODE_CUSTOMREAD			= 4
 MNEMO_SEGMODE_CUSTOMWRITE			= 8
+
+MNEMO_SEGMODE_CUSTOMREADBIT			= 2
+MNEMO_SEGMODE_CUSTOMWRITEBIT		= 3
+
 
 
 ; ----------------------------------------------------------------
@@ -60,7 +78,9 @@ MNEMO_ALLOC_KEEPPRIORITY0				= 0b00000000	; lowest priority
 MNEMO_ALLOC_KEEPPRIORITY1				= 0b00010000	
 MNEMO_ALLOC_KEEPPRIORITY2				= 0b00100000	; hightes priority
 MNEMO_ALLOC_INUSE						= 0b00110000	
+MNEMO_FLUSH								= 0b01000000
 
+MNEMO_FLUSH_BIT							= 6
 
 ; ----------------------------------------------------------------
 ;	- Segment header offsets - TO BE MOVED TO INTERFACE HEADER!
@@ -238,6 +258,20 @@ MNEMO_AUX_SEGPAYLOAD				= MNEMO_AUX_SWAP_PAGE_ADDR + MNEMO_SEGPAYLOAD_OFFSET
 ;   - A, DE, HL
 ; ----------------------------------------------------------------
 ;.globl mnemo_releaseLogSegHL
+
+; ----------------------------------------------------------------
+;	- Releases all active segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Release priority (0 - 2)
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+;.globl mnemo_releaseAll
 
 ; ----------------------------------------------------------------
 ;	- Get number of Free Physical Segments
