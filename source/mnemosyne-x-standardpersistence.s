@@ -272,6 +272,15 @@ persistCommon_indexWriteFail::
 ;   - All registers, di
 ; ----------------------------------------------------------------
 _standardLoad::
+	push	af
+	print	stdLoadMsg
+	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	call	_PrintDec
+	print	sepMsg
+	ld		hl, (#MNEMO_MAIN_SEGPAYLOAD)
+	call	 _PrintDec
+	pop		af
+
 	call	persistCommon
 	or		a
 	ret nz
@@ -301,11 +310,16 @@ _standardLoad_readToMainPage::
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardLoad_doRead::
-	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
+	push	de
+	print	loadMsg
+	pop		de
+
+	ld		hl, #MNEMO_SEGPAYLOAD_SIZE
 	ld		a, (#fileHandle)
 	ld		b, a
 	ld		c, #BDOS_READ
 	call	BDOS_SYSCAL		; pointer in beginning of segment
+	or		a
 	ld		a, #MNEMO_ERROR_SEGREADFAIL
 	ret nz
 
@@ -315,10 +329,16 @@ _standardLoad_doRead::
 	jr z,	_standardLoad_end
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 	ld		hl, #MNEMO_AUX_SEGPAYLOAD
-	ld		bc, #1024*16 - MNEMO_SEG_HEADER_SIZE
+	ld		bc, #MNEMO_SEGPAYLOAD_SIZE
 	ldir
 _standardLoad_end::
 .endif
+	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	call	_PrintDec
+	print	sepMsg
+	ld		hl, (#MNEMO_MAIN_SEGPAYLOAD)
+	call	 _PrintDec
+
 	xor		a
 	ret
 
@@ -337,6 +357,15 @@ _standardLoad_end::
 ;   - All registers, di
 ; ----------------------------------------------------------------
 _standardSave::
+	push	af
+	print	stdSaveMsg
+	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
+	call	_PrintDec
+	print	sepMsg
+	ld		hl, (#MNEMO_MAIN_SEGPAYLOAD)
+	call	 _PrintDec
+	pop		af
+
 	or		a
 	jr z,	_standardSave_assertReadWrite
 
@@ -369,6 +398,7 @@ _standardSave_assertReadWrite::
 	ret nz
 
 	; first time saving this segment. Go to EOF
+	print	seekMsg
 	ld		a, (#fileHandle)
 	ld		b, a
 	ld		d, #0
@@ -404,7 +434,6 @@ _standardSave_saveSegment::
 	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	ld		hl, #primaryMapperSlot
 	sub		(hl)
-	ld		(#isSecondaryMapper), a
 	jr z,	_standardSave_saveFromMainPage
 
 	ld		hl, #bufferSegment
@@ -412,7 +441,7 @@ _standardSave_saveSegment::
 
 	ld		de, #MNEMO_AUX_SEGPAYLOAD
 	ld		hl, #MNEMO_MAIN_SEGPAYLOAD
-	ld		bc, #1024*16 - MNEMO_SEG_HEADER_SIZE
+	ld		bc, #MNEMO_SEGPAYLOAD_SIZE
 	ldir
 
 	ld		de, #MNEMO_AUX_SEGPAYLOAD
@@ -423,7 +452,11 @@ _standardSave_saveFromMainPage:
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardSave_doSave::
-	ld		hl, #1024*16 - MNEMO_SEG_HEADER_SIZE
+	push	de
+	print	saveMsg
+	pop		de
+
+	ld		hl, #MNEMO_SEGPAYLOAD_SIZE
 	ld		a, (#fileHandle)
 	ld		b, a
 	ld		c, #BDOS_WRITE
@@ -445,6 +478,13 @@ _standardSave_saveIndex::
 fileHandle::				.db		#0xff
 fileName::					.ascii	'THETRIAL'
 fileExtension::				.asciz	'.___'
+
+seekMsg::					.asciz	'-SEEK'
+stdSaveMsg::				.asciz	'-sSAVE-'
+saveMsg::					.asciz	'-SAVE'
+stdLoadMsg::				.asciz	'-sLOAD-'
+loadMsg::					.asciz	'-LOAD-'
+sepMsg::					.asciz	'-'
 
 ;   ==================================
 ;   ========== DATA SEGMENT ==========

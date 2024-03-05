@@ -17,10 +17,9 @@ MNEMO_SUCCESS						= 0x00
 MNEMO_WARN_NOSEG					= 0x01
 MNEMO_WARN_OUTDATEDPSEGHANDLER		= 0x02
 MNEMO_WARN_BANKNOTACTIVE			= 0x03
-MNEMO_WARN_SEGINUSE					= 0x04		; warning group 1 start. Do no split! -> ref: _mnemo_flushAll
-MNEMO_WARN_ALREADYFLUSHED			= 0x05		; warning group 1. Do no split!
-MNEMO_WARN_INVALIDSEG				= 0x06		; warning group 1. Do no split!
-MNEMO_WARN_NOWRITABLESEG			= 0x07		; warning group 1 end. Do no split!
+MNEMO_WARN_ALREADYFLUSHED			= 0x04
+MNEMO_WARN_INVALIDSEG				= 0x05
+MNEMO_WARN_NOWRITABLESEG			= 0x06
 
 ; ----------------------------------------------------------------
 ;	- Error codes
@@ -38,6 +37,7 @@ MNEMO_ERROR_SEGREADFAIL				= 0x86
 MNEMO_ERROR_IDXWRITEFAIL			= 0x87
 MNEMO_ERROR_READONLYSEG				= 0x88
 MNEMO_ERROR_SEGWRITEFAIL			= 0x89
+MNEMO_ERROR_SEGINUSE				= 0x8A
 
 
 ; ----------------------------------------------------------------
@@ -108,6 +108,8 @@ MNEMO_AUX_SWAP_PAGE_ADDR			= 0x4000 * MNEMO_AUX_SWAP_PAGE
 
 MNEMO_MAIN_SEGPAYLOAD				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGPAYLOAD_OFFSET
 MNEMO_AUX_SEGPAYLOAD				= MNEMO_AUX_SWAP_PAGE_ADDR + MNEMO_SEGPAYLOAD_OFFSET
+
+MNEMO_SEGPAYLOAD_SIZE				= 1024*16 - MNEMO_SEG_HEADER_SIZE
 
 
 ; ----------------------------------------------------------------

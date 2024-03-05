@@ -30,6 +30,7 @@ MDO_HOOK_IMPLEMENTATION			finalizeMnemoSyneX	_finalizeMnemoSyneX
 MDO_HOOK_IMPLEMENTATION			activateLogSeg		_activateLogSeg
 MDO_HOOK_IMPLEMENTATION			mnemo_releaseLogSeg	_mnemo_releaseLogSeg
 MDO_HOOK_IMPLEMENTATION			mnemo_releaseAll	_mnemo_releaseAll
+MDO_HOOK_IMPLEMENTATION			mnemo_flushAll		_mnemo_flushAll
 MDO_HOOK_IMPLEMENTATION			switchMainPage		_switchMainPage
 MDO_HOOK_IMPLEMENTATION			switchAuxPage		_switchAuxPage
 
