@@ -884,7 +884,15 @@ _mnemo_flush_next::
 	add		hl, de
 	jr c,	_mnemo_flushAll_loop
 
-	jp		mnemo_releaseLogSegHL_end		; same ending
+	; Ensure last files buffers are written to disk
+	ld		a, (#fileHandle)
+	ld		b, a
+	ld		c, #BDOS_ENSURE
+	call	BDOS_SYSCAL
+	or		a
+	jr z,	mnemo_releaseLogSegHL_end		; same ending
+	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
+	jr		mnemo_releaseLogSegHL_end		; same ending
 
 ; ----------------------------------------------------------------
 ;	- Enable a segment from a Segment Handler in aux page

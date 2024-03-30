@@ -37,7 +37,7 @@ MNEMO_ERROR_SEGREADFAIL				= 0x86
 MNEMO_ERROR_IDXWRITEFAIL			= 0x87
 MNEMO_ERROR_READONLYSEG				= 0x88
 MNEMO_ERROR_SEGWRITEFAIL			= 0x89
-MNEMO_ERROR_SEGINUSE				= 0x8A
+MNEMO_ERROR_SEGINUSE				= 0x04
 
 
 ; ----------------------------------------------------------------

@@ -272,15 +272,6 @@ persistCommon_indexWriteFail::
 ;   - All registers, di
 ; ----------------------------------------------------------------
 _standardLoad::
-	push	af
-	print	stdLoadMsg
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
-	call	_PrintDec
-	print	sepMsg
-	ld		hl, (#MNEMO_MAIN_SEGPAYLOAD)
-	call	 _PrintDec
-	pop		af
-
 	call	persistCommon
 	or		a
 	ret nz
@@ -310,10 +301,6 @@ _standardLoad_readToMainPage::
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardLoad_doRead::
-	push	de
-	print	loadMsg
-	pop		de
-
 	ld		hl, #MNEMO_SEGPAYLOAD_SIZE
 	ld		a, (#fileHandle)
 	ld		b, a
@@ -333,12 +320,6 @@ _standardLoad_doRead::
 	ldir
 _standardLoad_end::
 .endif
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
-	call	_PrintDec
-	print	sepMsg
-	ld		hl, (#MNEMO_MAIN_SEGPAYLOAD)
-	call	 _PrintDec
-
 	xor		a
 	ret
 
@@ -357,15 +338,6 @@ _standardLoad_end::
 ;   - All registers, di
 ; ----------------------------------------------------------------
 _standardSave::
-	push	af
-	print	stdSaveMsg
-	ld		hl, (#MNEMO_MAIN_SWAP_PAGE_ADDR)
-	call	_PrintDec
-	print	sepMsg
-	ld		hl, (#MNEMO_MAIN_SEGPAYLOAD)
-	call	 _PrintDec
-	pop		af
-
 	or		a
 	jr z,	_standardSave_assertReadWrite
 
@@ -398,7 +370,6 @@ _standardSave_assertReadWrite::
 	ret nz
 
 	; first time saving this segment. Go to EOF
-	print	seekMsg
 	ld		a, (#fileHandle)
 	ld		b, a
 	ld		d, #0
@@ -452,10 +423,6 @@ _standardSave_saveFromMainPage:
 	ld		de, #MNEMO_MAIN_SEGPAYLOAD
 
 _standardSave_doSave::
-	push	de
-	print	saveMsg
-	pop		de
-
 	ld		hl, #MNEMO_SEGPAYLOAD_SIZE
 	ld		a, (#fileHandle)
 	ld		b, a
@@ -478,13 +445,6 @@ _standardSave_saveIndex::
 fileHandle::				.db		#0xff
 fileName::					.ascii	'THETRIAL'
 fileExtension::				.asciz	'.___'
-
-seekMsg::					.asciz	'-SEEK'
-stdSaveMsg::				.asciz	'-sSAVE-'
-saveMsg::					.asciz	'-SAVE'
-stdLoadMsg::				.asciz	'-sLOAD-'
-loadMsg::					.asciz	'-LOAD-'
-sepMsg::					.asciz	'-'
 
 ;   ==================================
 ;   ========== DATA SEGMENT ==========
