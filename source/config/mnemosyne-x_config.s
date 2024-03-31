@@ -13,5 +13,4 @@
 MNEMO_MAIN_SWAP_PAGE				= 2									; Either 1 or 2. Anything else means 2.
 MNEMO_INDEX_SEGMENTS				= 1									; 1 (8kSegs/128Mb) to 8 (64ksegs/1Gb)
 MNEMO_PRIMARY_MAPPER_ONLY			= 0									; 1 ignores secondary mappers
-MNEMO_MAX_PHYSICAL_SEGMENTS			= 0									; 0 = unlimited
-
+MNEMO_MAX_PHYSICAL_SEGMENTS			= 3072								; 3072 (48Mb) = max. Anything above this will default to 3072

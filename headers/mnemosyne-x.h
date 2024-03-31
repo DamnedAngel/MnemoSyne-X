@@ -25,8 +25,6 @@ typedef struct {
 	void* pLogSegTableItem;
 	unsigned int logSegNumber;
 	unsigned char segMode;
-	LoadSeg pLoadSeg;
-	SaveSeg pSaveSeg;
 } LOGSEGHANDLER;
 
 /*

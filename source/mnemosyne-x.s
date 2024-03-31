@@ -176,12 +176,7 @@ mnemo_commonSave::
 	ret nz
 
 	; check if custom write routine
-	bit		MNEMO_SEGMODE_CUSTOMWRITEBIT, b
-	ld		a, (#checkBank)
-	jr nz,	mnemo_commonSave_customSave
-	
-	; standard Save
-	call	_standardSave
+	call	MNEMO_SEGHDR_SAVEHOOK
 
 mnemo_commonSave_markFlushed:
 	or		a
@@ -196,18 +191,6 @@ mnemo_commonSave_markFlushed:
 	ld		(hl), a
 	xor		a
 	ret
-
-mnemo_commonSave_customSave:
-	ld		hl, #mnemo_commonSave_markFlushed
-	push	hl						; prepare return
-
-	ld		hl, (#MNEMO_SEGHDR_PSAVESEG)
-	ld		e, (hl)
-	inc		hl
-	ld		d, (hl)					; de = custom save routine
-	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
-	push	de						; prepare call
-	ret								; call de (THIS IS NOT A REAL RET!)
 
 
 ; ----------------------------------------------------------------
@@ -313,6 +296,16 @@ _initMnemoSyneX_indexSegAllocLoop::
 	ld		hl, #segTableSegment
 	call	_switchAuxPage
 
+_initMnemoSyneX_initBankPersistTable::
+	ld		hl, #_standardLoad
+	ld		(#MNEMO_BANK_PERSISTENCE_TABLE), hl
+	ld		hl, #_standardSave
+	ld		(#MNEMO_BANK_PERSISTENCE_TABLE+2), hl
+	ld		hl, #MNEMO_BANK_PERSISTENCE_TABLE
+	ld		de, #MNEMO_BANK_PERSISTENCE_TABLE + 4
+	ld		bc, #(MNEMO_NUM_BANKS * 4) - 4
+	ldir
+
 	; segments allocation loop
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
 	ld		(#afterSegTable), hl
@@ -334,11 +327,16 @@ _initMnemoSyneX_segAllocLoop::
 	inc		hl
 	ld		(hl), d
 
-	; mark segment's header with logSegNumber = 0xffff (invalid) ;;'
+	; mark segment header with logSegNumber = 0xffff (invalid)
 	dec		hl						; hl = pSegHandler
 	call	_switchMainPage
 	ld		hl, #0xffff				; invalid logSegNumber
 	ld		(#MNEMO_MAIN_SWAP_PAGE_ADDR), hl	; mark
+
+	; set hooks jp in segment header
+	ld		a, #0xc3				; jp
+	ld		(#MNEMO_SEGHDR_LOADHOOK), a
+	ld		(#MNEMO_SEGHDR_SAVEHOOK), a
 
 _initMnemoSyneX_printDash:
 	ld		a, #'-'
@@ -349,15 +347,11 @@ _initMnemoSyneX_inPhysSegCounter:
 	inc		hl						; next table entry
 	inc		hl
 	ld		(#afterSegTable), hl
-.ifeq MNEMO_MAX_PHYSICAL_SEGMENTS
-	jr  	_initMnemoSyneX_segAllocLoop
-.else
 	ld		de, #MNEMO_MAX_PSEGHANDLE
 	or		a
 	sbc		hl, de
 	add		hl, de
 	jr c, 	_initMnemoSyneX_segAllocLoop
-.endif
 
 _initMnemoSyneX_cont:
 	or		a
@@ -587,7 +581,7 @@ _activateLogSeg_searchLoop_cont2:
 	exx
 	dec		bc
 	ld		a, b
-	or		c				; all table positions were checked?
+	or		c					; all table positions were checked?
 	exx
 	jr nz,	_activateLogSeg_searchLoop	; not yet, continue search
 
@@ -599,12 +593,12 @@ _activateLogSeg_searchLoop_cont2:
 _activateLogSeg_activateSegment:
 	; update logSegHandler with segHandler
 	; de = p(SegHandler.mapperSlot)
-	dec		de				; de = pSegHandler
-	ex		de, hl			; hl = pSegHandler
+	dec		de					; de = pSegHandler
+	ex		de, hl				; hl = pSegHandler
 
 	; save
-	xor		a			; dont check bank
-	call	mnemo_commonSave
+	xor		a					; dont check bank
+	call	mnemo_commonSave	; activate main seg and save if needed
 	bit		MNEMO_ERROR_BIT, a
 	jr nz,	_activateLogSeg_restoreAuxSeg
 
@@ -615,8 +609,6 @@ _activateLogSeg_updateSegmentHeader:
 _activateLogSeg_updateSegmentMode:
 	ld		a, (#logSegMode)
 	ld		(#MNEMO_SEGHDR_SEGMODE), a
-	ld		hl, (#pSaveSeg)
-	ld		(#MNEMO_SEGHDR_PSAVESEG), hl
 
 _activateLogSeg_updateSegTable:
 	ld		hl, (#pSegHandler)
@@ -629,8 +621,23 @@ _activateLogSeg_updateSegTable:
 	ld		(hl), a
 	ld		(#mapperSlot), a
 
-_activateLogSeg_updateUsedSegs::
+_activateLogSeg_updatePersistence:
 	exx									; backup
+	ld		a, (#MNEMO_SEGHDR_LOGSEGNUMBER + 1)
+	ld		l, a
+	ld		h, #0
+	add		hl, hl
+	add		hl, hl
+	ld		de, #MNEMO_BANK_PERSISTENCE_TABLE
+	add		hl, de
+	ld		de, #MNEMO_SEGHDR_PLOADSEG
+	ld		bc, #2
+	ldir
+	inc		de
+	ld		c, #2
+	ldir
+
+_activateLogSeg_updateUsedSegs::
 	ld		hl, (#_nPhysicalSegsInUse)
 	inc		hl
 	ld		(#_nPhysicalSegsInUse), hl
@@ -648,7 +655,6 @@ _activateLogSeg_updateLogSegTable:
 
 _activateLogSeg_checkReadMode::
 	ld		a, (#logSegMode)
-	ld		b, a
 	and		#3
 	jr z,	_activateLogSeg_restoreAuxSeg		; Mode 0 (TEMPMEM): no load
 	cp		#MNEMO_SEGMODE_FORCEDREAD
@@ -659,24 +665,7 @@ _activateLogSeg_checkReadMode::
 	jr nz,	_activateLogSeg_restoreAuxSeg		;	no load.
 
 _activateLogSeg_load:
-	; check if custom load routine
-	ld		a, b
-	and		#MNEMO_SEGMODE_CUSTOMREAD
-	jr z,	_activateLogSeg_standardLoad
-	
-	; custom load
-	ld		hl, #_activateLogSeg_restoreAuxSeg
-	push	hl						; return point
-	ld		hl, (#pLoadSeg)
-	ld		e, (hl)
-	inc		hl
-	ld		d, (hl)					; de = custom load routine
-;	ld		hl, #MNEMO_MAIN_SWAP_PAGE_ADDR
-;	push	de						; prepare call
-	ret								; call de (THIS IS NOT A REAL RET!)
-
-_activateLogSeg_standardLoad::
-	call	_standardLoad
+	call	MNEMO_SEGHDR_LOADHOOK
 
 _activateLogSeg_restoreAuxSeg::
 	push	af
@@ -739,10 +728,12 @@ mnemo_releaseLogSegHL::
 	push	ix
 
 	; assure priority <= 2
+	ld		b, a
 	and		#MNEMO_ALLOC_MASK
 	cp		#MNEMO_ALLOC_INUSE
+	ld		a, b
 	jr nz,	mnemo_releaseLogSegHL_cont
-	dec		a						; priority from 3 to 2
+	sub		#MNEMO_ALLOC_KEEPPRIORITY1		; priority from 3 to 2
 
 mnemo_releaseLogSegHL_cont::
 	call	mnemo_allocationInitialServices
@@ -776,21 +767,22 @@ mnemo_releaseLogSegHL_cont::
 	call	_switchAuxPage
 	ld		hl, (#pLogSegHandler)
 	inc		hl
-	ld		a, (#mapperSlot)			; is this needed?
+	ld		a, (#mapperSlot)
 	ld		(hl), a
 	xor		a
-
-mnemo_releaseLogSegHL_end::				
-	push	af
-	ld		hl, #auxSegHandlerTemp		; switching for the 2nd time
-	call	_switchAuxPage
-	pop		af
 	pop		ix
 	ret
 
 mnemo_releaseLogSegHL_outdatedSegHandler::
 	ld		a, #MNEMO_WARN_OUTDATEDPSEGHANDLER
-	jr		mnemo_releaseLogSegHL_end
+
+mnemo_restoreAuxPageAndReturnStatus::				
+	push	af
+	ld		hl, #auxSegHandlerTemp
+	call	_switchAuxPage
+	pop		af
+	pop		ix
+	ret
 
 ; ----------------------------------------------------------------
 ;	- Releases all active segments
@@ -873,7 +865,7 @@ _mnemo_flushAll_loop::
 	cp		#MNEMO_ERROR_SEGINUSE
 	jr z,	_mnemo_flush_next
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	mnemo_releaseLogSegHL_end
+	jr nz,	mnemo_restoreAuxPageAndReturnStatus	; same ending
 
 _mnemo_flush_next::
 	inc		hl
@@ -885,14 +877,14 @@ _mnemo_flush_next::
 	jr c,	_mnemo_flushAll_loop
 
 	; Ensure last files buffers are written to disk
-	ld		a, (#fileHandle)
+	;ld		a, (#fileHandle)
 	ld		b, a
 	ld		c, #BDOS_ENSURE
 	call	BDOS_SYSCAL
 	or		a
-	jr z,	mnemo_releaseLogSegHL_end		; same ending
+	jr z,	mnemo_restoreAuxPageAndReturnStatus		; same ending
 	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
-	jr		mnemo_releaseLogSegHL_end		; same ending
+	jr		mnemo_restoreAuxPageAndReturnStatus		; same ending
 
 ; ----------------------------------------------------------------
 ;	- Enable a segment from a Segment Handler in aux page
@@ -1061,6 +1053,68 @@ _mnemoGetUsedSegments::
 	sbc		hl, de
 	ret
 
+
+; ----------------------------------------------------------------
+;	- Set a bank to standard persistence
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Bank number
+;
+; OUTPUTS:
+;	- None
+;
+; CHANGES:
+;   - All regs
+; ----------------------------------------------------------------
+_mnemoSetStandardPersistence::
+	ld		de, #0
+	push	de
+
+
+; ----------------------------------------------------------------
+;	- Set bank persistence
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Bank number
+;	- DE: pLoadSeg
+;   - Stack: pSaveSeg
+;
+; OUTPUTS:
+;	- None
+;
+; CHANGES:
+;   - All regs
+; ----------------------------------------------------------------
+_mnemoSetPersistence::
+	; Set Segment Table segment in Aux Page
+	push	de
+	push	af
+	ld		hl, #segTableSegment
+	call	_switchAuxPage
+
+	; find	Persistence entry address
+	pop		af
+	ld		l, a
+	ld		h, #0
+	add		hl, hl
+	add		hl, hl
+	ld		de, #MNEMO_BANK_PERSISTENCE_TABLE
+	add		hl, de
+
+	pop		de			; pLoadSeg
+	ld		(hl), e
+	inc		hl
+	ld		(hl), d
+	inc		hl
+	pop		bc			; return addr
+	pop		de			; pSaveSeg - clean stack as per sdcccall 1
+	push	bc			; return addr
+	ld		(hl), e
+	inc		hl
+	ld		(hl), d
+	ret
+
+
 ; ----------------------------------------------------------------
 ;	- Strings
 ; ----------------------------------------------------------------
@@ -1135,6 +1189,4 @@ pLogSegTableItem::			.ds 2		; TODO: Check if this can be dropped from the handle
 logSegHandler_params::
 logSegNumber::				.ds 2
 logSegMode::				.ds 1
-pLoadSeg::					.ds	2
-pSaveSeg::					.ds 2
 logSegHandler_end::
