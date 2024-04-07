@@ -53,7 +53,7 @@ persistCommon_convertLSNibble::
 	and		d
 	cp		c
 	jr c,	persistCommon_convertLSNibbleSubA
-	add		a, #'A'-'0'
+	add		a, #'A'-'9'-1
 
 persistCommon_convertLSNibbleSubA::
 	add		a, b
@@ -70,7 +70,7 @@ persistCommon_convertMSNibble::
 	and		d
 	cp		c
 	jr c,	persistCommon_convertMSNibbleSubA
-	add		a, #'A'-'0'
+	add		a, #'A'-'9'-1
 
 persistCommon_convertMSNibbleSubA::
 	add		a, b
@@ -342,7 +342,7 @@ _standardSave::
 	jr z,	_standardSave_assertReadWrite
 
 	; check file open
-	ld		a, (#fileHandle)
+	ld		a, (#fileHandle)	; 0xff if file not open
 	inc		a
 	ld		a, #MNEMO_WARN_BANKNOTACTIVE
 	ret c

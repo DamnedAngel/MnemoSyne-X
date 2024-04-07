@@ -176,6 +176,7 @@ mnemo_commonSave::
 	ret nz
 
 	; check if custom write routine
+	ld		a, (#checkBank)
 	call	MNEMO_SEGHDR_SAVEHOOK
 
 mnemo_commonSave_markFlushed:
@@ -482,14 +483,14 @@ _activateLogSeg::
 	jr nz,	_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; 2. Verify whether pSegHandler >= SegTable start
-	xor		a				; clear carry flag
+	xor		a				; clear carry flag (TODO: CHECK if necessary!)
 	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
 	add		hl, de			
 	jr c,	_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; 3. Verify whether pSegHandler <= SegTable end
-	xor		a				; clear carry flag
+	xor		a				; clear carry flag  (TODO: CHECK if necessary!)
 	ex		de, hl
 	ld		hl, (#afterSegTable)
 	ex		de, hl
@@ -621,7 +622,7 @@ _activateLogSeg_updateSegTable:
 	ld		(hl), a
 	ld		(#mapperSlot), a
 
-_activateLogSeg_updatePersistence:
+_activateLogSeg_updatePersistence::
 	exx									; backup
 	ld		a, (#MNEMO_SEGHDR_LOGSEGNUMBER + 1)
 	ld		l, a
