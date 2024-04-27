@@ -97,10 +97,16 @@ persistCommon_wrongFileOpen::
 	push	de
 	call	BDOS_SYSCAL
 	pop		de
+	or		a
+	jr nz,	persistCommon_fileCloseFail
+
+	; invalidate handle
 	ld		a, #0xff
 	ld		(#fileHandle), a
 
 persistCommon_fileClosed::
+
+	
 	; adjust file extension
 	ld		hl, #fileExtension + 2
 	ld		(hl), d
@@ -118,13 +124,21 @@ persistCommon_openFile::
 	jr nz,	persistCommon_fileOpenFail
 
 persistCommon_createFile::
+	; create file
 	ld		de, #fileName
 	xor		a
 	ld		b, a
 	ld		c, #BDOS_CREATE
 	call	BDOS_SYSCAL
 	or		a
-	jr z,	persistCommon_openFile
+	jr nz,	persistCommon_fileOpenFail
+
+	; close file handle (open leaves the file handle open even if it fails)
+	ld		c, #BDOS_CLOSE
+	call	BDOS_SYSCAL
+	or		a
+	jr nz,	persistCommon_fileCloseFail
+	jr		persistCommon_openFile
 
 persistCommon_fileOpenFail::
 	ld		hl, #fileExtension + 2
@@ -132,6 +146,10 @@ persistCommon_fileOpenFail::
 	inc		hl
 	ld		(hl), #'_'
 	ld		a, #MNEMO_ERROR_FILEOPENFAIL
+	ret
+
+persistCommon_fileCloseFail::
+	ld		a, #MNEMO_ERROR_FILECLOSEFAIL
 	ret
 
 persistCommon_storeHandle::
