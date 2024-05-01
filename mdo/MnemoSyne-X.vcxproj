@@ -73,6 +73,7 @@
     <None Include="..\datafile\mnemosegment.py" />
     <None Include="..\headers\mnemosyne-x_h.s" />
     <None Include="..\headers\rammapper_h.s" />
+    <None Include="..\README.md" />
     <None Include="..\source\config\mnemosyne-x_config.s" />
     <None Include="..\source\mnemosyne-x-internal_h.s" />
     <None Include="..\source\mnemosyne-x-standardpersistence.s" />

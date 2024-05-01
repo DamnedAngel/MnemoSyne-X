@@ -6,7 +6,6 @@
 ;	Standard Persistence for MnemoSyne-X
 ; ----------------------------------------------------------------
 
-.include "msxbios.s"
 .include "mnemosyne-x-internal_h.s"
 
 .NOFIL		.equ	0xD7

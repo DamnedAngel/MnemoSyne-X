@@ -41,6 +41,9 @@
     <Filter Include="Memory Bank Builder">
       <UniqueIdentifier>{b69f69b9-feff-4e03-893a-f662429a16ae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Documentation">
+      <UniqueIdentifier>{81a7c53c-3b92-44bf-a01b-187a405a9ca1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MSX\BIOS\msxbios.h">
@@ -113,6 +116,9 @@
     </None>
     <None Include="..\source\mnemosyne-x-internal_h.s">
       <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\README.md">
+      <Filter>Documentation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

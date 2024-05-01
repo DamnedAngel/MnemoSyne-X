@@ -8,9 +8,6 @@
 
 .include "mnemosyne-x-internal_h.s"
 
-.include "printdec_h.s"
-
-
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
 ;   ==================================
@@ -1046,7 +1043,7 @@ _restorePageLayout::
 ; CHANGES:
 ;   - DE
 ; ----------------------------------------------------------------
-_mnemoGetUsedSegments::
+_mnemoGetFreeSegments::
 	__mnemoGetUsedSegments
 	ex		de, hl
 	__mnemoGetManagedSegments

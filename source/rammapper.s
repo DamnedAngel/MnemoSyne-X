@@ -4,7 +4,7 @@
 ;		Support basic mapper routines.
 ;
 ;       This file is HEAVILY based on
-;		FUSION-C's rammapper.s, by 
+;		rammapper.s from FUSION-C, by 
 ;       Eric Boez &  Fernando Garcia
 ;		(Bitvision, 2018)
 ;		https://github.com/ericb59/FUSION-C-1.3
