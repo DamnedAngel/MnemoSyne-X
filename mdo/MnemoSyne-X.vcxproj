@@ -60,7 +60,8 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\headers\mnemosyne-x.h" />
+    <ClInclude Include="..\source\mnemosyne-x.h" />
+    <ClInclude Include="..\source\mnemosyne-x_rammapper.h" />
     <ClInclude Include="MSX\BIOS\msxbios.h" />
     <ClInclude Include="printinterface.h" />
   </ItemGroup>
@@ -72,13 +73,15 @@
     <None Include="..\datafile\mnemoresource.py" />
     <None Include="..\datafile\mnemosegment.py" />
     <None Include="..\headers\mnemosyne-x_h.s" />
-    <None Include="..\headers\rammapper_h.s" />
     <None Include="..\README.md" />
-    <None Include="..\source\config\mnemosyne-x_config.s" />
-    <None Include="..\source\mnemosyne-x-internal_h.s" />
-    <None Include="..\source\mnemosyne-x-standardpersistence.s" />
+    <None Include="..\source\config\mnemosyne-x_config_h.s" />
+    <None Include="..\source\mnemosyne-x_internal_h.s" />
     <None Include="..\source\mnemosyne-x.s" />
-    <None Include="..\source\rammapper.s" />
+    <None Include="..\source\mnemosyne-x_dirty_h.s" />
+    <None Include="..\source\mnemosyne-x_general_h.s" />
+    <None Include="..\source\mnemosyne-x_rammapper.s" />
+    <None Include="..\source\mnemosyne-x_rammapper_h.s" />
+    <None Include="..\source\mnemosyne-x_standardpersistence.s" />
     <None Include="Make\make.py" />
     <None Include="Make\symbol.py" />
     <None Include="msxdosovl.s" />
@@ -101,7 +104,7 @@
     <Text Include="Config\TargetConfig_Release.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\mnemosyne-x-dirty.s" />
+    <ClCompile Include="..\source\mnemosyne-x_dirty.s" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

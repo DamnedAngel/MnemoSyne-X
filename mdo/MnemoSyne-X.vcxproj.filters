@@ -52,7 +52,10 @@
     <ClInclude Include="printinterface.h">
       <Filter>C Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\headers\mnemosyne-x.h">
+    <ClInclude Include="..\source\mnemosyne-x.h">
+      <Filter>C Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\mnemosyne-x_rammapper.h">
       <Filter>C Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -81,20 +84,11 @@
     <None Include="..\source\mnemosyne-x.s">
       <Filter>ASM Source Files</Filter>
     </None>
-    <None Include="..\source\rammapper.s">
-      <Filter>ASM Source Files</Filter>
-    </None>
-    <None Include="..\source\config\mnemosyne-x_config.s">
+    <None Include="..\source\config\mnemosyne-x_config_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
     <None Include="..\headers\mnemosyne-x_h.s">
       <Filter>ASM Header Files</Filter>
-    </None>
-    <None Include="..\headers\rammapper_h.s">
-      <Filter>ASM Header Files</Filter>
-    </None>
-    <None Include="..\source\mnemosyne-x-standardpersistence.s">
-      <Filter>ASM Source Files</Filter>
     </None>
     <None Include="..\datafile\mnemo.py">
       <Filter>Memory Bank Builder</Filter>
@@ -114,11 +108,26 @@
     <None Include="..\datafile\mnemosegment.py">
       <Filter>Memory Bank Builder</Filter>
     </None>
-    <None Include="..\source\mnemosyne-x-internal_h.s">
+    <None Include="..\source\mnemosyne-x_internal_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
     <None Include="..\README.md">
       <Filter>Documentation</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_general_h.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_dirty_h.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_rammapper_h.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_standardpersistence.s">
+      <Filter>ASM Source Files</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_rammapper.s">
+      <Filter>ASM Source Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -157,7 +166,7 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\mnemosyne-x-dirty.s">
+    <ClCompile Include="..\source\mnemosyne-x_dirty.s">
       <Filter>ASM Source Files</Filter>
     </ClCompile>
   </ItemGroup>

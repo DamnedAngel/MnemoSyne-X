@@ -1,5 +1,5 @@
 ; ----------------------------------------------------------------
-;	mnemosyne-x-internal_h.s
+;	mnemosyne-x_internal_h.s
 ; ----------------------------------------------------------------
 ;	240116 - DamnedAngel
 ; ----------------------------------------------------------------
@@ -10,8 +10,8 @@
 .include "msxbios.s"
 .include "printinterface.s"
 .include "printdec_h.s"
-.include "rammapper_h.s"
-.include "mnemosyne-x_h.s"
+.include "mnemosyne-x_rammapper_h.s"
+.include "mnemosyne-x_general_h.s"
 
 .globl _rnd16
 .globl _standardLoad
@@ -118,3 +118,50 @@ MNEMO_NUM_BANKS						= MNEMO_INDEX_SEGMENTS * 32		; (each index_segment holds 8k
 	__GetSlot MNEMO_MAIN_SWAP_PAGE
 .endm
 
+; ----------------------------------------------------------------
+;	- Get number of Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Managed Physical Segments
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+.macro	__mnemo_getManagedSegments
+	ld		de, (#_nPhysicalSegs)
+.endm
+
+; ----------------------------------------------------------------
+;	- Get Managed Physical Memory Size
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: Managed Physical Memory Size
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+.macro	__mnemo_getManagedMemorySize
+	ld		de, (#_managedMemorySize)
+.endm
+
+; ----------------------------------------------------------------
+;	- Get number of Used Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Used Managed Physical Segments
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+.macro	__mnemo_getUsedSegments
+	ld		de, (#_nPhysicalSegsInUse)
+.endm

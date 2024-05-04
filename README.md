@@ -11,23 +11,30 @@ flowchart
         direction BT
 
            subgraph Core_Headers
-                MS-X-RM_H.S["XXX rammapper_h.s"]:::asmHeader
-                MS-X-C_H.S["XXX mnemosyne-x_config.s"]:::cfgHeader
+                MS-X_RM_H.S["mnemosyne-x_rammapper_h.s"]:::asmHeader
+                MS-X_C_H.S["mnemosyne-x_config.s"]:::cfgHeader
+                MS-X_G_H.S["mnemosyne-x_general_h.s"]:::asmHeader
                 MS-X_H.S["mnemosyne-x_h.s"]:::asmHeader
-                MS-X-I_H.S["mnemosyne-x-internal_h.s"]:::asmHeader
+                MS-X_I_H.S["mnemosyne-x_internal_h.s"]:::asmHeader
+                MS-X_D_H.S["mnemosyne-x_dirty_h.s"]:::asmDirtyHeader
             end
 
             MS-X.S["mnemosyne-x.s"]:::asmSource
-            MS-X-SP.S["mnemosyne-x-standardpersistence"]:::asmSource
-            MS-X-RM.S["XXX rammapper.s"]:::asmSource
+            MS-X_SP.S["mnemosyne-x_standardpersistence"]:::asmSource
+            MS-X_RM.S["mnemosyne-x_rammapper.s"]:::asmSource
+            MS-X_D.S["mnemosyne-x_dirty.s"]:::asmDirtySource
 
-            MS-X_H.S --> MS-X-C_H.S
-            MS-X-I_H.S --> MS-X_H.S
-            MS-X-I_H.S --> MS-X-RM_H.S
+            MS-X_G_H.S --> MS-X_C_H.S
+            MS-X_H.S --> MS-X_G_H.S
+            MS-X_I_H.S --> MS-X_G_H.S
+            MS-X_I_H.S --> MS-X_RM_H.S
 
-            MS-X-RM.S ~~~ MS-X-I_H.S
-            MS-X.S --> MS-X-I_H.S
-            MS-X-SP.S --> MS-X-I_H.S
+            MS-X_RM.S ~~~ MS-X_H.S
+            MS-X.S --> MS-X_I_H.S
+            MS-X_SP.S --> MS-X_I_H.S
+            
+            MS-X_D.S ~~~ Core_Headers
+
         end
 
         subgraph Misc
@@ -49,25 +56,16 @@ flowchart
                 MDO-APPLICATIONSETTINGS.S -.-o MDO-APPLICATIONSETTINGS.TXT
             end
 
-
             MDO-CRT0["msxdosovlcrt0.s"]:::mdoSource
             MDO-MSXDOSOVL.S["msxdosovl.s"]:::mdoSource
 
             MDO-CRT0 ~~~ MDO-MSXDOSOVL.S
-
-            %% MDO-CRT0 --> MSXBIOS.S
-            %% MDO-CRT0 --> MDO-APPLICATIONSETTINGS.S
-            %% MDO-CRT0 --> MDO-TARGETCONFIG.S
-
-            %% MDO-MSXDOSOVL.S --> MSXBIOS.S
-            %% MDO-MSXDOSOVL.S --> MDO-APPLICATIONSETTINGS.S
-            %% MDO-MSXDOSOVL.S --> MDO-TARGETCONFIG.S
         end
         
         MnemoSyne-X_MDO ~~~ Misc
 
-        MS-X-I_H.S --> |"All"| Misc
-        MS-X-I_H.S --> MSXBIOS.S
+        MS-X_I_H.S --> |"All"| Misc
+        MS-X_I_H.S --> MSXBIOS.S
 
         MDO-CRT0  --> |All| MDO_Headers
         MDO-MSXDOSOVL.S  --> |All| MDO_Headers
@@ -78,6 +76,8 @@ flowchart
     classDef cfgHeader fill:#f66
     classDef asmSource fill:#f96
     classDef asmHeader fill:#fda
+    classDef asmDirtySource fill:#88f
+    classDef asmDirtyHeader fill:#aaf
     classDef cSource fill:#f32
     classDef cHeader fill:#f23
     classDef mdoSource fill:#aaa

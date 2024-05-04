@@ -6,7 +6,7 @@
 ;	MnemoSyne-X: a virtual memory system for MSX.
 ; ----------------------------------------------------------------
 
-.include "mnemosyne-x-internal_h.s"
+.include "mnemosyne-x_internal_h.s"
 
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
@@ -85,6 +85,97 @@ mnemo_getSlot_secondaryShiftDone:
 
 
 ; ----------------------------------------------------------------
+;	- Save AUX and MAIN pages configurations
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pBuffer (4 bytes)
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All secondary registers; HL+=3
+; ----------------------------------------------------------------
+mnemo_savePageLayout:
+	call	mnemo_saveAuxPageConfig
+	inc		hl
+	jr		mnemo_saveMainPageConfig
+
+; ----------------------------------------------------------------
+;	- Save Aux Page configuration
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pSegHandler
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All secondary registers; HL+=1
+; ----------------------------------------------------------------
+mnemo_saveAuxPageConfig:
+	exx
+ 	__GetSegAux
+	exx
+ 	ld		(hl), a
+ 
+	exx
+ 	__GetSlotAux
+	exx
+	inc		hl
+ 	ld		(hl), a
+ 
+	ret
+
+; ----------------------------------------------------------------
+;	- Save Main Page configuration
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pSegHandler
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All secondary registers; HL+=1
+; ----------------------------------------------------------------
+mnemo_saveMainPageConfig:
+	exx
+	__GetSegMain
+	exx
+	ld		(hl), a
+
+	exx
+	__GetSlotMain
+	exx
+	inc		hl
+	ld		(hl), a
+ 
+ 	ret
+
+
+; ----------------------------------------------------------------
+;	- Restore AUX and MAIN pages configurations
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pBuffer (4 bytes; 2 x segHandler)
+;
+; OUTPUTS:
+;   - None
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+mnemo_restorePageLayout:
+	push	hl
+	call	_mnemo_switchAuxPage
+	pop		hl
+	inc		hl
+	inc		hl
+	jp		_mnemo_switchMainPage
+	
+	
+; ----------------------------------------------------------------
 ;	- Common allocation initial services
 ; ----------------------------------------------------------------
 ; INPUTS:
@@ -97,7 +188,7 @@ mnemo_getSlot_secondaryShiftDone:
 ; CHANGES:
 ;   - All regs
 ; ----------------------------------------------------------------
-mnemo_allocationInitialServices::
+mnemo_allocationInitialServices:
 	ld		(#pLogSegHandler), hl
 
 	; copy logSegHandler to page 3
@@ -106,12 +197,12 @@ mnemo_allocationInitialServices::
 ;	ld		hl, (#pLogSegHandler)
 	ldir
 
-mnemo_allocationInitialServices2::
+mnemo_allocationInitialServices2:
 	ld		(#logSegLoaded), a
 
-mnemo_allocationInitialServices3::
+mnemo_allocationInitialServices3:
 	ld		hl, #auxSegHandlerTemp
-	jp		_saveAuxPageConfig
+	jp		mnemo_saveAuxPageConfig
 
 
 ; ----------------------------------------------------------------
@@ -131,7 +222,7 @@ mnemo_allocationInitialServices3::
 ; CHANGES:
 ;   - All regs, segment selected in Main Page
 ; ----------------------------------------------------------------
-mnemo_commonSave::
+mnemo_commonSave:
 	ld		(#pSegHandler), hl
 	ld		(#checkBank), a
 
@@ -148,7 +239,7 @@ mnemo_commonSave::
 
 	; activate main segment
 	dec		hl
-	call	_switchMainPage
+	call	_mnemo_switchMainPage
 
 	; check if segment is already flushed
 	ld		a, (#mapperSlot)
@@ -181,7 +272,7 @@ mnemo_commonSave_markFlushed:
 	ret nz
 	
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	ld		hl, (#pSegHandler)
 	inc		hl
 	ld		a, (hl)
@@ -209,7 +300,7 @@ mnemo_commonSave_markFlushed:
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_initMnemoSyneX::
+_mnemo_init::
 	push	ix
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -236,15 +327,15 @@ _initMnemoSyneX::
 
 	; save page layout
 	ld		hl, #pageConfigGlobalBuffer
-	call	_savePageLayout
+	call	mnemo_savePageLayout
 
 	; set mapper query tag
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#usePrimaryMapperOnly)
 	dec		a						; a = 0 => primary mapper only
-	jr z,	_initMnemoSyneX_setQueryTag
+	jr z,	_mnemo_init_setQueryTag
 	ld		a, #0b00100000			; Try to specified slot and, if it failed, try another slot (if any)
-_initMnemoSyneX_setQueryTag:
+_mnemo_init_setQueryTag:
 	or		(hl)					; primary mapper slot
 	ld		(#mapperQueryTag), a
 .endif
@@ -261,13 +352,13 @@ _initMnemoSyneX_setQueryTag:
 	ld		b, #MNEMO_INDEX_SEGMENTS + 1
 .endif
 
-_initMnemoSyneX_indexSegAllocLoop::
+_mnemo_init_indexSegAllocLoop:
 	exx
 	xor		a						; user segment
 	ld		l, a					; primary mapper only
 	call	_AllocateSegment		; alternate regs are preserved
 	ld		a, #MNEMO_ERROR_NOINDEXSEG
-	jp c,	_initMnemoSyneX_end		; No more available segments
+	jp c,	_mnemo_init_end		; No more available segments
 	
 	; save segHandler
 	ld		a, e
@@ -281,20 +372,20 @@ _initMnemoSyneX_indexSegAllocLoop::
 	inc		hl
 .endif
 
-	djnz	_initMnemoSyneX_indexSegAllocLoop
+	djnz	_mnemo_init_indexSegAllocLoop
 
 	print	okMsg
 
 	; allocate all available segments
 	; Note: allocate all other segments needed
-	; by the application BEFORE calling _initMnemoSyneX!
+	; by the application BEFORE calling _mnemo_init!
 	print	allocatingSegmentsMsg
 
 	; Set Segment Table segment in Aux Page
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 
-_initMnemoSyneX_initBankPersistTable::
+_mnemo_init_initBankPersistTable:
 	ld		hl, #_standardLoad
 	ld		(#MNEMO_BANK_PERSISTENCE_TABLE), hl
 	ld		hl, #_standardSave
@@ -307,7 +398,7 @@ _initMnemoSyneX_initBankPersistTable::
 	; segments allocation loop
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
 	ld		(#afterSegTable), hl
-_initMnemoSyneX_segAllocLoop::
+_mnemo_init_segAllocLoop:
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#mapperQueryTag)
 	ld		l, a					; which mappers
@@ -318,7 +409,7 @@ _initMnemoSyneX_segAllocLoop::
 .endif
 	call	_AllocateSegment
 	ld		hl, (#afterSegTable)
-	jr c,	_initMnemoSyneX_cont	; No more available segments
+	jr c,	_mnemo_init_cont	; No more available segments
 
 	; save entry in segmentTable
 	ld		(hl), e
@@ -327,7 +418,7 @@ _initMnemoSyneX_segAllocLoop::
 
 	; mark segment header with logSegNumber = 0xffff (invalid)
 	dec		hl						; hl = pSegHandler
-	call	_switchMainPage
+	call	_mnemo_switchMainPage
 	ld		hl, #0xffff				; invalid logSegNumber
 	ld		(#MNEMO_MAIN_SWAP_PAGE_ADDR), hl	; mark
 
@@ -336,11 +427,11 @@ _initMnemoSyneX_segAllocLoop::
 	ld		(#MNEMO_SEGHDR_LOADHOOK), a
 	ld		(#MNEMO_SEGHDR_SAVEHOOK), a
 
-_initMnemoSyneX_printDash:
+_mnemo_init_printDash:
 	ld		a, #'-'
 	call	printchar
 
-_initMnemoSyneX_inPhysSegCounter:
+_mnemo_init_inPhysSegCounter:
 	ld		hl, (#afterSegTable)
 	inc		hl						; next table entry
 	inc		hl
@@ -349,9 +440,9 @@ _initMnemoSyneX_inPhysSegCounter:
 	or		a
 	sbc		hl, de
 	add		hl, de
-	jr c, 	_initMnemoSyneX_segAllocLoop
+	jr c, 	_mnemo_init_segAllocLoop
 
-_initMnemoSyneX_cont:
+_mnemo_init_cont:
 	or		a
 	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
@@ -380,9 +471,9 @@ _initMnemoSyneX_cont:
 	call	_PrintDec
 	print	megaBytesMsg
 
-_initMnemoSyneX_end:
+_mnemo_init_end:
 	ld		hl, #pageConfigGlobalBuffer
-	call	_restorePageLayout
+	call	mnemo_restorePageLayout
 	pop		ix
 	ret
 
@@ -399,18 +490,79 @@ _initMnemoSyneX_end:
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_finalizeMnemoSyneX::
+_mnemo_finalize::
 	; TODO: Decide whether to deallocate segments.
 	; In principle, that is not needed, since MSX-DOS will
 	; deallocate them automatically.
 	push	ix
 	ld		hl, #pageConfigGlobalBuffer
-	call	_restorePageLayout
+	call	mnemo_restorePageLayout
 	pop		ix
 	ret
 
 
 ; ----------------------------------------------------------------
+;	- Set a bank to standard persistence
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Bank number
+;
+; OUTPUTS:
+;	- None
+;
+; CHANGES:
+;   - All regs
+; ----------------------------------------------------------------
+_mnemo_setStdPersistence::
+	ld		de, #0
+	push	de
+
+
+; ----------------------------------------------------------------
+;	- Set bank persistence
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Bank number
+;	- DE: pLoadSeg
+;   - Stack: pSaveSeg
+;
+; OUTPUTS:
+;	- None
+;
+; CHANGES:
+;   - All regs
+; ----------------------------------------------------------------
+_mnemo_setPersistence::
+	; Set Segment Table segment in Aux Page
+	push	de
+	push	af
+	ld		hl, #segTableSegment
+	call	_mnemo_switchAuxPage
+
+	; find	Persistence entry address
+	pop		af
+	ld		l, a
+	ld		h, #0
+	add		hl, hl
+	add		hl, hl
+	ld		de, #MNEMO_BANK_PERSISTENCE_TABLE
+	add		hl, de
+
+	pop		de			; pLoadSeg
+	ld		(hl), e
+	inc		hl
+	ld		(hl), d
+	inc		hl
+	pop		bc			; return addr
+	pop		de			; pSaveSeg - clean stack as per sdcccall 1
+	push	bc			; return addr
+	ld		(hl), e
+	inc		hl
+	ld		(hl), d
+	ret
+	
+	
+	; ----------------------------------------------------------------
 ;	- Activates a logical segment
 ; ----------------------------------------------------------------
 ; INPUTS:
@@ -422,7 +574,7 @@ _finalizeMnemoSyneX::
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_activateLogSeg::
+_mnemo_activateLogSeg::
 	push	ix
 	xor		a
 
@@ -449,7 +601,7 @@ _activateLogSeg::
 	ld		(#pLogSegTableItem), hl
 	
 	cp		#(MNEMO_INDEX_SEGMENTS)
-	jp nc,	_activateLogSeg_segOutOfRangeError
+	jp nc,	_mnemo_activateLogSeg_segOutOfRangeError
 
 	; activate proper logSegTableSegment
 	ld		hl, #logSegIndexTable
@@ -464,7 +616,7 @@ _activateLogSeg::
 	ld		h, a			; hl = pLogSegTableSegment
 ;.endif
 	ld		(#pLogSegTableSegment), hl
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 
 	; find pSegHandler
 	ld		hl, (#pLogSegTableItem)
@@ -477,14 +629,14 @@ _activateLogSeg::
 	; check whether pSegHandler is valid
 	; 1. Verify whether pSegHandler is even
 	and		#1
-	jr nz,	_activateLogSeg_activateSegTableForSearch		; not valid
+	jr nz,	_mnemo_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; 2. Verify whether pSegHandler >= SegTable start
 	xor		a				; clear carry flag (TODO: CHECK if necessary!)
 	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
 	sbc		hl, de
 	add		hl, de			
-	jr c,	_activateLogSeg_activateSegTableForSearch		; not valid
+	jr c,	_mnemo_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; 3. Verify whether pSegHandler <= SegTable end
 	xor		a				; clear carry flag  (TODO: CHECK if necessary!)
@@ -493,16 +645,16 @@ _activateLogSeg::
 	ex		de, hl
 	sbc		hl, de
 	add		hl, de			
-	jr nc,	_activateLogSeg_activateSegTableForSearch		; not valid
+	jr nc,	_mnemo_activateLogSeg_activateSegTableForSearch		; not valid
 
 	; activate segTableSegment
 	push	hl
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 
 	; activate target segment
 	pop		hl
-	call	_switchMainPage
+	call	_mnemo_switchMainPage
 
 	; check if target segment contains correct logSegNumber
 	; (equal to logSegHandler.logSegNumber)
@@ -511,18 +663,18 @@ _activateLogSeg::
 	ex		de, hl
 	ld		hl, (#MNEMO_SEGHDR_LOGSEGNUMBER)
 	sbc		hl, de
-	jr nz,	_activateLogSeg_searchFreeSeg		; nope
+	jr nz,	_mnemo_activateLogSeg_searchFreeSeg		; nope
 
 	; logSeg already loaded
 	ld		a, #1
 	ld		(#logSegLoaded), a
-	jp		_activateLogSeg_updateSegmentMode
+	jp		_mnemo_activateLogSeg_updateSegmentMode
 
-_activateLogSeg_activateSegTableForSearch:
+_mnemo_activateLogSeg_activateSegTableForSearch:
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 
-_activateLogSeg_searchFreeSeg:
+_mnemo_activateLogSeg_searchFreeSeg:
 	; define random starting point for free segment search
 	call	_rnd16
 	ld		a, (#_nPhysicalSegs)
@@ -535,14 +687,14 @@ _activateLogSeg_searchFreeSeg:
 	ld		b, a
 	or		a						; reset carry flag
 
-_activateLogSeg_rndLoop:
+_mnemo_activateLogSeg_rndLoop:
 	; makes random point within Segment Table
 	srl		d
 	rr		e
 	or		a						; reset carry flag
 	sla		c
 	rl		b
-	jr nc,	_activateLogSeg_rndLoop
+	jr nc,	_mnemo_activateLogSeg_rndLoop
 	sla		e
 	rl		d						; de = pSegHandler (search starting pointer) - MNEMO_AUX_SWAP_PAGE_ADDR
 	inc		de						; de = p(SegHandler.mapperSlot) - MNEMO_AUX_SWAP_PAGE_ADDR
@@ -553,42 +705,42 @@ _activateLogSeg_rndLoop:
 	ld		de, #0xffff				; invalid pSegHandler
 	ld		c, #MNEMO_ALLOC_INUSE	; best status
 
-_activateLogSeg_searchLoop:
+_mnemo_activateLogSeg_searchLoop:
 	ld		a, (hl)
 	and		#MNEMO_ALLOC_MASK		; seg status
 	cp		c
-	jr nc,	_activateLogSeg_searchLoop_cont1
+	jr nc,	_mnemo_activateLogSeg_searchLoop_cont1
 
 	; found a better candidate
 	ld		c, a
 	ld		d, h
 	ld		e, l
 	or		a						; TODO: Is this needed?!?!?!?!
-	jr z,	_activateLogSeg_activateSegment		; priority 0, position chosen
+	jr z,	_mnemo_activateLogSeg_activateSegment		; priority 0, position chosen
 
-_activateLogSeg_searchLoop_cont1:
+_mnemo_activateLogSeg_searchLoop_cont1:
 	dec		hl
 	ld		a, h
 	sub		#>MNEMO_AUX_SWAP_PAGE_ADDR
 	or		l
-	jr nz,	_activateLogSeg_searchLoop_cont2
+	jr nz,	_mnemo_activateLogSeg_searchLoop_cont2
 	ld		hl, (#afterSegTable)
 
-_activateLogSeg_searchLoop_cont2:
+_mnemo_activateLogSeg_searchLoop_cont2:
 	dec		hl	
 	exx
 	dec		bc
 	ld		a, b
 	or		c					; all table positions were checked?
 	exx
-	jr nz,	_activateLogSeg_searchLoop	; not yet, continue search
+	jr nz,	_mnemo_activateLogSeg_searchLoop	; not yet, continue search
 
 	; end of segTable
 	ld		a, c
 	cp		#MNEMO_ALLOC_INUSE
-	jp z,	_activateLogSeg_noFreePhysSegError
+	jp z,	_mnemo_activateLogSeg_noFreePhysSegError
 
-_activateLogSeg_activateSegment:
+_mnemo_activateLogSeg_activateSegment:
 	; update logSegHandler with segHandler
 	; de = p(SegHandler.mapperSlot)
 	dec		de					; de = pSegHandler
@@ -598,17 +750,17 @@ _activateLogSeg_activateSegment:
 	xor		a					; dont check bank
 	call	mnemo_commonSave	; activate main seg and save if needed
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	_activateLogSeg_restoreAuxSeg
+	jr nz,	_mnemo_activateLogSeg_restoreAuxSeg
 
-_activateLogSeg_updateSegmentHeader:
+_mnemo_activateLogSeg_updateSegmentHeader:
 	ld		hl, (#logSegNumber)
 	ld		(#MNEMO_SEGHDR_LOGSEGNUMBER), hl
 
-_activateLogSeg_updateSegmentMode:
+_mnemo_activateLogSeg_updateSegmentMode:
 	ld		a, (#logSegMode)
 	ld		(#MNEMO_SEGHDR_SEGMODE), a
 
-_activateLogSeg_updateSegTable:
+_mnemo_activateLogSeg_updateSegTable:
 	ld		hl, (#pSegHandler)
 	ld		a, (hl)
 	ld		(#segNumber), a
@@ -619,7 +771,7 @@ _activateLogSeg_updateSegTable:
 	ld		(hl), a
 	ld		(#mapperSlot), a
 
-_activateLogSeg_updatePersistence::
+_mnemo_activateLogSeg_updatePersistence:
 	exx									; backup
 	ld		a, (#MNEMO_SEGHDR_LOGSEGNUMBER + 1)
 	ld		l, a
@@ -635,14 +787,14 @@ _activateLogSeg_updatePersistence::
 	ld		c, #2
 	ldir
 
-_activateLogSeg_updateUsedSegs::
+_mnemo_activateLogSeg_updateUsedSegs:
 	ld		hl, (#_nPhysicalSegsInUse)
 	inc		hl
 	ld		(#_nPhysicalSegsInUse), hl
 	
-_activateLogSeg_updateLogSegTable:
+_mnemo_activateLogSeg_updateLogSegTable:
 	ld		hl, (#pLogSegTableSegment)
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	exx									; restore
 	dec		hl
 	ex		de, hl
@@ -651,50 +803,50 @@ _activateLogSeg_updateLogSegTable:
 	inc		hl
 	ld		(hl), d
 
-_activateLogSeg_checkReadMode::
+_mnemo_activateLogSeg_checkReadMode:
 	ld		a, (#logSegMode)
 	and		#3
-	jr z,	_activateLogSeg_restoreAuxSeg		; Mode 0 (TEMPMEM): no load
+	jr z,	_mnemo_activateLogSeg_restoreAuxSeg		; Mode 0 (TEMPMEM): no load
 	cp		#MNEMO_SEGMODE_FORCEDREAD
-	jr z,	_activateLogSeg_load				; Mode 2 (FORCEREAD): load 
+	jr z,	_mnemo_activateLogSeg_load				; Mode 2 (FORCEREAD): load 
 	ld		a, (#logSegLoaded)					; Mode 1 (READ) or 3 (READWRITE)
 	or		a									;	If segment in memory,
 	ld		a, #0
-	jr nz,	_activateLogSeg_restoreAuxSeg		;	no load.
+	jr nz,	_mnemo_activateLogSeg_restoreAuxSeg		;	no load.
 
-_activateLogSeg_load:
+_mnemo_activateLogSeg_load:
 	call	MNEMO_SEGHDR_LOADHOOK
 
-_activateLogSeg_restoreAuxSeg::
+_mnemo_activateLogSeg_restoreAuxSeg:
 	push	af
 	ld		hl, #auxSegHandlerTemp
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	pop		af
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	_activateLogSeg_end
+	jr nz,	_mnemo_activateLogSeg_end
 
-_activateLogSeg_updateLogSegHandler::
+_mnemo_activateLogSeg_updateLogSegHandler:
 	; update logSegHandler from page 3
 	ld		hl, #logSegHandler
 	ld		de, (pLogSegHandler)
 	ld		bc, #(logSegHandler_params - logSegHandler)
 	ldir
 
-_activateLogSeg_end::
+_mnemo_activateLogSeg_end:
 	pop		ix
 	ret
 
-_activateLogSeg_segOutOfRangeError:
+_mnemo_activateLogSeg_segOutOfRangeError:
 	ld		a, #MNEMO_ERROR_SEGOUTOFRANGE
-	jr		_activateLogSeg_end
+	jr		_mnemo_activateLogSeg_end
 
-_activateLogSeg_noFreePhysSegError:
+_mnemo_activateLogSeg_noFreePhysSegError:
 	ld		a, #MNEMO_ERROR_NOFREEPHYSSEG
-	jr		_activateLogSeg_end
+	jr		_mnemo_activateLogSeg_end
 
 
 ; ----------------------------------------------------------------
-;	- Releases segment from a logSegHandler pointed by DE
+;	- Releases segment from a logSegHandler pointed by DE (SDCCCALL(1))
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- A: Release priority (0 - 2)
@@ -733,12 +885,12 @@ mnemo_releaseLogSegHL::
 	jr nz,	mnemo_releaseLogSegHL_cont
 	sub		#MNEMO_ALLOC_KEEPPRIORITY1		; priority from 3 to 2
 
-mnemo_releaseLogSegHL_cont::
+mnemo_releaseLogSegHL_cont:
 	call	mnemo_allocationInitialServices
 	
 	; assert segNumber
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	ld		hl, (#pSegHandler)
 	ld		a, (#segNumber)
 	cp		(hl)
@@ -767,7 +919,7 @@ mnemo_releaseLogSegHL_cont::
 	
 	; update release priority
 	ld		hl, #auxSegHandlerTemp
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	ld		hl, (#pLogSegHandler)
 	inc		hl
 	ld		a, (#mapperSlot)
@@ -776,13 +928,13 @@ mnemo_releaseLogSegHL_cont::
 	pop		ix
 	ret
 
-mnemo_releaseLogSegHL_outdatedSegHandler::
+mnemo_releaseLogSegHL_outdatedSegHandler:
 	ld		a, #MNEMO_WARN_OUTDATEDPSEGHANDLER
 
-mnemo_restoreAuxPageAndReturnStatus::				
+mnemo_restoreAuxPageAndReturnStatus:				
 	push	af
 	ld		hl, #auxSegHandlerTemp
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	pop		af
 	pop		ix
 	ret
@@ -805,13 +957,13 @@ _mnemo_releaseAll::
 	call	mnemo_allocationInitialServices2
 
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR + 1
 	ld		a, (#releasePriority)
 	ld		b, a
 	ld		de, (#afterSegTable)
 
-_mnemo_releaseAll_loop::
+_mnemo_releaseAll_loop:
 	; check if active
 	ld		a, (hl)
 	ld		c, a
@@ -832,7 +984,7 @@ _mnemo_releaseAll_loop::
 	ld		(#_nPhysicalSegsInUse), hl
 	exx
 
-_mnemo_releaseAll_next::
+_mnemo_releaseAll_next:
 	inc		hl
 	inc		hl
 	or		a						; reset carry
@@ -841,7 +993,7 @@ _mnemo_releaseAll_next::
 	jr c,	_mnemo_releaseAll_loop
 
 	ld		hl, #auxSegHandlerTemp
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	pop		ix
 	ret
 
@@ -864,10 +1016,10 @@ _mnemo_flushAll::
 	call	mnemo_allocationInitialServices3
 
 	ld		hl, #segTableSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
 
-_mnemo_flushAll_loop::
+_mnemo_flushAll_loop:
 	xor		a			; do not check bank
 	push	hl
 	call	mnemo_commonSave
@@ -877,7 +1029,7 @@ _mnemo_flushAll_loop::
 	bit		MNEMO_ERROR_BIT, a
 	jr nz,	mnemo_restoreAuxPageAndReturnStatus	; same ending
 
-_mnemo_flush_next::
+_mnemo_flush_next:
 	inc		hl
 	inc		hl
 	or		a							; reset carry
@@ -908,7 +1060,7 @@ _mnemo_flush_next::
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_switchAuxPage::
+_mnemo_switchAuxPage::
 	ld		a, (hl)			; segNumber
 	__PutSegAux
 
@@ -936,7 +1088,7 @@ _switchAuxPage::
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_switchMainPage::
+_mnemo_switchMainPage::
 	ld		a, (hl)			; segNumber
 	__PutSegMain
 
@@ -952,96 +1104,6 @@ _switchMainPage::
 	ret
 .endif
 
-; ----------------------------------------------------------------
-;	- Save AUX and MAIN pages configurations
-; ----------------------------------------------------------------
-; INPUTS:
-;	- HL: pBuffer (4 bytes)
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - All secondary registers; HL+=3
-; ----------------------------------------------------------------
-_savePageLayout::
-	call	_saveAuxPageConfig
-	inc		hl
-	jr		_saveMainPageConfig
-
-; ----------------------------------------------------------------
-;	- Save Aux Page configuration
-; ----------------------------------------------------------------
-; INPUTS:
-;	- HL: pSegHandler
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - All secondary registers; HL+=1
-; ----------------------------------------------------------------
-_saveAuxPageConfig::
-	exx
- 	__GetSegAux
-	exx
- 	ld		(hl), a
- 
-	exx
- 	__GetSlotAux
-	exx
-	inc		hl
- 	ld		(hl), a
- 
-	ret
-
-; ----------------------------------------------------------------
-;	- Save Main Page configuration
-; ----------------------------------------------------------------
-; INPUTS:
-;	- HL: pSegHandler
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - All secondary registers; HL+=1
-; ----------------------------------------------------------------
-_saveMainPageConfig::
-	exx
-	__GetSegMain
-	exx
-	ld		(hl), a
-
-	exx
-	__GetSlotMain
-	exx
-	inc		hl
-	ld		(hl), a
- 
- 	ret
-
-
-; ----------------------------------------------------------------
-;	- Restore AUX and MAIN pages configurations
-; ----------------------------------------------------------------
-; INPUTS:
-;	- HL: pBuffer (4 bytes; 2 x segHandler)
-;
-; OUTPUTS:
-;   - None
-;
-; CHANGES:
-;   - All registers
-; ----------------------------------------------------------------
-_restorePageLayout::
-	push	hl
-	call	_switchAuxPage
-	pop		hl
-	inc		hl
-	inc		hl
-	jp		_switchMainPage
-
 
 ; ----------------------------------------------------------------
 ;	- Get number of Managed Physical Segments
@@ -1055,8 +1117,8 @@ _restorePageLayout::
 ; CHANGES:
 ;   - Nothing
 ; ----------------------------------------------------------------
-_mnemoGetManagedSegments::
-	__mnemoGetManagedSegments
+_mnemo_getManagedSegments::
+	__mnemo_getManagedSegments
 	ret
 
 
@@ -1072,8 +1134,8 @@ _mnemoGetManagedSegments::
 ; CHANGES:
 ;   - Nothing
 ; ----------------------------------------------------------------
-_mnemoGetUsedSegments::
-	__mnemoGetUsedSegments
+_mnemo_getUsedSegments::
+	__mnemo_getUsedSegments
 	ret
 
 
@@ -1089,10 +1151,10 @@ _mnemoGetUsedSegments::
 ; CHANGES:
 ;   - DE
 ; ----------------------------------------------------------------
-_mnemoGetFreeSegments::
-	__mnemoGetManagedSegments
+_mnemo_getFreeSegments::
+	__mnemo_getManagedSegments
 	ex		de, hl
-	__mnemoGetUsedSegments
+	__mnemo_getUsedSegments
 	or		a					; reset carry flag
 	sbc		hl, de
 	ex		de, hl
@@ -1100,80 +1162,19 @@ _mnemoGetFreeSegments::
 
 
 ; ----------------------------------------------------------------
-;	- Set a bank to standard persistence
-; ----------------------------------------------------------------
-; INPUTS:
-;	- A: Bank number
-;
-; OUTPUTS:
-;	- None
-;
-; CHANGES:
-;   - All regs
-; ----------------------------------------------------------------
-_mnemoSetStandardPersistence::
-	ld		de, #0
-	push	de
-
-
-; ----------------------------------------------------------------
-;	- Set bank persistence
-; ----------------------------------------------------------------
-; INPUTS:
-;	- A: Bank number
-;	- DE: pLoadSeg
-;   - Stack: pSaveSeg
-;
-; OUTPUTS:
-;	- None
-;
-; CHANGES:
-;   - All regs
-; ----------------------------------------------------------------
-_mnemoSetPersistence::
-	; Set Segment Table segment in Aux Page
-	push	de
-	push	af
-	ld		hl, #segTableSegment
-	call	_switchAuxPage
-
-	; find	Persistence entry address
-	pop		af
-	ld		l, a
-	ld		h, #0
-	add		hl, hl
-	add		hl, hl
-	ld		de, #MNEMO_BANK_PERSISTENCE_TABLE
-	add		hl, de
-
-	pop		de			; pLoadSeg
-	ld		(hl), e
-	inc		hl
-	ld		(hl), d
-	inc		hl
-	pop		bc			; return addr
-	pop		de			; pSaveSeg - clean stack as per sdcccall 1
-	push	bc			; return addr
-	ld		(hl), e
-	inc		hl
-	ld		(hl), d
-	ret
-
-
-; ----------------------------------------------------------------
 ;	- Strings
 ; ----------------------------------------------------------------
-initializingMnemosynex::		.asciz "** MnemoSyne-X Virtual Memory **\r\n"
-mnemosynexVirtualMemSize::		.asciz "Virtual Memory Size is "
-initializingMapperMsg::			.asciz "Initializing mapper service..."
-allocatingIndexSegmentsMsg::	.asciz "Allocating index segments... "
-allocatingSegmentsMsg::			.asciz "Allocating segments...\r\n=> "
-segmentsAllocatedMsg::			.asciz " segments allocated.\r\n"
-memoryManaged1Msg::				.asciz "Managing "
-memoryManaged2Msg::				.asciz "Kbytes of physical memory.\r\n"
-megaBytesMsg::					.asciz "Mbytes.\r\n"
+initializingMnemosynex:			.asciz "** MnemoSyne-X Virtual Memory **\r\n"
+mnemosynexVirtualMemSize:		.asciz "Virtual Memory Size is "
+initializingMapperMsg:			.asciz "Initializing mapper service..."
+allocatingIndexSegmentsMsg:		.asciz "Allocating index segments... "
+allocatingSegmentsMsg:			.asciz "Allocating segments...\r\n=> "
+segmentsAllocatedMsg:			.asciz " segments allocated.\r\n"
+memoryManaged1Msg:				.asciz "Managing "
+memoryManaged2Msg:				.asciz "Kbytes of physical memory.\r\n"
+megaBytesMsg:					.asciz "Mbytes.\r\n"
 
-okMsg::							.asciz " [OK]\r\n"
+okMsg:							.asciz " [OK]\r\n"
 
 ;   ==================================
 ;   ========== DATA SEGMENT ==========
@@ -1224,14 +1225,14 @@ pageConfigGlobalBuffer::
 ;
 ; temporary logSegHandler
 ;
-pLogSegHandler::			.ds 2
-logSegHandler::
-segHandler::
-segNumber::					.ds 1
-mapperSlot::				.ds 1
-pSegHandler::				.ds 2
-pLogSegTableItem::			.ds 2		; TODO: Check if this can be dropped from the handler
-logSegHandler_params::
-logSegNumber::				.ds 2
-logSegMode::				.ds 1
-logSegHandler_end::
+pLogSegHandler:				.ds 2
+logSegHandler:
+segHandler:
+segNumber:					.ds 1
+mapperSlot:					.ds 1
+pSegHandler:				.ds 2
+pLogSegTableItem:			.ds 2		; TODO: Check if this can be dropped from the handler
+logSegHandler_params:
+logSegNumber:				.ds 2
+logSegMode:					.ds 1
+logSegHandler_end:

@@ -6,11 +6,11 @@
 ;	Standard Persistence for MnemoSyne-X
 ; ----------------------------------------------------------------
 
-.include "mnemosyne-x-internal_h.s"
+.include "mnemosyne-x_internal_h.s"
 
 .NOFIL		.equ	0xD7
 
-.globl		_switchAuxPage
+.globl		_mnemo_switchAuxPage
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 .globl		primaryMapperSlot
@@ -276,7 +276,7 @@ persistCommon_indexWriteFail::
 ; ----------------------------------------------------------------
 
 ; ----------------------------------------------------------------
-;	- Standard segment load routine for MnemoSine-X
+;	- Standard segment load routine for MnemoSyne-X
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- None
@@ -308,7 +308,7 @@ _standardLoad_readSegment::
 	jr z,	_standardLoad_readToMainPage
 
 	ld		hl, #bufferSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 
 	ld		de, #MNEMO_AUX_SEGPAYLOAD
 	jr		_standardLoad_doRead
@@ -341,7 +341,7 @@ _standardLoad_end::
 	ret
 
 ; ----------------------------------------------------------------
-;	- Standard segment save routine for MnemoSine-X
+;	- Standard segment save routine for MnemoSyne-X
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- A:  0 = Dont check bank
@@ -425,7 +425,7 @@ _standardSave_saveSegment::
 	jr z,	_standardSave_saveFromMainPage
 
 	ld		hl, #bufferSegment
-	call	_switchAuxPage
+	call	_mnemo_switchAuxPage
 
 	ld		de, #MNEMO_AUX_SEGPAYLOAD
 	ld		hl, #MNEMO_MAIN_SEGPAYLOAD
