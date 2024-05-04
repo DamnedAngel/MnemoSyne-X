@@ -215,8 +215,8 @@ _initMnemoSyneX::
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		(#usePrimaryMapperOnly), a
 .endif
-	xor		a
-	ld		(#_nPhysicalSegsInUse), a
+	ld hl,	#0
+	ld		(#_nPhysicalSegsInUse), hl
 
 	print	initializingMnemosynex
 
@@ -760,6 +760,11 @@ mnemo_releaseLogSegHL_cont::
 	ld		(hl), a
 	ld		(#mapperSlot), a
 
+	; update used segments
+	ld		hl, (#_nPhysicalSegsInUse)
+	dec		hl
+	ld		(#_nPhysicalSegsInUse), hl
+	
 	; update release priority
 	ld		hl, #auxSegHandlerTemp
 	call	_switchAuxPage
@@ -819,6 +824,13 @@ _mnemo_releaseAll_loop::
 	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	or		b
 	ld		(hl), a
+
+	; update used segments
+	exx
+	ld		hl, (#_nPhysicalSegsInUse)
+	dec		hl
+	ld		(#_nPhysicalSegsInUse), hl
+	exx
 
 _mnemo_releaseAll_next::
 	inc		hl
@@ -1032,7 +1044,41 @@ _restorePageLayout::
 
 
 ; ----------------------------------------------------------------
-;	- Get number of Free Physical Segments
+;	- Get number of Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Managed Physical Segments
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+_mnemoGetManagedSegments::
+	__mnemoGetManagedSegments
+	ret
+
+
+; ----------------------------------------------------------------
+;	- Get number of Used Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Used Managed Physical Segments
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+_mnemoGetUsedSegments::
+	__mnemoGetUsedSegments
+	ret
+
+
+; ----------------------------------------------------------------
+;	- Get number of Free Managed  Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- None
@@ -1044,11 +1090,12 @@ _restorePageLayout::
 ;   - DE
 ; ----------------------------------------------------------------
 _mnemoGetFreeSegments::
-	__mnemoGetUsedSegments
-	ex		de, hl
 	__mnemoGetManagedSegments
-	or		a					; set carry flag
+	ex		de, hl
+	__mnemoGetUsedSegments
+	or		a					; reset carry flag
 	sbc		hl, de
+	ex		de, hl
 	ret
 
 

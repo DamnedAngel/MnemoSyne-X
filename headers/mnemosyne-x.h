@@ -88,4 +88,18 @@ void releaseSeg(unsigned char priority, SEGHANDLER* pSegHandler) __sdcccall(1);
 */
 void releaseLogSeg (unsigned char priority, LOGSEGHANDLER* pSDPHandler) __sdcccall(1);
 
+/*
+; ----------------------------------------------------------------
+;	-Get number of Free Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	-None
+;
+; OUTPUTS:
+;   -None
+; ----------------------------------------------------------------
+*/
+unsigned int mnemoGetFreeSegments (void) __sdcccall(1);
+
+
 #endif	//  ____MNEMOSYNEX_H__

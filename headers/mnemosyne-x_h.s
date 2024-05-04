@@ -138,13 +138,13 @@ MNEMO_SEGPAYLOAD_SIZE				= 1024*16 - MNEMO_SEG_HEADER_SIZE
 ;	- None
 ;
 ; OUTPUTS:
-;   - None
+;   - DE: number of Managed Physical Segments
 ;
 ; CHANGES:
-;   - HL
+;   - Nothing
 ; ----------------------------------------------------------------
 .macro	__mnemoGetManagedSegments
-	ld		hl, (#_nPhysicalSegs)
+	ld		de, (#_nPhysicalSegs)
 .endm
 
 ; ----------------------------------------------------------------
@@ -154,30 +154,31 @@ MNEMO_SEGPAYLOAD_SIZE				= 1024*16 - MNEMO_SEG_HEADER_SIZE
 ;	- None
 ;
 ; OUTPUTS:
-;   - None
+;   - DE: Managed Physical Memory Size
 ;
 ; CHANGES:
-;   - HL
+;   - Nothing
 ; ----------------------------------------------------------------
 .macro	__mnemoGetManagedMemorySize
-	ld		hl, (#_managedMemorySize)
+	ld		de, (#_managedMemorySize)
 .endm
 
 ; ----------------------------------------------------------------
-;	- Get number of Used Physical Segs
+;	- Get number of Used Managed Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- None
 ;
 ; OUTPUTS:
-;   - None
+;   - DE: number of Used Managed Physical Segments
 ;
 ; CHANGES:
-;   - HL
+;   - Nothing
 ; ----------------------------------------------------------------
 .macro	__mnemoGetUsedSegments
-	ld		hl, (#_nPhysicalSegsInUse)
+	ld		de, (#_nPhysicalSegsInUse)
 .endm
+
 
 ; ----------------------------------------------------------------
 ;	- Init MnemoSyne-X.
