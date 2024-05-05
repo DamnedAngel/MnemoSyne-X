@@ -562,7 +562,7 @@ _mnemo_setPersistence::
 	ret
 	
 	
-	; ----------------------------------------------------------------
+; ----------------------------------------------------------------
 ;	- Activates a logical segment
 ; ----------------------------------------------------------------
 ; INPUTS:
@@ -1140,16 +1140,16 @@ _mnemo_getUsedSegments::
 
 
 ; ----------------------------------------------------------------
-;	- Get number of Free Managed  Physical Segments
+;	- Get number of Free Managed Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:
 ;	- None
 ;
 ; OUTPUTS:
-;   - HL: Number of free segments
+;   - DE: Number of free segments
 ;
 ; CHANGES:
-;   - DE
+;   - HL
 ; ----------------------------------------------------------------
 _mnemo_getFreeSegments::
 	__mnemo_getManagedSegments
