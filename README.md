@@ -9,23 +9,23 @@ Damned Angel
 ---
 
 ## Introduction
-MnemoSyne-X is a Virtual Memory System developed for the MSX platform,
+**MnemoSyne-X** is a Virtual Memory System developed for the MSX platform,
 designed to provide programmers with a simple interface to manage 
 mapped RAM memory effectively and efficiently.
 
-MnemoSyne-X allows for up to 1Gb of addressable memory, divided in 65535
+**MnemoSyne-X** allows for up to 1Gb of addressable memory, divided in 65535
 segments of 16kbytes each.
 
-The objective if MnemoSyne-X is to unleash MSX RAM Mapper cababilities,
+The objective if **MnemoSyne-X** is to unleash MSX RAM Mapper cababilities,
 paving the way for innovative MSX-DOS/Nextor applications and games on
 the platform.
 
 ---
 
 ## Integration
-MnemoSyne-X is distributed with a core module integrated in an MDO
-(A DLL-like format for MSX - Please Check), as show in the diagram 
-below.
+**MnemoSyne-X** is distributed with a core module integrated in an 
+[MDO](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx),
+as show in the diagram below.
 
 ```mermaid
 flowchart
@@ -118,7 +118,7 @@ designed to be dinamycally loaded in the beginning of page 3.
 
 ### MDO
 When using MnemoSyne-X in the 
-[MDO Basics](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx),
+[MDO format](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx),
 the developer must create an MSX-DOS application with the MSX-DOS
 template available
 [here](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases/tag/v00.06.01)
@@ -154,7 +154,7 @@ in to learn how to configure your project to take full advantage
 of MDOs,  how to dynamically load the MDO and how to access its
 API from your application.
 
-###Inside the executable
+### Inside the executable
 In order to directly integrate MnemoSyne-X to your MSX-DOS/Nextor
 Application without MDOs, ignore the _mdo_ folder in the package,
 include the sources in the diagram above to your project, and use
@@ -182,8 +182,8 @@ Each **Databank** file will be named XXXXXXXX._NN, where:
 - NN is the 0-padded hexadecimal representation of the **Databank** number.
 
 The number of the **Databank** in which a given Logical Segment, among the
-64564 possible Logical Segments, will be stored is The Segment Number DIV
-256, or the MSByte of the (16-bit) Segment Number. Segments doesn't need
+64564 possible Logical Segments, will be stored is the Segment Number DIV
+256, or the MSByte of the (16-bit) Segment Number. Segments don't need
 to be stored in order inside a **Databank**; every **Databank** has an
 index in its beginning with the references to the Segments withing it. As
 a consequence, **Databanks** are pontentially incomplete, meaning that it
@@ -212,8 +212,8 @@ allocating them.
 
 The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
 will define which page will be considered the **MAIN** and **AUX** pages
-by **MnemoSyne-X**. Please check the CONFIGURATION SECTION in this
-documento for further info.
+by **MnemoSyne-X**. Please check the MEMORY ARCHITECTURE SECTION for
+further info.
 
 ---
 
@@ -319,6 +319,12 @@ In order to comply to SSDCCCALL(1) standard, **_mnemo_setPersistence**
 will clean pSaveSeg from the stack. The callee doesn't need to bother
 with it.
 
+Custom persistence routines are not needed in the majority of cases.
+They are, howeverm interesting to provide way of having custom 
+Databank formats (compressed segments, for instance), to allow for 
+procedural data generation (i.e. random levels for a game), or simply
+accessing different medias (mapped drives, internet access, whatever).
+
 
 ### _mnemo_activateLogSeg
 
@@ -393,7 +399,7 @@ Upon successful allocation, register A is set to 0, the remaining
 fields of the Logical Segment Handler are populated (typically, of no
 concern to the programmer), and the newly allocated segment will be
 made available for use in **MnemoSyne-X**'s MAIN page (see 
-CONFIGURATION SECTION). Any other value returned in register A
+MEMORY ARCHITECTURE SECTION). Any other value returned in register A
 indicates either failure (bit 7 set) or a warning (bit 7 reset).
 
 
