@@ -8,24 +8,14 @@
 
 
 .include "msxbios.s"
-.include "printinterface.s"
+.include "printinterface_h.s"
 .include "printdec_h.s"
+.include "random_h.s"
 .include "mnemosyne-x_rammapper_h.s"
 .include "mnemosyne-x_general_h.s"
 
-.globl _rnd16
 .globl _standardLoad
 .globl _standardSave
-
-.globl	__PutP0
-.globl	__PutP1
-.globl	__PutP2
-
-.globl	__GetP0
-.globl	__GetP1
-.globl	__GetP2
-.globl	__GetP3
-
 
 ; ----------------------------------------------------------------
 ;	- General Settings

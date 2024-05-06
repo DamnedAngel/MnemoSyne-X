@@ -7,6 +7,7 @@
 ; ----------------------------------------------------------------
 
 .include "mnemosyne-x_internal_h.s"
+.include "mnemosyne-x_stdpersist_h.s"
 
 ;   ==================================
 ;   ========== CODE SEGMENT ==========

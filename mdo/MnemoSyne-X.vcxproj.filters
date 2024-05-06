@@ -44,19 +44,31 @@
     <Filter Include="Documentation">
       <UniqueIdentifier>{81a7c53c-3b92-44bf-a01b-187a405a9ca1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ASM Header Files\Misc">
+      <UniqueIdentifier>{4ce568d3-9208-4ed2-81b4-84198671ee11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C Header Files\Misc">
+      <UniqueIdentifier>{bc55de02-fcc4-4dbf-82c2-2b34cd01d7cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ASM Source Files\Misc">
+      <UniqueIdentifier>{00fa4461-04bc-4924-b42e-a604c28de442}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MSX\BIOS\msxbios.h">
       <Filter>C Header Files\MSX\BIOS</Filter>
-    </ClInclude>
-    <ClInclude Include="printinterface.h">
-      <Filter>C Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\source\mnemosyne-x.h">
       <Filter>C Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\source\mnemosyne-x_rammapper.h">
       <Filter>C Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\misc\printdec.h">
+      <Filter>C Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\misc\printinterface.h">
+      <Filter>C Header Files\Misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -65,9 +77,6 @@
     </None>
     <None Include="Make\symbol.py">
       <Filter>Make</Filter>
-    </None>
-    <None Include="printinterface.s">
-      <Filter>ASM Header Files</Filter>
     </None>
     <None Include="Make\make.py">
       <Filter>Make</Filter>
@@ -85,9 +94,6 @@
       <Filter>ASM Source Files</Filter>
     </None>
     <None Include="..\source\config\mnemosyne-x_config_h.s">
-      <Filter>ASM Header Files</Filter>
-    </None>
-    <None Include="..\headers\mnemosyne-x_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
     <None Include="..\datafile\mnemo.py">
@@ -123,11 +129,32 @@
     <None Include="..\source\mnemosyne-x_rammapper_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
-    <None Include="..\source\mnemosyne-x_standardpersistence.s">
+    <None Include="..\source\mnemosyne-x_stdpersist.s">
       <Filter>ASM Source Files</Filter>
     </None>
     <None Include="..\source\mnemosyne-x_rammapper.s">
       <Filter>ASM Source Files</Filter>
+    </None>
+    <None Include="..\misc\printdec_h.s">
+      <Filter>ASM Header Files\Misc</Filter>
+    </None>
+    <None Include="..\misc\printinterface_h.s">
+      <Filter>ASM Header Files\Misc</Filter>
+    </None>
+    <None Include="..\misc\random_h.s">
+      <Filter>ASM Header Files\Misc</Filter>
+    </None>
+    <None Include="..\misc\printdec.s">
+      <Filter>ASM Source Files\Misc</Filter>
+    </None>
+    <None Include="..\misc\random.s">
+      <Filter>ASM Source Files\Misc</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_stdpersist_h.s">
+      <Filter>ASM Header Files</Filter>
+    </None>
+    <None Include="..\source\mnemosyne-x_h.s">
+      <Filter>ASM Header Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

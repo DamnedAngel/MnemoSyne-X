@@ -12,5 +12,5 @@
 .\MSX\BIOS
 ..\source
 ..\source\config
-..\..\damnlib
+..\misc
 

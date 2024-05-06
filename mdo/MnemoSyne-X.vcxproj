@@ -60,10 +60,11 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\misc\printdec.h" />
+    <ClInclude Include="..\misc\printinterface.h" />
     <ClInclude Include="..\source\mnemosyne-x.h" />
     <ClInclude Include="..\source\mnemosyne-x_rammapper.h" />
     <ClInclude Include="MSX\BIOS\msxbios.h" />
-    <ClInclude Include="printinterface.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\datafile\mnemo.py" />
@@ -72,23 +73,28 @@
     <None Include="..\datafile\mnemologger.py" />
     <None Include="..\datafile\mnemoresource.py" />
     <None Include="..\datafile\mnemosegment.py" />
-    <None Include="..\headers\mnemosyne-x_h.s" />
+    <None Include="..\misc\printdec.s" />
+    <None Include="..\misc\printdec_h.s" />
+    <None Include="..\misc\printinterface_h.s" />
+    <None Include="..\misc\random.s" />
+    <None Include="..\misc\random_h.s" />
     <None Include="..\README.md" />
     <None Include="..\source\config\mnemosyne-x_config_h.s" />
+    <None Include="..\source\mnemosyne-x_h.s" />
     <None Include="..\source\mnemosyne-x_internal_h.s" />
     <None Include="..\source\mnemosyne-x.s" />
     <None Include="..\source\mnemosyne-x_dirty_h.s" />
     <None Include="..\source\mnemosyne-x_general_h.s" />
     <None Include="..\source\mnemosyne-x_rammapper.s" />
     <None Include="..\source\mnemosyne-x_rammapper_h.s" />
-    <None Include="..\source\mnemosyne-x_standardpersistence.s" />
+    <None Include="..\source\mnemosyne-x_stdpersist_h.s" />
+    <None Include="..\source\mnemosyne-x_stdpersist.s" />
     <None Include="Make\make.py" />
     <None Include="Make\symbol.py" />
     <None Include="msxdosovl.s" />
     <None Include="MSX\BIOS\msxbios.s" />
     <None Include="MSX\MDO\msxdosovlcrt0.s" />
     <None Include="MSX\VDP\vdpportmacros.s" />
-    <None Include="printinterface.s" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\datafile\mnemosynexdata.txt" />

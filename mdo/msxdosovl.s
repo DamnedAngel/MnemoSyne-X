@@ -7,7 +7,7 @@
 	.include "MSX/BIOS/msxbios.s"
 	.include "targetconfig.s"
 	.include "applicationsettings.s"
-	.include "printinterface.s"
+	.include "printinterface_h.s"
 
 	.area	_CODE
 

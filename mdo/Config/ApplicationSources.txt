@@ -25,4 +25,4 @@ msxdosovl.s
 ;	using relative paths from the project folder
 ../source/mnemosyne-x.s
 ../source/mnemosyne-x_rammapper.s
-../source/mnemosyne-x_standardpersistence.s
+../source/mnemosyne-x_stdpersist.s
