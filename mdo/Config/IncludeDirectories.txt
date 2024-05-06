@@ -10,7 +10,7 @@
 ;[MSX_LIB_PATH]\util
 ;[MSX_LIB_PATH]\fusion-c\header
 .\MSX\BIOS
-..\headers
+..\source
 ..\source\config
-..\..\damnlib
+..\misc
 

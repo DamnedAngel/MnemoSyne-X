@@ -13,11 +13,10 @@
 #define  __MNEMOSYNEX_H__
 
 #include "stdbool.h"
+#include "mnemosyne-x_rammapper.h"
 
-#include "rammapper.h"
-
-typedef unsigned char (*LoadSeg) (unsigned page, unsigned int logSeg);
-typedef unsigned char (*SaveSeg) (unsigned page);
+//typedef unsigned char (*LoadSeg) (unsigned page, unsigned int logSeg);
+//typedef unsigned char (*SaveSeg) (unsigned page);
 
 typedef struct {
 	SEGHANDLER segHandler;
@@ -42,10 +41,24 @@ typedef struct {
 ; ----------------------------------------------------------------
 */
 #ifdef MNEMO_PRIMARY_MAPPER_ONLY
-extern void initMnemoSyneX(void) __sdcccall(1);
+extern void mnemo_init(void) __sdcccall(1);
 #else
-extern unsigned char initMnemoSyneX(bool) __sdcccall(1);
+extern unsigned char mnemo_init(bool) __sdcccall(1);
 #endif
+
+/*
+; ----------------------------------------------------------------
+;	- Finalize MnemoSyne-X.
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   -None
+; ----------------------------------------------------------------
+*/
+extern void mnemo_finalize(void) __sdcccall(1);
+
 
 /*
 ; ----------------------------------------------------------------
@@ -58,7 +71,7 @@ extern unsigned char initMnemoSyneX(bool) __sdcccall(1);
 ;   - unsigned char:	0 = success
 ; ----------------------------------------------------------------
 */
-unsigned char activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcccall(1);
+unsigned char mnemo_activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcccall(1);
 
 /*
 ; ----------------------------------------------------------------
@@ -99,7 +112,7 @@ void releaseLogSeg (unsigned char priority, LOGSEGHANDLER* pSDPHandler) __sdccca
 ;   -None
 ; ----------------------------------------------------------------
 */
-unsigned int mnemoGetFreeSegments (void) __sdcccall(1);
+unsigned int mnemo_getFreeSegments (void) __sdcccall(1);
 
 
 #endif	//  ____MNEMOSYNEX_H__

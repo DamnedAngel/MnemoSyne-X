@@ -1,5 +1,5 @@
 ; ----------------------------------------------------------------
-;	mnemosyne-x-internal_h.s
+;	mnemosyne-x_internal_h.s
 ; ----------------------------------------------------------------
 ;	240116 - DamnedAngel
 ; ----------------------------------------------------------------
@@ -8,49 +8,20 @@
 
 
 .include "msxbios.s"
-.include "printinterface.s"
+.include "printinterface_h.s"
 .include "printdec_h.s"
-.include "rammapper_h.s"
-.include "mnemosyne-x_h.s"
+.include "random_h.s"
+.include "mnemosyne-x_rammapper_h.s"
+.include "mnemosyne-x_general_h.s"
 
-.globl _rnd16
 .globl _standardLoad
 .globl _standardSave
-
-.globl	__PutP0
-.globl	__PutP1
-.globl	__PutP2
-
-.globl	__GetP0
-.globl	__GetP1
-.globl	__GetP2
-.globl	__GetP3
-
 
 ; ----------------------------------------------------------------
 ;	- General Settings
 ; ----------------------------------------------------------------
 MNEMO_MAPPER_DEVICE_ID				= 4									; always 4 (memory mapper)
 
-
-; ----------------------------------------------------------------
-;	- Derivative Configuration.
-; ----------------------------------------------------------------
-.ifgt MNEMO_MAX_PHYSICAL_SEGMENTS-3072
-.define MNEMO_MAX_PHYSICAL_SEGMENTS 3072
-.endif
-
-MNEMO_SEGHDR_LOGSEGNUMBER			= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_LOGSEGNUMBER
-MNEMO_SEGHDR_SEGMODE				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_SEGMODE
-MNEMO_SEGHDR_LOADHOOK				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_LOADHOOK
-MNEMO_SEGHDR_PLOADSEG				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_PLOADSEG
-MNEMO_SEGHDR_SAVEHOOK				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_SAVEHOOK
-MNEMO_SEGHDR_PSAVESEG				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_PSAVESEG
-
-MNEMO_MAX_PSEGHANDLE				= MNEMO_AUX_SWAP_PAGE_ADDR + MNEMO_MAX_PHYSICAL_SEGMENTS * 2
-
-MNEMO_BANK_PERSISTENCE_TABLE		= MNEMO_MAX_PSEGHANDLE
-MNEMO_NUM_BANKS						= MNEMO_INDEX_SEGMENTS * 32		; (each index_segment holds 8k SegHandlers, which demands 32 banks)
 
 ; ----------------------------------------------------------------
 ;	- Macros
@@ -118,3 +89,50 @@ MNEMO_NUM_BANKS						= MNEMO_INDEX_SEGMENTS * 32		; (each index_segment holds 8k
 	__GetSlot MNEMO_MAIN_SWAP_PAGE
 .endm
 
+; ----------------------------------------------------------------
+;	- Get number of Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Managed Physical Segments
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+.macro	__mnemo_getManagedSegments
+	ld		de, (#_nPhysicalSegs)
+.endm
+
+; ----------------------------------------------------------------
+;	- Get Managed Physical Memory Size
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: Managed Physical Memory Size
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+.macro	__mnemo_getManagedMemorySize
+	ld		de, (#_managedMemorySize)
+.endm
+
+; ----------------------------------------------------------------
+;	- Get number of Used Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Used Managed Physical Segments
+;
+; CHANGES:
+;   - Nothing
+; ----------------------------------------------------------------
+.macro	__mnemo_getUsedSegments
+	ld		de, (#_nPhysicalSegsInUse)
+.endm
