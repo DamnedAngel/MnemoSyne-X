@@ -34,25 +34,6 @@ MNEMO_MAPPER_DEVICE_ID				= 4									; always 4 (memory mapper)
 
 
 ; ----------------------------------------------------------------
-;	- Derivative Configuration.
-; ----------------------------------------------------------------
-.ifgt MNEMO_MAX_PHYSICAL_SEGMENTS-3072
-.define MNEMO_MAX_PHYSICAL_SEGMENTS 3072
-.endif
-
-MNEMO_SEGHDR_LOGSEGNUMBER			= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_LOGSEGNUMBER
-MNEMO_SEGHDR_SEGMODE				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_SEGMODE
-MNEMO_SEGHDR_LOADHOOK				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_LOADHOOK
-MNEMO_SEGHDR_PLOADSEG				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_PLOADSEG
-MNEMO_SEGHDR_SAVEHOOK				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_SAVEHOOK
-MNEMO_SEGHDR_PSAVESEG				= MNEMO_MAIN_SWAP_PAGE_ADDR + MNEMO_SEGHDROFFSET_PSAVESEG
-
-MNEMO_MAX_PSEGHANDLE				= MNEMO_AUX_SWAP_PAGE_ADDR + MNEMO_MAX_PHYSICAL_SEGMENTS * 2
-
-MNEMO_BANK_PERSISTENCE_TABLE		= MNEMO_MAX_PSEGHANDLE
-MNEMO_NUM_BANKS						= MNEMO_INDEX_SEGMENTS * 32		; (each index_segment holds 8k SegHandlers, which demands 32 banks)
-
-; ----------------------------------------------------------------
 ;	- Macros
 ; ----------------------------------------------------------------
 .macro	__PutSeg PAGE

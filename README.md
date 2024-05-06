@@ -112,17 +112,17 @@ flowchart
 ```
 
 The core module may be integrated directly to the MSX-DOS/Nextor
-executable, however. Please note that MnemoSyne-X manages segments in
-pages 1 and 2, so MnemoSyne-X must sit on pages 0 or 3. The MDO is
-designed to be dinamycally loaded in the beginning of page 3.
+executable, however. Since **MnemoSyne-X** manages segments in
+pages 1 and 2, it must sit on pages 0 or 3. The MDO provided is,
+by default, to be dinamycally loaded in the beginning of page 3.
 
-### MDO
-When using MnemoSyne-X in the 
+### Using **MnemoSyne-X** in an MDO
+When using **MnemoSyne-X** in the 
 [MDO format](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx),
-the developer must create an MSX-DOS application with the MSX-DOS
+the developer must create, in addition to the MDO, an MSX-DOS application with the MSX-DOS
 template available
 [here](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases/tag/v00.06.01)
-and configure MDO hooks, in __MDOSettings.txt__, as described below:
+and configure MDO hooks, in **MDOSettings.txt**, as described below:
 
     ;----------------------------------------------------------
     ;	MDO hooks
@@ -150,25 +150,94 @@ and configure MDO hooks, in __MDOSettings.txt__, as described below:
 
 Be sure to read the
 [MDO Basics](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx)
-in to learn how to configure your project to take full advantage
-of MDOs,  how to dynamically load the MDO and how to access its
-API from your application.
+in order to learn how to configure your project to take full
+advantage of MDOs, how to dynamically load the MDO and how to access
+its API from your application.
 
-### Inside the executable
-In order to directly integrate MnemoSyne-X to your MSX-DOS/Nextor
+Additionally, the programmer may
+
+    .include "mnemosyne-x_general_h.s"
+
+in its program to make use of useful **MnemoSyne-X** constants.
+
+### Integrating **MnemoSyne-X** inside your executable
+In order to directly integrate **MnemoSyne-X** to your MSX-DOS/Nextor
 Application without MDOs, ignore the _mdo_ folder in the package,
 include the sources in the diagram above to your project, and use
 
     .include "mnemosyne-x_h.s"
 
-in your program to access MnemoSyne-X's API.
+in your program to access **MnemoSyne-X**'s API. **mnemosyne-x_h.s**
+already includes **mnemosyne-x_general_h.s** to provide the programmer
+with useful **MnemoSyne-X** constants.
 
-__In all cases__, remember to configure MnemoSyne-X in _mnemosyne-x_config_h.s_.
-More on this in the [Configuration Section](#configuration) below.
+**In all cases**, remember to configure **MnemoSyne-X** in
+**mnemosyne-x_config_h.s**. More on this in the
+[Configuration Section](#configuration) below.
 
 ---
 
-## DataBanks
+## Architecture
+
+### Page Structure
+**MnemoSyne-X** will use page 1 and 2 to operate. One of these pages will
+be **MnemoSyne-X**'s **MAIN** page and the other **MnemoSyne-X**'s **AUX**
+page.
+
+**AUX** page is more easily shared with the application. It is used by
+**MnemoSyne-X**'s internal operations, but that should be transparent to 
+the programmer and **MnemoSyne-X** will always restore user's segment in
+**AUX** page before returning from a service routine (except from 
+**_mnemo_switchAuxPage**).
+
+If should be safe to call **MnemoSyne-X**'s API from a user routine in 
+**AUX** page.
+
+**MAIN** page is where **MnemoSyne-X** will make segments availble after
+allocating them.
+
+The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
+will define which page will be considered the **MAIN** and **AUX** pages
+by **MnemoSyne-X**. Please check [Configuration Section](#configuration)
+for further info.
+
+### Logical Segments
+Logical Segments are identifiable and manage instances of standard MSX
+Physical Segments in RAM mappers.
+
+**MnemoSyne-X**, in its full configuration, identifies and manages at
+most 65565 logical segments (64k minus 1, since segment identifier
+*0xffff* is used to denote an invalid segment).
+
+A Logical Segment may be made available by **MnemoSyne-X** in its
+**MAIN** or **AUX** page (more on this in the [Page Structure Section]
+(#page_structure) above).
+
+**MnemoSyne-X**'s Logical Segment, following the standard RAM mapper
+segment in the MSX architecture, has 16kbytes, but its first 16 bytes
+are reserved for the header. The structure of the Logical Segment Header 
+is:
+
+    typedef struct {
+    	unsigned int logSegNumber;
+    	unsigned char segMode;
+    	unsigned char loadHook;         // load hook byte 1: always 0xc3 (jp)
+    	unsigned int pLoadSeg;          // load hook bytes 2 and 3: address of segment load routine
+    	unsigned char loadHook;         // save hook byte 1: always 0xc3 (jp)
+    	unsigned int pLoadSeg;          // save hook bytes 2 and 3: address of segment save routine
+    	unsigned char reserved9;
+    	unsigned char reserved10;
+    	unsigned char reserved11;
+    	unsigned char reserved12;
+    	unsigned char reserved13;
+    	unsigned char reserved14;
+    	unsigned char reserved15;
+    } LOGSEGHEADER;
+
+Normally, the programmer doesn't have to care about a Logical Segment's
+header, though, as long as these 16 bytes are honored.
+
+### Databanks
 
 **Databanks** are swap files dedicated to holding segment backups. Up to 
 256 segments may be stored in one **Databank**, and a maximum of 256
@@ -189,31 +258,6 @@ index in its beginning with the references to the Segments withing it. As
 a consequence, **Databanks** are pontentially incomplete, meaning that it
 is likely that a **Databank** will not be holding the 256 segments it 
 could hold.
-
----
-
-## Memory Architecture
-
-**MnemoSyne-X** will use page 1 and 2 to operate. One of these pages will
-be **MnemoSyne-X**'s **MAIN** page and the other **MnemoSyne-X**'s **AUX**
-page.
-
-**AUX** page is more easily shared with the application. It is used by
-**MnemoSyne-X**'s internal operations, but that should be transparent to 
-the programmer and **MnemoSyne-X** will always restore user's segment in
-**AUX** page before returning from a service routine (except from 
-**_mnemo_switchAuxPage**).
-
-If should be safe to call **MnemoSyne-X**'s API from a user routine in 
-**AUX** page.
-
-**MAIN** page is where **MnemoSyne-X** will make segments availble after
-allocating them.
-
-The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
-will define which page will be considered the **MAIN** and **AUX** pages
-by **MnemoSyne-X**. Please check the MEMORY ARCHITECTURE SECTION for
-further info.
 
 ---
 
@@ -243,10 +287,9 @@ to C projects (SDCCCALL(1) must be used).
     ;   - All registers
     ; ----------------------------------------------------------------
 
-**_mnemo_init** initializes MnemoSyne-X and must be called
-before any other accesses to the system. If initialization
-succeeds, register A is set to 0. Any other value denotes 
-a failure.
+**_mnemo_init** initializes **MnemoSyne-X** subsystem and must be
+called before any other accesses to the system. If initialization
+succeeds, register A is set to 0. Any other value denotes a failure.
 
 ### _mnemo_finalize
 
@@ -263,7 +306,7 @@ a failure.
     ;   - All registers
     ; ----------------------------------------------------------------
 
-**_mnemo_finalize** finalizes the MnemoSyne-X subsystem and releases
+**_mnemo_finalize** finalizes **MnemoSyne-X** subsystem and releases
 mapper segments. It receives no parameters and returns nothing.
 
 It is a good practice to call **_mnemo_finalize** before exiting to
@@ -284,9 +327,9 @@ MSX-DOS/Nextor.
     ;   - All regs
     ; ----------------------------------------------------------------
 
-**_mnemo_setStdPersistence** associates the standard persistence
-routines (Load and Save) to a given Databank. Databank number (0-255)
-must be especified in register A before calling
+**_mnemo_setStdPersistence** associates **MnemoSyne-X**'s standard
+persistence routines (Load and Save) to a given Databank. Databank
+number (0-255) must be especified in register A before calling
 **_mnemo_setStdPersistence**.
 
 The standard persistence routines are default for all Databanks.
@@ -319,11 +362,11 @@ In order to comply to SSDCCCALL(1) standard, **_mnemo_setPersistence**
 will clean pSaveSeg from the stack. The callee doesn't need to bother
 with it.
 
-Custom persistence routines are not needed in the majority of cases.
-They are, howeverm interesting to provide way of having custom 
-Databank formats (compressed segments, for instance), to allow for 
-procedural data generation (i.e. random levels for a game), or simply
-accessing different medias (mapped drives, internet access, whatever).
+Custom persistence routines are not needed in many cases. They are,
+however, interesting to provide way of having custom Databank formats
+(compressed segments, for instance), to allow for procedural data
+generation (i.e. random levels for a game), or simply accessing
+different medias (mapped drives, internet access, whatever).
 
 
 ### _mnemo_activateLogSeg
@@ -341,8 +384,9 @@ accessing different medias (mapped drives, internet access, whatever).
     ;   - All registers
     ; ----------------------------------------------------------------
 
-**_mnemo_activateLogSeg** allocates a logical segment. HL must
-point to a Logical Segment Handler.
+**_mnemo_activateLogSeg** allocates a logical segment, activating it 
+in memory and making it available for the user program. HL must point
+to a Logical Segment Handler.
 
 The Logical Segment Handler is defined as:
 
@@ -362,13 +406,13 @@ The (physical) Segment Handler (SEGHANDLER) is defined as:
     } SEGHANDLER;
 
 Upon calling **_mnemo_activateLogSeg**, the only relevant fields
-in the Logical Segment Handler pointed by HLthat must be filled 
-are **logSegNumber**, a number between 0 and 65364, and 
-**segMode**, the mode the segment will operate. The possible modes
+in the Logical Segment Handler pointed by HL that must be already
+filled are **logSegNumber** (a number between 0 and 65364), and 
+**segMode** (the mode the segment will operate). The possible modes
 are:
 
-    MNEMO_SEGMODE_TEMP				= 0
-    MNEMO_SEGMODE_READ				= 1
+    MNEMO_SEGMODE_TEMP			= 0
+    MNEMO_SEGMODE_READ			= 1
     MNEMO_SEGMODE_FORCEDREAD		= 2
     MNEMO_SEGMODE_READWRITE			= 3
 
@@ -395,12 +439,31 @@ discarded.
 disk upon allocation and, after release, when **MnemoSyne-X** needs
 to reuse the physical segment, the data is persisted to Databanks.
 
+When selecting a Physical Segment to allocate the requested Logical
+Segment, **_mnemo_activateLogSeg** will do its best to keep the other 
+Logical Segments consistent and in memory, in order to avoid the
+need to persist them to Databanks and to reload it afterwards. To
+do so, the following precedence is used:
+
+1. Try to use unused Physical Segments; if not available
+1. Try to reuse segments released with NEMO_ALLOC_KEEPPRIORITY0\*; if not available
+1. Try to reuse segments released with NEMO_ALLOC_KEEPPRIORITY1\*; if not available
+1. Try to reuse segments released with NEMO_ALLOC_KEEPPRIORITY2\*; if not available
+1. Fail.
+
+\* For further info on releasing segments and release priority, please
+refer to [_mnemo_releaseLogSeg](#_mnemo_releaseLogSeg).
+
+Thus, it is very important, performace-wise, that the programmer 
+chooses properly the release priority when releasing segments.
+
 Upon successful allocation, register A is set to 0, the remaining
 fields of the Logical Segment Handler are populated (typically, of no
 concern to the programmer), and the newly allocated segment will be
-made available for use in **MnemoSyne-X**'s MAIN page (see 
-MEMORY ARCHITECTURE SECTION). Any other value returned in register A
-indicates either failure (bit 7 set) or a warning (bit 7 reset).
+made available for use in **MnemoSyne-X**'s **MAIN** page (see 
+[Page Structure Section](#page_structure)). Any other value returned
+in register A indicates either failure (bit 7 set) or a warning (bit
+7 reset).
 
 
 ### _mnemo_releaseLogSeg
@@ -419,9 +482,10 @@ indicates either failure (bit 7 set) or a warning (bit 7 reset).
     ;   - All registers
     ; ----------------------------------------------------------------
 
-**_mnemo_releaseLogSeg** releases logical segment from the
-segment pool. Register A must specify the release priority and DE
-must point to the Logical Segment Handler to be released.
+**_mnemo_releaseLogSeg** releases an allocated logical segment.
+Register A must specify the release priority and DE must point to the
+Logical Segment Handler (see
+[_mnemo_activateLogSeg](#_mnemo_activateLogSeg)) to be released.
 
 The release priority are the following:
 
@@ -429,16 +493,8 @@ The release priority are the following:
     MNEMO_ALLOC_KEEPPRIORITY1				= 0b00010000	
     MNEMO_ALLOC_KEEPPRIORITY2				= 0b00100000	; highest priority
 
-After a segment is released, **MnemoSyne-X** will do its best to
-keep the segment consistent and in memory, in order to avoid the
-need to persist it to Databanks and to reload it afterwards. To
-do so, **MnemoSyni-X** will give preference to use unused physical
-segments, then reuse segments released with
-NEMO_ALLOC_KEEPPRIORITY0 segments, then segments released with 
-MNEMO_ALLOC_KEEPPRIORITY1, and then segments released with 
-MNEMO_ALLOC_KEEPPRIORITY2. Thus, it is very important, 
-performace-wise, to choose properly the release priority when 
-releasing segments.
+To learn more how the release priorities are used by **MnemoSyne-X** 
+please refer to [_mnemo_activateLogSeg](#_mnemo_activateLogSeg).
 
 
 ### mnemo_releaseLogSegHL
@@ -495,7 +551,7 @@ these segments shall be passed on register A.
     ; ----------------------------------------------------------------
 
 **_mnemo_flushAll** will release and persist all non-persisted
-segments with mode MNEMO_SEGMODE_READWRITE to disk. If the flush
+segments with mode **MNEMO_SEGMODE_READWRITE** to disk. If the flush
 process succeeds, register A is set to 0. Any other value denotes 
 a failure.
 
@@ -517,7 +573,7 @@ a failure.
 
 **_mnemo_switchAuxPage** will make the Logical Segment associated with
 the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
-AUX page (see OPERATION SECTION).
+**AUX** page (see [Page Structure Section](#page_structure)).
 
 
 ### _mnemo_switchMainPage
@@ -537,7 +593,7 @@ AUX page (see OPERATION SECTION).
 
 **_mnemo_switchMainPage** will make the Logical Segment associated with
 the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
-MAIN page (see OPERATION SECTION).
+**MAIN** page (see [Page Structure Section](#page_structure)).
 
 
 ### _mnemo_getManagedSegments
@@ -554,8 +610,8 @@ MAIN page (see OPERATION SECTION).
     ;   - Nothing
     ; ----------------------------------------------------------------
 
-**_mnemo_getManagedSegments** will return the numbers of physical 
-segments reserved to manage logical segments.
+**_mnemo_getManagedSegments** will return the number of Physical 
+Segments reserved to manage logical segments.
 
 
 ### _mnemo_getUsedSegments
@@ -572,8 +628,8 @@ segments reserved to manage logical segments.
     ;   - Nothing
     ; ----------------------------------------------------------------
 
-**_mnemo_getUsedSegments** will return the numbers of physical 
-segments used to manage logical segments.
+**_mnemo_getUsedSegments** will return the number of Physical 
+Segments in use to manage logical segments.
 
 
 ### _mnemo_getFreeSegments
@@ -590,9 +646,10 @@ segments used to manage logical segments.
     ;   - HL
     ; ----------------------------------------------------------------
 
-**_mnemo_getFreeSegments** will return the number of free physical 
-segments. When no free physical segments are available, attempts
-to allocate new logical segments will fail.
+**_mnemo_getFreeSegments** will return the number of free Physical 
+Segments. When no free Physical Segments are available, attempts
+to allocate new Logical Segments with
+[_mnemo_activateLogSeg](#_mnemo_activateLogSeg) will fail.
 
 ---
 
@@ -604,36 +661,44 @@ settings in the **mnemosyne-x_config_h.s** file.
 The possible configurations are:
 
 ### MNEMO_MAIN_SWAP_PAGE
-This defines **MnemoSyne-X** **MAIN** page (please chech Memory Architecture Section),
-which can be page 1 or 2. A value "1" will make **MAIN** page 1, and **AUX** page 2.
-Anything else will make **MAIN** page 2 and **AUX** page 1.
+This defines **MnemoSyne-X** **MAIN** page (please check
+[Page Structure Section](#page_structure)), which can be page 1 or 2.
+A value "1" will make **MAIN** page 1, and **AUX** page 2. Anything
+else will make **MAIN** page 2 and **AUX** page 1.
 
 ### MNEMO_INDEX_SEGMENTS
-This determines how many physical segments will be allocated to manage Logical
-Segments. Every physical segment will hold 8k Logical Segments, which corresponds
-to 128Mbytes of Virtual Memory.
-The minimum valid value is 1 physical segment, for an operation of 8k Logical Segments
-and a total of 128Mbytes of Virtual Memory. The maximum value is 8 physical segments,
-for an operation of 64k segments (minus one, since segment Number 0xFFFF is used by
-**MnemoSyne-X** as an indicator of invalid Logical Segment) and a total of 1Gbytes of
+This determines how many physical segments will be allocated to
+manage Logical Segments. Every physical segment will hold 8k Logical
+Segments, which corresponds to 128Mbytes of Virtual Memory.
+The minimum valid value is 1 physical segment, for an operation of
+8k Logical Segments and a total of 128Mbytes of Virtual Memory. The
+maximum value is 8 physical segments, for an operation of 64k segments
+(minus one, since segment Number 0xFFFF is used by **MnemoSyne-X** as
+an indicator of invalid Logical Segment) and a total of 1Gbytes of 
 Virtual Memory.
 
 ### MNEMO_PRIMARY_MAPPER_ONLY
-0 will make **MnemoSyne-X** use all RAM memory mappers it finds. 1 will make
-**MnemoSyne-X** to use onlye the primary mapper.
-Using all mappers available will bring memory swaps to a minimum, but segment 
-allocation, release and switch operations will be slightly heavier, and 
-**MnemoSyne-X** subsystem footprint will be slightly bigger.
-Using the primary mappers only will make **MnemoSyne-X** fotprint slightly
-smaller and operations will be slightly slower, but memory swap will be
-maximized. Limiting to primary mapper may also be even more performatic on the 
-Turbo Rs, since their primary mapper is reasonably faster.
+**MNEMO_PRIMARY_MAPPER_ONLY** determines whether **MnemoSyne-X** will
+use secondary RAM mappers or not. A value 0 will make **MnemoSyne-X**
+use all RAM memory mappers it finds. 1 will restrict **MnemoSyne-X**
+to use only the primary mapper.
+
+Using all mappers available will bring memory swaps to a minimum, but
+segment allocation, release and switch operations will be slightly
+heavier, and **MnemoSyne-X** subsystem footprint will be slightly
+bigger.
+Using the primary mappers only will make **MnemoSyne-X** footprint
+slightly smaller and operations will be slightly slower, but memory
+swap will be maximized. Limiting to primary mapper may also be even
+more performatic on the Turbo Rs, since their primary mapper is
+reasonably faster.
 
 ### MNEMO_MAX_PHYSICAL_SEGMENTS
-If, for any reason, the programmer wants to establish an upper limit for the number
-of physical segments available to the Virtual Memory system, this can be configured
-in **MNEMO_MAX_PHYSICAL_SEGMENTS**. The possible values for this setting is from 1 
-to 3072 (that is, 48Mbytes max of physical RAM).
+If, for any reason, the programmer wants to establish an upper limit
+for the number of physical segments available to the Virtual Memory
+system, this can be configured in **MNEMO_MAX_PHYSICAL_SEGMENTS**.
+The possible values for this setting is from 1 to 3072 (that is,
+48Mbytes max of physical RAM).
 
 ---
 
@@ -648,5 +713,5 @@ They are already included in the pack for the curious and for the masochists onl
 
 ## Final notes
 
-- There currently is no way of deleting segments within Databanks. Data may be "erased" by overriding a segment with new data or with junk data.
-- 
+- There currently is no way of deleting segments within Databanks. Data may be 
+"erased" by overriding a segment with new data or with junk data.
