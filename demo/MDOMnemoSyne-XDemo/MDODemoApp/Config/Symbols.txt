@@ -1,0 +1,28 @@
+;----------------------------------------------------------
+;	Symbols.txt - by Danilo Angelo, 2021
+;
+;	Symbol export configuration.
+;   Add python-like matching regex expressions
+;   in one of the formats below:
+;
+;   <symbol match regex>
+;   <symbol match regex> <substring search regex>  <substring replace string>
+;----------------------------------------------------------
+_[a-zA-Z0-9_]*_hook
+_mdoLoad
+_mdoRelease
+_mdoLink
+_mdoUnlink
+_mdoAbend
+s__AFTERHEAP s__A PARENT_A
+
+;[a-zA-Z0-9]*_init
+;_main _m m
+_print
+__print
+_msgdbg
+_linefeed
+printchar
+
+_PrintDec
+_rnd16

@@ -1,0 +1,46 @@
+;----------------------------------------------------------
+;	MDOSettings.txt - by Danilo Angelo, 2020-2023
+;
+;	MDO (MSX-DOS Overlay) features general configuration.
+;----------------------------------------------------------
+
+;----------------------------------------------------------
+;	MDO hierarchy
+;	This project IS the base application module. Always leave ".".
+MDO_APPLICATION_PROJECT_PATH	.
+
+;----------------------------------------------------------
+;	MDO name
+MDO_NAME						APPLICATION
+
+;----------------------------------------------------------
+;	MDO hooks
+;	Syntax: MDO_HOOK <C return type>|<hookname>|<C signature>
+
+; --- MnemoSyneX ---
+MDO_HOOK		unsigned char|mnemo_init|(bool)
+MDO_HOOK		void|mnemo_finalize|(void)
+
+MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
+MDO_HOOK		void|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
+
+MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
+MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)
+MDO_HOOK		unsigned char|mnemo_releaseLogSegHL|(unsigned char, LOGSEGHANDLER*)		; ASM ONLY!!!
+MDO_HOOK		unsigned char|mnemo_releaseAll|(unsigned char)
+MDO_HOOK		unsigned char|mnemo_flushAll|(void)
+
+MDO_HOOK		void|mnemo_switchAuxPage|(LOGSEGHANDLER*)
+MDO_HOOK		void|mnemo_switchMainPage|(LOGSEGHANDLER*)
+
+MDO_HOOK		unsigned int |mnemo_getManagedSegments|(void)
+MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)
+MDO_HOOK		unsigned int |mnemo_getFreeSegments|(void)
+
+;----------------------------------------------------------
+;	Children MDOs
+;	Syntax: MDO_CHILD <mdoname> <filename> <extension> <starting address>
+;	Notes:
+;	  - if filename is less than 8 characters, the rest must be filled in by spaces.
+;	  - if extension is less than 3 characters, the rest must be filled in by spaces.
+MDO_CHILD						MNEMOSYNEX	^/MNEMOSX / DRV #0xc000

@@ -1,5 +1,5 @@
 ;----------------------------------------------------------
-;	ApplicationSources.txt - by Danilo Angelo, 2023
+;	ApplicationSources.txt - by Danilo Angelo, 2020 - 2023
 ;
 ;	List of all specific application C and ASM sources
 ;	These will always be processed by any build actions
@@ -9,23 +9,24 @@
 ;	General structure of a MSX BIN application
 ;	Do NOT remove.
 ;	This MUST be the first entry in this file.
-MSX\MDO\msxdosovlcrt0.s
+MSX\MSX-DOS\msxdoscrt0.s
 
 ;----------------------------------------------------------
-;	MSX-DOS overlay source files, in C and ASM formats
+;	MSX-DOS application source file, in C and ASM formats
 ;	This is where your main function is.
 ;	THIS IS YOUR PROGRAM!
 ;	Choose ONE and ONLY ONE of the lines below,
 ;	and leave the other commented!
-msxdosovl.s
+;msxdosapp.s
+msxdosapp.c
 
 ;----------------------------------------------------------
 ;	Additional source files
 ;	Add below additional source files for your application
 ;	using relative paths from the project folder
-../source/mnemosyne-x.s
-../source/mnemosyne-x_rammapper.s
-../source/mnemosyne-x_stdpersist.s
+print.s
+;yourSourceCodeHere.s
+;yourSourceCodeHere.c
 
-;../misc/random.s
-;../misc/printdec.s
+../../../misc/random.s
+../../../misc/printdec.s

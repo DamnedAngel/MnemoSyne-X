@@ -1,14 +1,14 @@
 ;----------------------------------------------------------
 ;	TargetConfig_Debug.txt - by Danilo Angelo, 2020-2023
 ;
-;	Configuration for the DEBUG profile
+;	Configuration for the RELEASE profile
 ;----------------------------------------------------------
 
 ;----------------------------------------------------------
 ;	Build settings
 ;   Determine operation of the build tools
 .BUILD
-BUILD_DEBUG			        150 				; DBG_MUTE=0
+BUILD_DEBUG			        100 				; DBG_MUTE=0
                                                 ; DBG_ERROR=10
                                                 ; DBG_OPENING=40
                                                 ; DBG_STEPS=50
@@ -33,17 +33,17 @@ EXECGEN_EXTRA_DIRECTIVES
 ;	Application settings
 ;   Macros & constants
 .APPLICATION
-DEBUG				        _ON					; _OFF: not defined ; _ON: defined; 1-n defined with debug level
-MSXDOSPRINT			        _ON     			; Allows pipe and redirection. _OFF: not defined ; _ON: defined.
+DEBUG				        _OFF				; _OFF: not defined ; _ON: defined; 1-n defined with debug level
+MSXDOSPRINT			        _OFF    			; Allows pipe and redirection. _OFF: not defined ; _ON: defined.
+ 
 
 ;----------------------------------------------------------
 ;	Filesystem settings
 ;	The values below are also default, if ommited.
 .FILESYSTEM
-MSX_FILE_NAME		        MNEMOSX
-MSX_FILE_EXTENSION          DRV
-MSX_BIN_PATH		        ..\demo\MDOMnemoSyne-XDemo\MDODemoApp\[PROFILE]\bin
-;MSX_BIN_PATH		        ..\..\..\projects\SCAMM\SCAMM\[PROFILE]\bin
+MSX_FILE_NAME		        MNEMO1
+MSX_FILE_EXTENSION          COM
+MSX_BIN_PATH		        [PROFILE]\bin
 MSX_OBJ_PATH		        [PROFILE]\objs
 MSX_DEV_PATH		        ..\..\..
 MSX_LIB_PATH		        [MSX_DEV_PATH]\libs

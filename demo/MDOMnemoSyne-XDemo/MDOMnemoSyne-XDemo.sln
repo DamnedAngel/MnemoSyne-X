@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.34407.143
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MDODemoApp", "MDODemoApp\MDODemoApp.vcxproj", "{6690A391-8DF0-455A-B6B0-B427923A970F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MnemoSyne-X", "..\..\mdo\MnemoSyne-X.vcxproj", "{940CA166-1353-487C-B0B3-8F6C56ED1844}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6690A391-8DF0-455A-B6B0-B427923A970F} = {6690A391-8DF0-455A-B6B0-B427923A970F}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6690A391-8DF0-455A-B6B0-B427923A970F}.Debug|x86.ActiveCfg = Debug|Win32
+		{6690A391-8DF0-455A-B6B0-B427923A970F}.Debug|x86.Build.0 = Debug|Win32
+		{6690A391-8DF0-455A-B6B0-B427923A970F}.Release|x86.ActiveCfg = Release|Win32
+		{6690A391-8DF0-455A-B6B0-B427923A970F}.Release|x86.Build.0 = Release|Win32
+		{940CA166-1353-487C-B0B3-8F6C56ED1844}.Debug|x86.ActiveCfg = Debug|Win32
+		{940CA166-1353-487C-B0B3-8F6C56ED1844}.Debug|x86.Build.0 = Debug|Win32
+		{940CA166-1353-487C-B0B3-8F6C56ED1844}.Release|x86.ActiveCfg = Release|Win32
+		{940CA166-1353-487C-B0B3-8F6C56ED1844}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {28DF72E9-F1C3-47A0-97D6-D7137A21C644}
+	EndGlobalSection
+EndGlobal

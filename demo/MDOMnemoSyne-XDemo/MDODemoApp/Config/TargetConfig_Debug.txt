@@ -35,15 +35,15 @@ EXECGEN_EXTRA_DIRECTIVES
 .APPLICATION
 DEBUG				        _ON					; _OFF: not defined ; _ON: defined; 1-n defined with debug level
 MSXDOSPRINT			        _ON     			; Allows pipe and redirection. _OFF: not defined ; _ON: defined.
+ 
 
 ;----------------------------------------------------------
 ;	Filesystem settings
 ;	The values below are also default, if ommited.
 .FILESYSTEM
-MSX_FILE_NAME		        MNEMOSX
-MSX_FILE_EXTENSION          DRV
-MSX_BIN_PATH		        ..\demo\MDOMnemoSyne-XDemo\MDODemoApp\[PROFILE]\bin
-;MSX_BIN_PATH		        ..\..\..\projects\SCAMM\SCAMM\[PROFILE]\bin
+MSX_FILE_NAME		        MNEMO1
+MSX_FILE_EXTENSION          COM
+MSX_BIN_PATH		        [PROFILE]\bin
 MSX_OBJ_PATH		        [PROFILE]\objs
 MSX_DEV_PATH		        ..\..\..
 MSX_LIB_PATH		        [MSX_DEV_PATH]\libs

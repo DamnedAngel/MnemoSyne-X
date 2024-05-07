@@ -131,12 +131,11 @@ When using **MnemoSyne-X** in the
 the developer must create, in addition to the MDO, an MSX-DOS application with the MSX-DOS
 template available
 [here](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases/tag/v00.06.01)
-and configure MDO hooks, in **MDOSettings.txt**, as described below:
+and configure both projects, as described below:
 
-    ;----------------------------------------------------------
-    ;	MDO hooks
-    ;	Syntax: MDO_HOOK <C return type>|<hookname>|<C signature>
+1. MDODemoApp -> ApplicationSettings.txt -> MDO_SUPPORT _ON
 
+2. MDODemoApp -> MDOSettings.txt -> Add the following hooks
     ; --- MnemoSyneX ---
     MDO_HOOK		unsigned char|mnemo_init|(bool)
     MDO_HOOK		void|mnemo_finalize|(void)
@@ -157,17 +156,85 @@ and configure MDO hooks, in **MDOSettings.txt**, as described below:
     MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)
     MDO_HOOK		unsigned int |mnemo_getFreeSegments|(void)
 
+3. MDODemoApp -> MDOSettings.txt -> MDO_CHILD						MNEMOSYNEX	^/MNEMOSX / DRV #0xc000
+
+4. MnemoSyne-X -> MDOSettings -> MDO_APPLICATION_PROJECT_PATH	<path to .COM project>
+
+5. MnemoSyne-X -> MDOSettings -> MDO_PARENT_PROJECT_PATH	<path to .COM project>
+
+6. Optionally, MnemoSyne-X -> TargetConfig_Debug.txt -> MSX_BIN_PATH		<path to .COM project>\[PROFILE]\bin
+
+7. Optionally, MnemoSyne-X -> TargetConfig_Release.txt -> MSX_BIN_PATH		<path to .COM project>\[PROFILE]\bin
+
+8. MDODemoApp -> Include Directories.txt -> <path to MnemoSyne-X>\source
+
+9. MDODemoApp -> Include Directories.txt -> <path to MnemoSyne-X>\source
+
+10. C application source -> #include <stdbool.h>
+
+11. C application source -> #include "mnemosyne-x.h" *BEFORE* #include "mdointerface.h"
+
+12. ASM application source -> #include "mnemosyne-x_h.s"
+
+13. Add code to (example project available):
+13.1. Load and Link MnemoSyne-X MDO:
+	// ----------------------------------------------------------
+	// Load & Link MDO
+	// ----------------------------------------------------------
+    // load MnemoSyne-X MDO
+	unsigned char r = mdoLoad(&MNEMOSYNEX);
+	if (r) {
+		print("Error loading MDO.\r\n\0");
+		return r;
+	}
+	dbg("MDO loaded successfully.\r\n\0");
+
+	// link MnemoSyne-X MDO
+	r = mdoLink(&MNEMOSYNEX);
+	if (r) {
+		print("Error linking MDO.\r\n\0");
+		return r;
+	}
+	dbg("MDO linked successfully.\r\n\0");
+
+13.2. Unlink and Release MnemoSyne-X MDO:
+	// ----------------------------------------------------------
+	// Unload and Release MDO
+	// ----------------------------------------------------------
+	// unlink MnemoSyne-X MDO
+	r = mdoUnlink(&MNEMOSYNEX);
+	if (r) {
+		print("Error unlinking MDO.\r\n\0");
+		return r;
+	}
+	dbg("MDO unlinked successfully.\r\n\0");
+
+	// release MnemoSyne-X MDO
+	r = mdoRelease(&MNEMOSYNEX);
+	if (r) {
+		print("Error releasing MDO.\r\n\0");
+		return r;
+	}
+	dbg("MDO released successfully.\r\n\0");
+
+14. MDODemoApp -> Symbols.txt -> replace line _[a-zA-Z0-9]*_hook with _[a-zA-Z0-9_]*_hook (This is a Bug in the MSX-DOS template. Will be solved in the future).
+
+15. MDODemoApp -> Symbols.txt -> add printchar (also a bug to be corrected in the MSX-DOS template).
+
+16. Either add random.s to the MnemoSyne-X MDO project 
+(MnemoSyne-X -> ApplicationSources.txt ->  ../misc/random.s) or your application project and 
+export the symbol to the MDO adding it to application's Symbols.txt file.
+16.1. Idem to _PrintDec (../misc/printdec.s).
+16.2. In the example, both are added to the application and the symbols exported to the MDO.
+
+All these steps are contemplated in the **MDOMnemoSyne-XDemo** bundled in **MnemoSyne-X** package.
+
 Be sure to read the
 [MDO Basics](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx)
 in order to learn how to configure your project to take full
 advantage of MDOs, how to dynamically load the MDO and how to access
 its API from your application.
 
-Additionally, the programmer may
-
-    .include "mnemosyne-x_general_h.s"
-
-in its program to make use of useful **MnemoSyne-X** constants.
 
 ### Integrating **MnemoSyne-X** inside your executable
 In order to directly integrate **MnemoSyne-X** to your MSX-DOS/Nextor
@@ -222,8 +289,8 @@ most 65565 logical segments (64k minus 1, since segment identifier
 *0xffff* is used to denote an invalid segment).
 
 A Logical Segment may be made available by **MnemoSyne-X** in its
-**MAIN** or **AUX** page (more on this in the [Page Structure Section]
-(#page_structure) above).
+**MAIN** or **AUX** page (more on this in the
+[Page Structure Section](#page-structure) above).
 
 **MnemoSyne-X**'s Logical Segment, following the standard RAM mapper
 segment in the MSX architecture, has 16kbytes, but its first 16 bytes
