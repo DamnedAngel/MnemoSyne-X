@@ -125,65 +125,82 @@ executable, however. Since **MnemoSyne-X** manages segments in
 pages 1 and 2, it must sit on pages 0 or 3. The MDO provided is,
 by default, to be dinamycally loaded in the beginning of page 3.
 
+### Integrating **MnemoSyne-X** statically to your executable
+In order to directly integrate **MnemoSyne-X** to your MSX-DOS/Nextor
+Application without MDOs, ignore the _mdo_ folder in the package,
+include the sources in the diagram above to your project, and use
+
+    .include "mnemosyne-x_h.s"
+
+in your program to access **MnemoSyne-X**'s API. **mnemosyne-x_h.s**
+already includes **mnemosyne-x_general_h.s** to provide the programmer
+with useful **MnemoSyne-X** constants.
+
+
 ### Using **MnemoSyne-X** in an MDO (MSX-DOS Overlay)
 When using **MnemoSyne-X** in the 
 [MDO format](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/blob/master/doc/manual.md#running-your-msx-dos-program-with-overlays-in-webmsx),
-the developer must create, in addition to the MDO, an MSX-DOS application with the MSX-DOS
-template available
-[here](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases/tag/v00.06.01)
-and configure both projects, as described below:
+the developer must create, two different projects: the MDO with MnemoSyne-X (using the MDO
+template available [here](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases/tag/v00.06.01)
+and an MSX-DOS application with the MSX-DOS template available in the same link.
+
+Configure both projects, as described below:
 
 1. In ApplicationProject -> ApplicationSettings.txt, set **MDO_SUPPORT** to  **_ON**.
 
+
 2. In ApplicationProject -> MDOSettings.txt, add the following hooks:
 
-    ; --- MnemoSyneX ---
-    MDO_HOOK		unsigned char|mnemo_init|(bool)
-    MDO_HOOK		void|mnemo_finalize|(void)
+.
 
-    MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
-    MDO_HOOK		void|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
+	; --- MnemoSyneX ---
+	MDO_HOOK		unsigned char|mnemo_init|(bool)
+	MDO_HOOK		void|mnemo_finalize|(void)
 
-    MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
-    MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)
-    MDO_HOOK		unsigned char|mnemo_releaseLogSegHL|(unsigned char, LOGSEGHANDLER*)		; ASM ONLY!!!
-    MDO_HOOK		unsigned char|mnemo_releaseAll|(unsigned char)
-    MDO_HOOK		unsigned char|mnemo_flushAll|(void)
+	MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
+	MDO_HOOK		void|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
 
-    MDO_HOOK		void|mnemo_switchAuxPage|(LOGSEGHANDLER*)
-    MDO_HOOK		void|mnemo_switchMainPage|(LOGSEGHANDLER*)
+	MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
+	MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)
+	MDO_HOOK		unsigned char|mnemo_releaseLogSegHL|(unsigned char, LOGSEGHANDLER*)		; ASM ONLY!!!
+	MDO_HOOK		unsigned char|mnemo_releaseAll|(unsigned char)
+	MDO_HOOK		unsigned char|mnemo_flushAll|(void)
 
-    MDO_HOOK		unsigned int |mnemo_getManagedSegments|(void)
-    MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)
-    MDO_HOOK		unsigned int |mnemo_getFreeSegments|(void)
+	MDO_HOOK		void|mnemo_switchAuxPage|(LOGSEGHANDLER*)
+	MDO_HOOK		void|mnemo_switchMainPage|(LOGSEGHANDLER*)
 
-3. In ApplicationProject -> MDOSettings.txt ->, declare an MDO child:  **MDO_CHILD		MNEMOSYNEX	^/MNEMOSX / DRV #0xc000**
+	MDO_HOOK		unsigned int |mnemo_getManagedSegments|(void)
+	MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)
+	MDO_HOOK		unsigned int |mnemo_getFreeSegments|(void)
 
-4. In MnemoSyne-X -> MDOSettings, configure **MDO_APPLICATION_PROJECT_PATH** with the **\<path to .COM project\>**.
+5. In ApplicationProject -> MDOSettings.txt ->, declare an MDO child:  **MDO_CHILD		MNEMOSYNEX	^/MNEMOSX / DRV #0xc000**
 
-5. In MnemoSyne-X -> MDOSettings, configure **MDO_PARENT_PROJECT_PATH** with the **\<path to .COM project\>**.
+6. In MnemoSyne-X MDO -> MDOSettings, configure **MDO_APPLICATION_PROJECT_PATH** with the **\<path to .COM project\>**.
 
-6. Optionally, in MnemoSyne-X -> TargetConfig_Debug.txt, configure **MSX_BIN_PATH** with **\<path to .COM project\>\\[PROFILE]\bin
+7. In MnemoSyne-X MDO -> MDOSettings, configure **MDO_PARENT_PROJECT_PATH** with the **\<path to .COM project\>**.
 
-6. Optionally, in MnemoSyne-X -> TargetConfig_Release.txt, configure **MSX_BIN_PATH** with **\<path to .COM project\>\\[PROFILE]\bin
+8. Optionally, in MnemoSyne-X MDO -> TargetConfig_Debug.txt, configure **MSX_BIN_PATH** with **\<path to .COM project\>\\[PROFILE]\\bin**
+
+6. Optionally, in MnemoSyne-X MDO -> TargetConfig_Release.txt, configure **MSX_BIN_PATH** with **\<path to .COM project\>\\[PROFILE]\\bin**
 
 8. In ApplicationProject -> Include Directories.txt, add **\<path to MnemoSyne-X\>\\source**
 
 9. In ApplicationProject -> Include Directories.txt, add **\<path to MnemoSyne-X\>\\misc**
 
-10. In C application source, add the line **#include \<stdbool.h\>**
+10. In ApplicationProject's C application source, add the line **#include \<stdbool.h\>**
 
-11. In C application source, add the line **#include "mnemosyne-x.h"** _BEFORE_ **#include "mdointerface.h"**
+11. In ApplicationProject's C application source, add the line **#include "mnemosyne-x.h"** _BEFORE_ **#include "mdointerface.h"**
 
-12. In ASM application source, add the line **#include "mnemosyne-x_h.s"**
+12. In ApplicationProject's ASM application source, add the line **#include "mnemosyne-x_h.s"**
 
-13. Add code to (example project available):
+13. Add code to (example project available) the  ApplicationProject:
+
 13.1. Load and Link MnemoSyne-X MDO:
 
 	// ----------------------------------------------------------
 	// Load & Link MDO
 	// ----------------------------------------------------------
-    // load MnemoSyne-X MDO
+	// load MnemoSyne-X MDO
 	unsigned char r = mdoLoad(&MNEMOSYNEX);
 	if (r) {
 		print("Error loading MDO.\r\n\0");
@@ -239,16 +256,6 @@ advantage of MDOs, how to dynamically load the MDO and how to access
 its API from your application.
 
 
-### Integrating **MnemoSyne-X** inside your executable
-In order to directly integrate **MnemoSyne-X** to your MSX-DOS/Nextor
-Application without MDOs, ignore the _mdo_ folder in the package,
-include the sources in the diagram above to your project, and use
-
-    .include "mnemosyne-x_h.s"
-
-in your program to access **MnemoSyne-X**'s API. **mnemosyne-x_h.s**
-already includes **mnemosyne-x_general_h.s** to provide the programmer
-with useful **MnemoSyne-X** constants.
 
 **In all cases**, remember to configure **MnemoSyne-X** in
 **mnemosyne-x_config_h.s**. More on this in the
