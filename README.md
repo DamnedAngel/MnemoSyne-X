@@ -133,9 +133,10 @@ template available
 [here](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases/tag/v00.06.01)
 and configure both projects, as described below:
 
-1. MDODemoApp -> ApplicationSettings.txt -> MDO_SUPPORT _ON
+1. In ApplicationProject -> ApplicationSettings.txt, set **MDO_SUPPORT** to  **_ON**.
 
-2. MDODemoApp -> MDOSettings.txt -> Add the following hooks
+2. In ApplicationProject -> MDOSettings.txt, add the following hooks:
+
     ; --- MnemoSyneX ---
     MDO_HOOK		unsigned char|mnemo_init|(bool)
     MDO_HOOK		void|mnemo_finalize|(void)
@@ -156,28 +157,29 @@ and configure both projects, as described below:
     MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)
     MDO_HOOK		unsigned int |mnemo_getFreeSegments|(void)
 
-3. MDODemoApp -> MDOSettings.txt -> MDO_CHILD						MNEMOSYNEX	^/MNEMOSX / DRV #0xc000
+3. In ApplicationProject -> MDOSettings.txt ->, declare an MDO child:  **MDO_CHILD		MNEMOSYNEX	^/MNEMOSX / DRV #0xc000**
 
-4. MnemoSyne-X -> MDOSettings -> MDO_APPLICATION_PROJECT_PATH	<path to .COM project>
+4. In MnemoSyne-X -> MDOSettings, configure **MDO_APPLICATION_PROJECT_PATH** with the **\<path to .COM project\>**.
 
-5. MnemoSyne-X -> MDOSettings -> MDO_PARENT_PROJECT_PATH	<path to .COM project>
+5. In MnemoSyne-X -> MDOSettings, configure **MDO_PARENT_PROJECT_PATH** with the **\<path to .COM project\>**.
 
-6. Optionally, MnemoSyne-X -> TargetConfig_Debug.txt -> MSX_BIN_PATH		<path to .COM project>\[PROFILE]\bin
+6. Optionally, in MnemoSyne-X -> TargetConfig_Debug.txt, configure **MSX_BIN_PATH** with **\<path to .COM project\>\\[PROFILE]\bin
 
-7. Optionally, MnemoSyne-X -> TargetConfig_Release.txt -> MSX_BIN_PATH		<path to .COM project>\[PROFILE]\bin
+6. Optionally, in MnemoSyne-X -> TargetConfig_Release.txt, configure **MSX_BIN_PATH** with **\<path to .COM project\>\\[PROFILE]\bin
 
-8. MDODemoApp -> Include Directories.txt -> <path to MnemoSyne-X>\source
+8. In ApplicationProject -> Include Directories.txt, add **\<path to MnemoSyne-X\>\\source**
 
-9. MDODemoApp -> Include Directories.txt -> <path to MnemoSyne-X>\source
+9. In ApplicationProject -> Include Directories.txt, add **\<path to MnemoSyne-X\>\\misc**
 
-10. C application source -> #include <stdbool.h>
+10. In C application source, add the line **#include \<stdbool.h\>**
 
-11. C application source -> #include "mnemosyne-x.h" *BEFORE* #include "mdointerface.h"
+11. In C application source, add the line **#include "mnemosyne-x.h"** _BEFORE_ **#include "mdointerface.h"**
 
-12. ASM application source -> #include "mnemosyne-x_h.s"
+12. In ASM application source, add the line **#include "mnemosyne-x_h.s"**
 
 13. Add code to (example project available):
 13.1. Load and Link MnemoSyne-X MDO:
+
 	// ----------------------------------------------------------
 	// Load & Link MDO
 	// ----------------------------------------------------------
@@ -198,6 +200,7 @@ and configure both projects, as described below:
 	dbg("MDO linked successfully.\r\n\0");
 
 13.2. Unlink and Release MnemoSyne-X MDO:
+
 	// ----------------------------------------------------------
 	// Unload and Release MDO
 	// ----------------------------------------------------------
@@ -217,9 +220,9 @@ and configure both projects, as described below:
 	}
 	dbg("MDO released successfully.\r\n\0");
 
-14. MDODemoApp -> Symbols.txt -> replace line _[a-zA-Z0-9]*_hook with _[a-zA-Z0-9_]*_hook (This is a Bug in the MSX-DOS template. Will be solved in the future).
+14. In ApplicationProject -> Symbols.txt, replace the line **\_[a-zA-Z0-9]\*\_hook** with **\_[a-zA-Z0-9\_]\*\_hook** (This is a Bug in the MSX-DOS template. Will be solved in the future).
 
-15. MDODemoApp -> Symbols.txt -> add printchar (also a bug to be corrected in the MSX-DOS template).
+15. In ApplicationProject -> Symbols.txt, add the line **printchar** (also a bug to be corrected in the MSX-DOS template).
 
 16. Either add random.s to the MnemoSyne-X MDO project 
 (MnemoSyne-X -> ApplicationSources.txt ->  ../misc/random.s) or your application project and 
