@@ -15,8 +15,15 @@
 #include "stdbool.h"
 #include "mnemosyne-x_rammapper.h"
 
-//typedef unsigned char (*LoadSeg) (unsigned page, unsigned int logSeg);
-//typedef unsigned char (*SaveSeg) (unsigned page);
+#define				MNEMO_ALLOC_MASK			0b00110000
+#define				MNEMO_SEGMODE_TEMP			0
+#define				MNEMO_SEGMODE_READ			1
+#define				MNEMO_SEGMODE_FORCEDREAD	2
+#define				MNEMO_SEGMODE_READWRITE		3
+
+#define				MNEMO_ALLOC_KEEPPRIORITY0	0b00000000	// lowest priority
+#define				MNEMO_ALLOC_KEEPPRIORITY1	0b00010000
+#define				MNEMO_ALLOC_KEEPPRIORITY2	0b00100000	// highest priority
 
 typedef struct {
 	SEGHANDLER segHandler;
@@ -62,57 +69,165 @@ extern void mnemo_finalize(void) __sdcccall(1);
 
 /*
 ; ----------------------------------------------------------------
-;	- Activates a logical segment in a segment
+;	- Set a bank to standard persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- LOGSEGHANDLER* pLogSegHandler: pointer to logical segment handler
+;	- A: Bank number
 ;
 ; OUTPUTS:
-;   - unsigned char:	0 = success
+;	- None
 ; ----------------------------------------------------------------
 */
-unsigned char mnemo_activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcccall(1);
+extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
+
 
 /*
 ; ----------------------------------------------------------------
-;	- Releases a segment related to a logical segment number
+;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- unsigned char priority: Release priority (0 - 2)
-;	- unsigned int* logSegNumber: logical segment number
+;	- A: Bank number
+;	- DE: pLoadSeg
+;   - Stack: pSaveSeg
+;
+; OUTPUTS:
+;	- None
+;
+; CHANGES:
+;   - All regs
+; ----------------------------------------------------------------
+*/
+extern void mnemo_setPersistence(unsigned char, unsigned int*, unsigned int*) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Activates a logical segment
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pointer to logical segment handler
+;
+; OUTPUTS:
+;   - A:  0 = Success
+; ----------------------------------------------------------------
+*/
+extern unsigned char mnemo_activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Releases segment from a logSegHandler
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Release priority (0 - 2)
+;	- DE: pointer to logical segment handler
+;
+; OUTPUTS:
+;   - A:  0 = Success
+; ----------------------------------------------------------------
+*/
+extern unsigned char mnemo_releaseLogSeg(unsigned char priority, LOGSEGHANDLER* pSegHandler) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Releases all active segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Release priority (0 - 2)
 ;
 ; OUTPUTS:
 ;   - None
 ; ----------------------------------------------------------------
 */
-void releaseSeg(unsigned char priority, SEGHANDLER* pSegHandler) __sdcccall(1);
+extern void mnemo_releaseAll(unsigned char priority) __sdcccall(1);
+
 
 /*
 ; ----------------------------------------------------------------
-;	- Releases a segment from a logical segment handler
+;	- Flushes all pending, released segments to disk
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- unsigned char priority: Release priority (0 - 2)
-;	- LOGSEGHANDLER* pLogSegHandler: pointer to logical segment handler
+;	- None
+;
+; OUTPUTS:
+;   - A: Error code
+; ----------------------------------------------------------------
+*/
+extern unsigned char mnemo_flushAll(void) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Enable a segment from a Segment Handler in aux page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- HL: pointer to Segment handler
 ;
 ; OUTPUTS:
 ;   - None
 ; ----------------------------------------------------------------
 */
-void releaseLogSeg (unsigned char priority, LOGSEGHANDLER* pSDPHandler) __sdcccall(1);
+extern void mnemo_switchAuxPage(LOGSEGHANDLER*) __sdcccall(1);
+
 
 /*
 ; ----------------------------------------------------------------
-;	-Get number of Free Physical Segments
+;	- Enable a segment from a Segment Handler in main page
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	-None
+;	- HL: pointer to Segment handler
 ;
 ; OUTPUTS:
-;   -None
+;   - None
 ; ----------------------------------------------------------------
 */
-unsigned int mnemo_getFreeSegments (void) __sdcccall(1);
+extern void mnemo_switchMainPage(LOGSEGHANDLER*) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Get number of Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Managed Physical Segments
+; ----------------------------------------------------------------
+*/
+extern unsigned int mnemo_getManagedSegments(void) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Get number of Used Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: number of Used Managed Physical Segments
+; ----------------------------------------------------------------
+*/
+extern unsigned int mnemo_getUsedSegments(void) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Get number of Free Managed Physical Segments
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: Number of free segments
+;
+; CHANGES:
+;   - HL
+; ----------------------------------------------------------------
+*/
+extern unsigned int mnemo_getFreeSegments(void) __sdcccall(1);
 
 
 #endif	//  ____MNEMOSYNEX_H__

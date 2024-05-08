@@ -28,5 +28,3 @@ print.s
 ;yourSourceCodeHere.s
 ;yourSourceCodeHere.c
 
-../../../misc/random.s
-../../../misc/printdec.s

@@ -11,9 +11,9 @@
 ;[MSX_LIB_PATH]\util\printf.c
 ;[MSX_LIB_PATH]\util\types.c
 
-../source/mnemosyne-x.s
-../source/mnemosyne-x_rammapper.s
-../source/mnemosyne-x_stdpersist.s
+../../../source/mnemosyne-x.s
+../../../source/mnemosyne-x_rammapper.s
+../../../source/mnemosyne-x_stdpersist.s
 
-;../misc/random.s
-;../misc/printdec.s
+../../../misc/random.s
+../../../misc/printdec.s

@@ -854,7 +854,7 @@ _mnemo_activateLogSeg_noFreePhysSegError:
 ;	- DE: pLogSegHandler
 ;
 ; OUTPUTS:
-;   - None
+;   - A: Error code
 ;
 ; CHANGES:
 ;   - All registers
@@ -1048,6 +1048,7 @@ _mnemo_flush_next:
 	jr z,	mnemo_restoreAuxPageAndReturnStatus		; same ending
 	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
 	jr		mnemo_restoreAuxPageAndReturnStatus		; same ending
+
 
 ; ----------------------------------------------------------------
 ;	- Enable a segment from a Segment Handler in aux page

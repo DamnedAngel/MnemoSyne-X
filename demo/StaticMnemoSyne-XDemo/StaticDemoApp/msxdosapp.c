@@ -5,15 +5,12 @@
 //		C version
 // ----------------------------------------------------------
 
-#include <stdbool.h>
-
 #include "MSX/BIOS/msxbios.h"
 #include "targetconfig.h"
 #include "applicationsettings.h"
 #include "printinterface.h"
 #include "printdec.h"
 #include "mnemosyne-x.h"
-#include "mdointerface.h"
 
 LOGSEGHANDLER seg0, seg1, seg2;
 
@@ -54,83 +51,25 @@ bool getFlag(unsigned int i) {
 }
 
 // ----------------------------------------------------------
-// Generic example of loading the MnemoSyne-X in MDO.
-// ----------------------------------------------------------
-unsigned char loadMDO(void) {
-
-	// ----------------------------------------------------------
-	// Load & Link MDO
-	// ----------------------------------------------------------
-	print("Loading MnemoSyne-X MDO.\r\n\0");
-
-	// load MnemoSyne-X MDO
-	unsigned char r = mdoLoad(&MNEMOSYNEX);
-	if (r) {
-		print("Error loading MDO.\r\n\0");
-		return r;
-	}
-	dbg("MDO loaded successfully.\r\n\0");
-
-	// link MnemoSyne-X MDO
-	r = mdoLink(&MNEMOSYNEX);
-	if (r) {
-		print("Error linking MDO.\r\n\0");
-		return r;
-	}
-	dbg("MDO linked successfully.\r\n\0");
-
-	return 0;
-}
-
-
-// ----------------------------------------------------------
-// Generic example of unloading the MnemoSyne-X in MDO.
-// ----------------------------------------------------------
-unsigned char unloadMDO(void) {
-	// ----------------------------------------------------------
-	// Unload and Release MDO
-	// ----------------------------------------------------------
-	
-	// unlink MnemoSyne-X MDO
-	unsigned char r = mdoUnlink(&MNEMOSYNEX);
-	if (r) {
-		print("Error unlinking MDO.\r\n\0");
-		return r;
-	}
-	dbg("MDO unlinked successfully.\r\n\0");
-
-	// release MnemoSyne-X MDO
-	r = mdoRelease(&MNEMOSYNEX);
-	if (r) {
-		print("Error releasing MDO.\r\n\0");
-		return r;
-	}
-	dbg("MDO released successfully.\r\n\0");
-
-	return 0;
-}
-
-
-// ----------------------------------------------------------
 // Generic example of using MnemoSyne-X.
 // ----------------------------------------------------------
 
 void printManagedSegs(void) {
-	unsigned int ts = mnemo_getManagedSegments_hook();
+	unsigned int ts = mnemo_getManagedSegments();
 	print(" - Managed segments: \0");
 	PrintDec(ts);
 	print("\r\n\0");
 }
 
 void printUsedSegs(void) {
-	unsigned int ts = mnemo_getUsedSegments_hook();
+	unsigned int ts = mnemo_getUsedSegments();
 	print(" - Used segments: \0");
 	PrintDec(ts);
 	print("\r\n\0");
 }
 
 void printFreeSegs(void) {
-	unsigned int ts = mnemo_getFreeSegments_hook();
+	unsigned int ts = mnemo_getFreeSegments();
 	print(" - Free segments: \0");
 	PrintDec(ts);
 	print("\r\n\0");
@@ -141,7 +80,7 @@ void useMnemoSyneX(void) {
 	// Use MnemoSyne-X
 	// ----------------------------------------------------------
 
-	mnemo_init_hook(false);
+	mnemo_init(false);
 	printManagedSegs();
 	printFreeSegs();
 
@@ -149,7 +88,7 @@ void useMnemoSyneX(void) {
 	print("Activating seg. 1024.\r\n\0");
 	seg0.logSegNumber = 1024;
 	seg0.segMode = MNEMO_SEGMODE_READWRITE;
-	mnemo_activateLogSeg_hook(&seg0);
+	mnemo_activateLogSeg(&seg0);
 	Pokew(MNEMO_MAIN_SEGPAYLOAD, 1024);
 	printFreeSegs();
 
@@ -157,38 +96,38 @@ void useMnemoSyneX(void) {
 	print("Activating seg. 1025.\r\n\0");
 	seg1.logSegNumber = 1025;
 	seg1.segMode = MNEMO_SEGMODE_READWRITE;
-	mnemo_activateLogSeg_hook(&seg1);
+	mnemo_activateLogSeg(&seg1);
 	Pokew(MNEMO_MAIN_SEGPAYLOAD, 1025);
 	printFreeSegs();
 
 	// switch back to segment 1024
 	print("Switching back to seg. 1024.\r\n\0");
-	mnemo_switchMainPage_hook(&seg0);
+	mnemo_switchMainPage(&seg0);
 	print("Signature: \0");
 	PrintDec(Peekw(MNEMO_MAIN_SEGPAYLOAD));
 	print("\r\n\0");
 
 	// release segment 1024
 	print("Releasing seg. 1024.\r\n\0");
-	mnemo_releaseLogSeg_hook(MNEMO_ALLOC_KEEPPRIORITY2, &seg0);
+	mnemo_releaseLogSeg(MNEMO_ALLOC_KEEPPRIORITY2, &seg0);
 	printFreeSegs();
 
 	// activate segment 1026
 	print("Activating seg. 1026.\r\n\0");
 	seg2.logSegNumber = 1026;
 	seg2.segMode = MNEMO_SEGMODE_READWRITE;
-	mnemo_activateLogSeg_hook(&seg2);
+	mnemo_activateLogSeg(&seg2);
 	Pokew(MNEMO_MAIN_SEGPAYLOAD, 1026);
 	printFreeSegs();
 
 	// release all segments
 	print("Releasing all segs.\r\n\0");
-	mnemo_releaseAll_hook(MNEMO_ALLOC_KEEPPRIORITY0);
+	mnemo_releaseAll(MNEMO_ALLOC_KEEPPRIORITY0);
 	printFreeSegs();
 
 	// Flush all segments
 	print("Flushing all segs.\r\n\0");
-	mnemo_flushAll_hook();
+	mnemo_flushAll();
 	printFreeSegs();
 
 	print("-------------------\r\n\0");
@@ -220,7 +159,7 @@ void useMnemoSyneX(void) {
 
 		seg0.logSegNumber = lsn;
 		seg0.segMode = 3;
-		e = mnemo_activateLogSeg_hook(&seg0);
+		e = mnemo_activateLogSeg(&seg0);
 		if (e > 1) {
 			//			PrintDec(lsn);
 			print(" - Act. Error (1) \0");
@@ -230,7 +169,7 @@ void useMnemoSyneX(void) {
 		else {
 			setFlag(rw);
 			Pokew(MNEMO_MAIN_SEGPAYLOAD, lsn);
-			e=mnemo_releaseLogSeg_hook(rb, &seg0);
+			e = mnemo_releaseLogSeg(MNEMO_ALLOC_KEEPPRIORITY1, &seg0);
 			if (e > 1) {
 				PrintDec(lsn);
 				print(" - Rel. Error \0");
@@ -248,9 +187,9 @@ void useMnemoSyneX(void) {
 	print("\r\n\0");
 
 	print("Releasing all segments...\r\n\0");
-	mnemo_releaseAll_hook(0x10);
+	mnemo_releaseAll(0x10);
 	print("Flushing all segments...\r\n\0");
-	mnemo_flushAll_hook();
+	mnemo_flushAll();
 	printFreeSegs();
 
 
@@ -264,7 +203,7 @@ void useMnemoSyneX(void) {
 			segc++;
 			seg0.logSegNumber = lsn;
 			seg0.segMode = 1;
-			e = mnemo_activateLogSeg_hook(&seg0);
+			e = mnemo_activateLogSeg(&seg0);
 			if (e) {
 				PrintDec(lsn);
 				print(" - Act. Error (2) \0");
@@ -279,7 +218,7 @@ void useMnemoSyneX(void) {
 					PrintDec(Peekw(MNEMO_MAIN_SEGPAYLOAD));
 					print("\r\n\0");
 				}
-				e = mnemo_releaseLogSeg_hook(1, &seg0);
+				e = mnemo_releaseLogSeg(1, &seg0);
 				if (e) {
 					PrintDec(lsn);
 					print(" - Rel. Error \0");
@@ -308,7 +247,7 @@ void useMnemoSyneX(void) {
 	print("Activating seg. 1024.\r\n\0");
 	seg0.logSegNumber = 1024;
 	seg0.segMode = MNEMO_SEGMODE_READ;
-	mnemo_activateLogSeg_hook(&seg0);
+	mnemo_activateLogSeg(&seg0);
 	print("Signature: \0");
 	PrintDec(Peekw(MNEMO_MAIN_SEGPAYLOAD));
 	print("\r\n\0");
@@ -318,7 +257,7 @@ void useMnemoSyneX(void) {
 	print("Activating seg. 1025.\r\n\0");
 	seg0.logSegNumber = 1025;
 	seg0.segMode = MNEMO_SEGMODE_READ;
-	mnemo_activateLogSeg_hook(&seg0);
+	mnemo_activateLogSeg(&seg0);
 	print("Signature: \0");
 	PrintDec(Peekw(MNEMO_MAIN_SEGPAYLOAD));
 	print("\r\n\0");
@@ -328,7 +267,7 @@ void useMnemoSyneX(void) {
 	print("Activating seg. 1026.\r\n\0");
 	seg0.logSegNumber = 1026;
 	seg0.segMode = MNEMO_SEGMODE_READ;
-	mnemo_activateLogSeg_hook(&seg0);
+	mnemo_activateLogSeg(&seg0);
 	print("Signature: \0");
 	PrintDec(Peekw(MNEMO_MAIN_SEGPAYLOAD));
 	print("\r\n\0");
@@ -336,31 +275,22 @@ void useMnemoSyneX(void) {
 
 	// release all segments
 	print("Releasing all segs.\r\n\0");
-	mnemo_releaseAll_hook(MNEMO_ALLOC_KEEPPRIORITY0);
+	mnemo_releaseAll(MNEMO_ALLOC_KEEPPRIORITY0);
 	printFreeSegs();
 
-	mnemo_finalize_hook();
-}
-
-//	----------------------------------------------------------
-//	This is called when an MDO hook is called before it is
-//	linked to a child MDO.The application will terminate
-//	after the return of this routine.
-//	Customize here the finalization of you application.
-//  Remove it if you're not using MDOs.
-unsigned char onMDOAbend(void) {
-	print("Undefined hook called.\r\n\0");
-	return 0xa1;	// error code to be relayed to MSX-DOS.
+	mnemo_finalize();
 }
 
 // ----------------------------------------------------------
+//	This is the main function for your C MSX APP!
+//
 //	Your fun starts here!!!
 //	Replace the code below with your art.
 // 
 //	Note: Only use argv and argc if you enabled
 //	CMDLINE_PARAMETERS on TargetConfig_XXXXX.txt
 unsigned char main(char** argv, int argc) {
-	print("MnemoSyne MDO Demo app\r\n\0");
+	print("MnemoSyne Static Demo app\r\n\0");
 	print("Damned Angel - 2024\r\n\0");
 
 #ifdef CMDLINE_PARAMETERS
@@ -372,9 +302,22 @@ unsigned char main(char** argv, int argc) {
 	print(linefeed);
 #endif
 
-	loadMDO();
 	useMnemoSyneX();
-	unloadMDO();
 
+#ifdef MDO_SUPPORT
+	//	useMDO returns errorcode, but in this
+	//  example we will ignore it and return
+	//	#0xa0 error code for all MDO errors.
+	//  Remove it if you're not using MDOs.
+	extern unsigned char useMDO(void);
+	if (useMDO()) {
+		return 0xa0;
+	}
+	else {
+		return 0;
+	}
+#else
 	return 0;
+#endif
 }
+
