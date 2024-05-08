@@ -1,0 +1,16 @@
+;----------------------------------------------------------
+;	IncludeDirectories.txt - by Danilo Angelo, 2020
+;
+;	List of all directories in which the build process
+;	must search source files.
+;----------------------------------------------------------
+.
+MSX\BIOS
+;[MSX_LIB_PATH]\msx
+;[MSX_LIB_PATH]\msxdos
+;[MSX_LIB_PATH]\util
+;[MSX_LIB_PATH]\fusion-c\header
+
+..\..\..\source
+..\..\..\source\config
+..\..\..\misc

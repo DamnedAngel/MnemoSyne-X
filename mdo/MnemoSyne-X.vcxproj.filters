@@ -38,9 +38,6 @@
     <Filter Include="ASM Header Files\MSX\VDP">
       <UniqueIdentifier>{442c8cf3-2879-4985-8ded-19250a0c1dea}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Memory Bank Builder">
-      <UniqueIdentifier>{b69f69b9-feff-4e03-893a-f662429a16ae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Documentation">
       <UniqueIdentifier>{81a7c53c-3b92-44bf-a01b-187a405a9ca1}</UniqueIdentifier>
     </Filter>
@@ -52,6 +49,9 @@
     </Filter>
     <Filter Include="ASM Source Files\Misc">
       <UniqueIdentifier>{00fa4461-04bc-4924-b42e-a604c28de442}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Databank Builder">
+      <UniqueIdentifier>{b69f69b9-feff-4e03-893a-f662429a16ae}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -68,7 +68,7 @@
       <Filter>C Header Files\Misc</Filter>
     </ClInclude>
     <ClInclude Include="..\misc\printinterface.h">
-      <Filter>C Header Files\Misc</Filter>
+      <Filter>C Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -97,22 +97,22 @@
       <Filter>ASM Header Files</Filter>
     </None>
     <None Include="..\datafile\mnemo.py">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </None>
     <None Include="..\datafile\mnemobank.py">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </None>
     <None Include="..\datafile\mnemoexception.py">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </None>
     <None Include="..\datafile\mnemologger.py">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </None>
     <None Include="..\datafile\mnemoresource.py">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </None>
     <None Include="..\datafile\mnemosegment.py">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </None>
     <None Include="..\source\mnemosyne-x_internal_h.s">
       <Filter>ASM Header Files</Filter>
@@ -189,7 +189,7 @@
       <Filter>Project Config</Filter>
     </Text>
     <Text Include="..\datafile\mnemosynexdata.txt">
-      <Filter>Memory Bank Builder</Filter>
+      <Filter>Databank Builder</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>

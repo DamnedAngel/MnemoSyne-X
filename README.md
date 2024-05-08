@@ -133,11 +133,36 @@ pages 1 and 2, it must sit on pages 0 or 3. The MDO provided is,
 by default, to be dinamycally loaded in the beginning of page 3.
 
 ### Integrating **MnemoSyne-X** statically to your executable
-In order to directly integrate **MnemoSyne-X** to your MSX-DOS/Nextor
-Application without MDOs, ignore the _mdo_ folder in the package,
-include the sources in the diagram above to your project, and use
+In order to statically integrate **MnemoSyne-X** to your MSX-DOS/Nextor
+Application, ignore the _mdo_ folder in the package and follow
+the steps:
+
+1. Add the following files to your build process (if you are 
+using my MSX-DOS template, add them to **LibrarySources.txt**):
+
+    source/mnemosyne-x.s
+    source/mnemosyne-x_rammapper.s
+    source/mnemosyne-x_stdpersist.s
+    
+    misc/random.s
+    misc/printdec.s
+
+2. Add the following include paths to your build process (if you are 
+using my MSX-DOS template, add them to **IncludeDirectories.txt**):
+
+    source
+    source\config
+    misc
+    
+3. Add to ASM sources program: 
 
     .include "mnemosyne-x_h.s"
+
+4. Add to C sources program:
+
+    #include "mnemosyne-x_h.s"
+
+
 
 in your program to access **MnemoSyne-X**'s API. **mnemosyne-x_h.s**
 already includes **mnemosyne-x_general_h.s** to provide the programmer
