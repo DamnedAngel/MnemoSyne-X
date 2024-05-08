@@ -130,7 +130,7 @@ flowchart
 The core module may be integrated directly to the MSX-DOS/Nextor
 executable, however. Since **MnemoSyne-X** manages segments in
 pages 1 and 2, it must sit on pages 0 or 3. The MDO provided is,
-by default, to be dinamycally loaded in the beginning of page 3.
+by default, to be dynamically loaded in the beginning of page 3.
 
 ### Integrating **MnemoSyne-X** statically to your executable
 In order to statically integrate **MnemoSyne-X** to your MSX-DOS/Nextor
@@ -321,7 +321,7 @@ the programmer and **MnemoSyne-X** will always restore user's segment in
 If should be safe to call **MnemoSyne-X**'s API from a user routine in 
 **AUX** page.
 
-**MAIN** page is where **MnemoSyne-X** will make segments availble after
+**MAIN** page is where **MnemoSyne-X** will make segments available after
 allocating them.
 
 The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
