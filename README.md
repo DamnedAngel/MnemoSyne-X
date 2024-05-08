@@ -140,6 +140,8 @@ the steps:
 1. Add the following files to your build process (if you are 
 using my MSX-DOS template, add them to **LibrarySources.txt**):
 
+.
+
     source/mnemosyne-x.s
     source/mnemosyne-x_rammapper.s
     source/mnemosyne-x_stdpersist.s
@@ -150,24 +152,29 @@ using my MSX-DOS template, add them to **LibrarySources.txt**):
 2. Add the following include paths to your build process (if you are 
 using my MSX-DOS template, add them to **IncludeDirectories.txt**):
 
+.
+
     source
     source\config
     misc
     
 3. Add to ASM sources program: 
 
+.
+
     .include "mnemosyne-x_h.s"
 
 4. Add to C sources program:
+
+.
 
     #include "mnemosyne-x_h.s"
 
 
 
-in your program to access **MnemoSyne-X**'s API. **mnemosyne-x_h.s**
-already includes **mnemosyne-x_general_h.s** to provide the programmer
-with useful **MnemoSyne-X** constants.
+That's it. Your program is now *MnemoSyne-X* capable.
 
+**Important: Be sure to keep MnemoSyne-X** routines in page 0!**
 
 ### Using **MnemoSyne-X** in an MDO (MSX-DOS Overlay)
 When using **MnemoSyne-X** in the 
