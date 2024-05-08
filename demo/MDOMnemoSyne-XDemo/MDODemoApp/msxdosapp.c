@@ -141,7 +141,7 @@ void useMnemoSyneX(void) {
 	// Use MnemoSyne-X
 	// ----------------------------------------------------------
 
-	mnemo_init_hook(false);
+	mnemo_init_hook(false, "MNEMOSYN");
 	printManagedSegs();
 	printFreeSegs();
 

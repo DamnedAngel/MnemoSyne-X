@@ -294,6 +294,7 @@ mnemo_commonSave_markFlushed:
 ;	- A: Use primary mappers only (if MNEMO_PRIMARY_MAPPER_ONLY = 0).
 ;			0 = All mappers
 ;			1 = Primary mapper only
+;	- DE: pointer to an 8-byte string with the filename
 ;
 ; OUTPUTS:
 ;   - A:  0 = Success
@@ -302,6 +303,12 @@ mnemo_commonSave_markFlushed:
 ;   - All registers
 ; ----------------------------------------------------------------
 _mnemo_init::
+	; copy filename
+	ld		hl, #fileName
+	ex		de, hl
+	ld		bc, #8
+	ldir
+
 	push	ix
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -491,7 +498,12 @@ _mnemo_init_end:
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_mnemo_finalize::
+_mnemo_finalize::	
+	; release and flush all segments
+	ld		a, #MNEMO_ALLOC_KEEPPRIORITY0
+	call	_mnemo_releaseAll
+	call	_mnemo_flushAll
+
 	; TODO: Decide whether to deallocate segments.
 	; In principle, that is not needed, since MSX-DOS will
 	; deallocate them automatically.
@@ -1186,6 +1198,10 @@ okMsg:							.asciz " [OK]\r\n"
 ;
 ; buffer and indexes
 ;
+
+fileName::					.ascii	'THETRIAL'
+fileExtension::				.asciz	'.___'
+
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 bufferSegment::				.ds 2
 segTableSegment::			.ds 2

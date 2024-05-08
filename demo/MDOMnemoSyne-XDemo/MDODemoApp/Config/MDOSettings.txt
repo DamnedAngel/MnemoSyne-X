@@ -18,7 +18,7 @@ MDO_NAME						APPLICATION
 ;	Syntax: MDO_HOOK <C return type>|<hookname>|<C signature>
 
 ; --- MnemoSyneX ---
-MDO_HOOK		unsigned char|mnemo_init|(bool)
+MDO_HOOK		unsigned char|mnemo_init|(bool, char*)
 MDO_HOOK		void|mnemo_finalize|(void)
 
 MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)

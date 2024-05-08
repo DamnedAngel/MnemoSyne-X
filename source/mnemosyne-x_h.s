@@ -17,6 +17,7 @@
 ;	- [MNEMO_PRIMARY_MAPPER_ONLY = 0] A: Use primary mappers only
 ;			0 = All mappers
 ;			1 = Primary mapper only
+;	- DE: pointer to an 8-byte string with the databanks filename
 ;
 ; OUTPUTS:
 ;   - A:  0 = Success
