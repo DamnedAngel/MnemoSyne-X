@@ -368,7 +368,7 @@ Since each segment holds 16kbytes, a maximum 16bytes * 256 * 256 = 1GByte
 Virtual Memory may be managed by **MnemoSyne-X**.
 
 Each **Databank** file will be named XXXXXXXX._NN, where:
-- XXXXXXXX is a string hardcoded in **MnemoSyne-X** sources; and
+- XXXXXXXX is a string passed as parameter to _mnemo_init; and
 - NN is the 0-padded hexadecimal representation of the **Databank** number.
 
 The number of the **Databank** in which a given Logical Segment, among the
@@ -400,6 +400,7 @@ to C projects (SDCCCALL(1) must be used).
     ;	- A: Use primary mappers only (if MNEMO_PRIMARY_MAPPER_ONLY = 0).
     ;			0 = All mappers
     ;			1 = Primary mapper only
+    ;	- DE: pointer to an 8-byte string with the databanks filename
     ;
     ; OUTPUTS:
     ;   - A:  0 = Success

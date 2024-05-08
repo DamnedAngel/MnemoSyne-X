@@ -80,7 +80,7 @@ void useMnemoSyneX(void) {
 	// Use MnemoSyne-X
 	// ----------------------------------------------------------
 
-	mnemo_init(false);
+	mnemo_init(false, "MNEMOSYN");
 	printManagedSegs();
 	printFreeSegs();
 

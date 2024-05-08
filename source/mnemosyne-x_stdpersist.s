@@ -11,6 +11,8 @@
 .NOFIL		.equ	0xD7
 
 .globl		_mnemo_switchAuxPage
+.globl		fileName
+.globl		fileExtension
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 .globl		primaryMapperSlot
@@ -460,8 +462,6 @@ _standardSave_saveIndex::
 	jp		persistCommon_saveEntry
 
 fileHandle::				.db		#0xff
-fileName::					.ascii	'THETRIAL'
-fileExtension::				.asciz	'.___'
 
 ;   ==================================
 ;   ========== DATA SEGMENT ==========

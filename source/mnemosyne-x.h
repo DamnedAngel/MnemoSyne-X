@@ -42,6 +42,7 @@ typedef struct {
 ;	- [MNEMO_PRIMARY_MAPPER_ONLY = 0] bool primaryMapperOnly
 ;			false = All mappers
 ;			true  = Primary mapper only
+;	- char[8]*: databanks filename
 ;
 ; OUTPUTS:
 ;   - unsigned char:  0 = Success
@@ -50,7 +51,7 @@ typedef struct {
 #ifdef MNEMO_PRIMARY_MAPPER_ONLY
 extern void mnemo_init(void) __sdcccall(1);
 #else
-extern unsigned char mnemo_init(bool) __sdcccall(1);
+extern unsigned char mnemo_init(bool, char*) __sdcccall(1);
 #endif
 
 /*
