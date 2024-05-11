@@ -219,7 +219,7 @@ void useMnemoSyneX(void) {
 		unsigned char rb = ((unsigned char)(rnd16())) & MNEMO_ALLOC_MASK;
 
 		seg0.logSegNumber = lsn;
-		seg0.segMode = 3;
+		seg0.segMode = MNEMO_SEGMODE_READWRITE;
 		e = mnemo_activateLogSeg_hook(&seg0);
 		if (e > 1) {
 			//			PrintDec(lsn);
@@ -263,7 +263,7 @@ void useMnemoSyneX(void) {
 		if (getFlag(i)) {
 			segc++;
 			seg0.logSegNumber = lsn;
-			seg0.segMode = 1;
+			seg0.segMode = MNEMO_SEGMODE_READ;
 			e = mnemo_activateLogSeg_hook(&seg0);
 			if (e) {
 				PrintDec(lsn);
@@ -334,11 +334,6 @@ void useMnemoSyneX(void) {
 	print("\r\n\0");
 	printFreeSegs();
 
-	// release all segments
-	print("Releasing all segs.\r\n\0");
-	mnemo_releaseAll_hook(MNEMO_ALLOC_KEEPPRIORITY0);
-	printFreeSegs();
-
 	mnemo_finalize_hook();
 }
 
@@ -360,7 +355,7 @@ unsigned char onMDOAbend(void) {
 //	Note: Only use argv and argc if you enabled
 //	CMDLINE_PARAMETERS on TargetConfig_XXXXX.txt
 unsigned char main(char** argv, int argc) {
-	print("MnemoSyne MDO Demo app\r\n\0");
+	print("MnemoSyne-X MDO Demo app\r\n\0");
 	print("Damned Angel - 2024\r\n\0");
 
 #ifdef CMDLINE_PARAMETERS

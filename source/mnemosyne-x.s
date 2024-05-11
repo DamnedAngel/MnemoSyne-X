@@ -9,11 +9,22 @@
 .include "mnemosyne-x_internal_h.s"
 .include "mnemosyne-x_stdpersist_h.s"
 
+.macro __MNEMOPRINT a
+.ifeq (MNEMO_VERBOSE_MODE - 1)
+	print	a
+.endif
+.endm
+
+.macro __MNEMOPRINTDEC
+.ifeq (MNEMO_VERBOSE_MODE - 1)
+	call	_PrintDec
+.endif
+.endm
+
 ;   ==================================
 ;   ========== CODE SEGMENT ==========
 ;   ==================================
 	.area _CODE
-
 
 ; ----------------------------------------------------------------
 ; ----------------------- SERVICES -------------------------------
@@ -317,10 +328,10 @@ _mnemo_init::
 	ld hl,	#0
 	ld		(#_nPhysicalSegsInUse), hl
 
-	print	initializingMnemosynex
+	__MNEMOPRINT	initializingMnemosynexMsg
 
 	; init mapper mgr
-	print	initializingMapperMsg
+	__MNEMOPRINT	initializingMapperMsg
 	ld		a, #MNEMO_MAPPER_DEVICE_ID
 	call	_InitRamMapperInfo
 
@@ -348,10 +359,10 @@ _mnemo_init_setQueryTag:
 	ld		(#mapperQueryTag), a
 .endif
 
-	print	okMsg
+	__MNEMOPRINT	okMsg
 
 	; allocate index segments
-	print	allocatingIndexSegmentsMsg
+	__MNEMOPRINT	allocatingIndexSegmentsMsg
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		hl, #bufferSegment
 	ld		b, #MNEMO_INDEX_SEGMENTS + 2
@@ -382,12 +393,12 @@ _mnemo_init_indexSegAllocLoop:
 
 	djnz	_mnemo_init_indexSegAllocLoop
 
-	print	okMsg
+	__MNEMOPRINT	okMsg
 
 	; allocate all available segments
 	; Note: allocate all other segments needed
 	; by the application BEFORE calling _mnemo_init!
-	print	allocatingSegmentsMsg
+	__MNEMOPRINT	allocatingSegmentsMsg
 
 	; Set Segment Table segment in Aux Page
 	ld		hl, #segTableSegment
@@ -435,9 +446,11 @@ _mnemo_init_segAllocLoop:
 	ld		(#MNEMO_SEGHDR_LOADHOOK), a
 	ld		(#MNEMO_SEGHDR_SAVEHOOK), a
 
+.ifeq (MNEMO_VERBOSE_MODE - 1)
 _mnemo_init_printDash:
 	ld		a, #'-'
 	call	printchar
+.endif
 
 _mnemo_init_inPhysSegCounter:
 	ld		hl, (#afterSegTable)
@@ -457,27 +470,31 @@ _mnemo_init_cont:
 	srl		h
 	rr		l						; hl = #segments
 	ld		(#_nPhysicalSegs), hl
+
+.ifeq (MNEMO_VERBOSE_MODE - 1)
 	push	hl
-	print	okMsg	
+	__MNEMOPRINT	okMsg	
 	pop		hl
 
 	push	hl
-	call	_PrintDec
-	print	segmentsAllocatedMsg
-	print	memoryManaged1Msg
+	__MNEMOPRINTDEC
+	__MNEMOPRINT	segmentsAllocatedMsg
+	__MNEMOPRINT	memoryManaged1Msg
 	pop		hl
+.endif
+
 	add		hl, hl
 	add		hl, hl
 	add		hl, hl
 	add		hl, hl
 	ld		(#_managedMemorySize), hl
-	call	_PrintDec
-	print	memoryManaged2Msg
+	__MNEMOPRINTDEC
+	__MNEMOPRINT	memoryManaged2Msg
 
-	print	mnemosynexVirtualMemSize
+	__MNEMOPRINT	mnemosynexVirtualMemSizeMsg
 	ld		hl, #MNEMO_MAX_LOGICAL_MEMORY
-	call	_PrintDec
-	print	megaBytesMsg
+	__MNEMOPRINTDEC
+	__MNEMOPRINT	megaBytesMsg
 
 _mnemo_init_end:
 	ld		hl, #pageConfigGlobalBuffer
@@ -498,11 +515,18 @@ _mnemo_init_end:
 ; CHANGES:
 ;   - All registers
 ; ----------------------------------------------------------------
-_mnemo_finalize::	
+_mnemo_finalize::
+	__MNEMOPRINT	finalizingMnemosynexMsg
+
 	; release and flush all segments
+	__MNEMOPRINT	releasingAllSegmentsMsg
 	ld		a, #MNEMO_ALLOC_KEEPPRIORITY0
 	call	_mnemo_releaseAll
+	__MNEMOPRINT	okMsg
+
+	__MNEMOPRINT	flushingAllSegmentsMsg
 	call	_mnemo_flushAll
+	__MNEMOPRINT	okMsg
 
 	; TODO: Decide whether to deallocate segments.
 	; In principle, that is not needed, since MSX-DOS will
@@ -511,6 +535,8 @@ _mnemo_finalize::
 	ld		hl, #pageConfigGlobalBuffer
 	call	mnemo_restorePageLayout
 	pop		ix
+
+	__MNEMOPRINT	mnemosynexShutDownMsg
 	ret
 
 
@@ -1178,8 +1204,9 @@ _mnemo_getFreeSegments::
 ; ----------------------------------------------------------------
 ;	- Strings
 ; ----------------------------------------------------------------
-initializingMnemosynex:			.asciz "** MnemoSyne-X Virtual Memory **\r\n"
-mnemosynexVirtualMemSize:		.asciz "Virtual Memory Size is "
+.ifeq (MNEMO_VERBOSE_MODE - 1)
+initializingMnemosynexMsg:		.asciz "** MnemoSyne-X Virtual Memory **\r\n"
+mnemosynexVirtualMemSizeMsg:	.asciz "Virtual Memory Size is "
 initializingMapperMsg:			.asciz "Initializing mapper service..."
 allocatingIndexSegmentsMsg:		.asciz "Allocating index segments... "
 allocatingSegmentsMsg:			.asciz "Allocating segments...\r\n=> "
@@ -1187,8 +1214,14 @@ segmentsAllocatedMsg:			.asciz " segments allocated.\r\n"
 memoryManaged1Msg:				.asciz "Managing "
 memoryManaged2Msg:				.asciz "Kbytes of physical memory.\r\n"
 megaBytesMsg:					.asciz "Mbytes.\r\n"
+finalizingMnemosynexMsg:		.asciz "** Shutting MnemoSyne-X down **\r\n"
+releasingAllSegmentsMsg:		.asciz "Releasing all segments... "
+flushingAllSegmentsMsg:			.asciz "Flushing all segments... "
+mnemosynexShutDownMsg:			.asciz "MnemoSyne-X shut down.\r\n"
 
 okMsg:							.asciz " [OK]\r\n"
+.endif
+
 
 ;   ==================================
 ;   ========== DATA SEGMENT ==========
@@ -1247,7 +1280,7 @@ pLogSegHandler:				.ds 2
 logSegHandler:
 segHandler:
 segNumber:					.ds 1
-mapperSlot:					.ds 1
+mapperSlot::				.ds 1
 pSegHandler:				.ds 2
 pLogSegTableItem:			.ds 2		; TODO: Check if this can be dropped from the handler
 logSegHandler_params:
