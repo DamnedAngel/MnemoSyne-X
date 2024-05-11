@@ -67,12 +67,12 @@
     <ClInclude Include="MSX\BIOS\msxbios.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\datafile\mnemo.py" />
-    <None Include="..\datafile\mnemobank.py" />
-    <None Include="..\datafile\mnemoexception.py" />
-    <None Include="..\datafile\mnemologger.py" />
-    <None Include="..\datafile\mnemoresource.py" />
-    <None Include="..\datafile\mnemosegment.py" />
+    <None Include="..\databank\mnemo.py" />
+    <None Include="..\databank\mnemobank.py" />
+    <None Include="..\databank\mnemoexception.py" />
+    <None Include="..\databank\mnemologger.py" />
+    <None Include="..\databank\mnemoresource.py" />
+    <None Include="..\databank\mnemosegment.py" />
     <None Include="..\misc\printdec.s" />
     <None Include="..\misc\printdec_h.s" />
     <None Include="..\misc\printinterface_h.s" />
@@ -97,7 +97,7 @@
     <None Include="MSX\VDP\vdpportmacros.s" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\datafile\mnemosynexdata.txt" />
+    <Text Include="..\databank\mnemosynexdata.txt" />
     <Text Include="Config\ApplicationSettings.txt" />
     <Text Include="Config\ApplicationSources.txt" />
     <Text Include="Config\BuildEvents.txt" />

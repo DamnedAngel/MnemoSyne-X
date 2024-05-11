@@ -96,24 +96,6 @@
     <None Include="..\source\config\mnemosyne-x_config_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
-    <None Include="..\datafile\mnemo.py">
-      <Filter>Databank Builder</Filter>
-    </None>
-    <None Include="..\datafile\mnemobank.py">
-      <Filter>Databank Builder</Filter>
-    </None>
-    <None Include="..\datafile\mnemoexception.py">
-      <Filter>Databank Builder</Filter>
-    </None>
-    <None Include="..\datafile\mnemologger.py">
-      <Filter>Databank Builder</Filter>
-    </None>
-    <None Include="..\datafile\mnemoresource.py">
-      <Filter>Databank Builder</Filter>
-    </None>
-    <None Include="..\datafile\mnemosegment.py">
-      <Filter>Databank Builder</Filter>
-    </None>
     <None Include="..\source\mnemosyne-x_internal_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
@@ -156,6 +138,24 @@
     <None Include="..\source\mnemosyne-x_h.s">
       <Filter>ASM Header Files</Filter>
     </None>
+    <None Include="..\databank\mnemo.py">
+      <Filter>Databank Builder</Filter>
+    </None>
+    <None Include="..\databank\mnemobank.py">
+      <Filter>Databank Builder</Filter>
+    </None>
+    <None Include="..\databank\mnemoexception.py">
+      <Filter>Databank Builder</Filter>
+    </None>
+    <None Include="..\databank\mnemologger.py">
+      <Filter>Databank Builder</Filter>
+    </None>
+    <None Include="..\databank\mnemoresource.py">
+      <Filter>Databank Builder</Filter>
+    </None>
+    <None Include="..\databank\mnemosegment.py">
+      <Filter>Databank Builder</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Config\ApplicationSettings.txt">
@@ -188,7 +188,7 @@
     <Text Include="Config\MDOSettings.txt">
       <Filter>Project Config</Filter>
     </Text>
-    <Text Include="..\datafile\mnemosynexdata.txt">
+    <Text Include="..\databank\mnemosynexdata.txt">
       <Filter>Databank Builder</Filter>
     </Text>
   </ItemGroup>

@@ -17,13 +17,12 @@ Damned Angel
 
 ## Introduction
 **MnemoSyne-X** is a Virtual Memory System developed for the MSX platform,
-designed to provide programmers with a simple interface to manage 
-mapped RAM memory effectively and efficiently.
+offering programmers a simple interface to efficiently manage mapped RAM memory.
 
 **MnemoSyne-X** allows for up to 1Gb of addressable memory, divided in 65535
 segments of 16kbytes each.
 
-The objective if **MnemoSyne-X** is to unleash MSX RAM Mapper cababilities,
+The objective of **MnemoSyne-X** is to unleash MSX RAM Mapper cababilities,
 paving the way for innovative MSX-DOS/Nextor applications and games on
 the platform.
 
@@ -130,15 +129,16 @@ flowchart
 The core module may be integrated directly to the MSX-DOS/Nextor
 executable, however. Since **MnemoSyne-X** manages segments in
 pages 1 and 2, it must sit on pages 0 or 3. The MDO provided is,
-by default, to be dinamycally loaded in the beginning of page 3.
+by default, dynamically loaded in the beginning of page 3.
 
 ### Integrating **MnemoSyne-X** statically to your executable
 In order to statically integrate **MnemoSyne-X** to your MSX-DOS/Nextor
-Application, ignore the _mdo_ folder in the package and follow
-the steps:
+Application, follow the four steps below:
 
 1. Add the following files to your build process (if you are 
-using my MSX-DOS template, add them to **LibrarySources.txt**):
+using my
+[MSX-DOS template](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases),
+add them to **LibrarySources.txt**):
 
 .
 
@@ -150,7 +150,9 @@ using my MSX-DOS template, add them to **LibrarySources.txt**):
     misc/printdec.s
 
 2. Add the following include paths to your build process (if you are 
-using my MSX-DOS template, add them to **IncludeDirectories.txt**):
+using my
+[MSX-DOS template](https://github.com/DamnedAngel/MSX-Templates-for-VisualStudio/releases),
+add them to **IncludeDirectories.txt**):
 
 .
 
@@ -158,13 +160,13 @@ using my MSX-DOS template, add them to **IncludeDirectories.txt**):
     source\config
     misc
     
-3. Add to ASM sources program: 
+3. Add to your ASM program's sources: 
 
 .
 
     .include "mnemosyne-x_h.s"
 
-4. Add to C sources program:
+4. Add to your C program's sources:
 
 .
 
@@ -172,9 +174,11 @@ using my MSX-DOS template, add them to **IncludeDirectories.txt**):
 
 
 
-That's it. Your program is now *MnemoSyne-X* capable.
+That's it. Your program is now **MnemoSyne-X** capable.
 
-**Important: Be sure to keep MnemoSyne-X** routines in page 0!**
+All these steps are contemplated in the **StaticMnemoSyne-XDemo** bundled in **MnemoSyne-X** package.
+
+**Important: Be sure to keep MnemoSyne-X routines in page 0!**
 
 ### Using **MnemoSyne-X** in an MDO (MSX-DOS Overlay)
 When using **MnemoSyne-X** in the 
@@ -234,7 +238,7 @@ Configure both projects, as described below:
 
 13. Add code to (example project available) the  ApplicationProject:
 
-13.1. Load and Link MnemoSyne-X MDO:
+13.1. Load and Link **MnemoSyne-X** MDO:
 
 	// ----------------------------------------------------------
 	// Load & Link MDO
@@ -280,7 +284,7 @@ Configure both projects, as described below:
 
 15. In ApplicationProject -> Symbols.txt, add the line **printchar** (also a bug to be corrected in the MSX-DOS template).
 
-16. Either add random.s to the MnemoSyne-X MDO project 
+16. Either add random.s to the **MnemoSyne-X** MDO project 
 (MnemoSyne-X -> ApplicationSources.txt ->  ../misc/random.s) or your application project and 
 export the symbol to the MDO adding it to application's Symbols.txt file.
 16.1. Idem to _PrintDec (../misc/printdec.s).
@@ -321,7 +325,7 @@ the programmer and **MnemoSyne-X** will always restore user's segment in
 If should be safe to call **MnemoSyne-X**'s API from a user routine in 
 **AUX** page.
 
-**MAIN** page is where **MnemoSyne-X** will make segments availble after
+**MAIN** page is where **MnemoSyne-X** will make segments available after
 allocating them.
 
 The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
@@ -590,7 +594,7 @@ Upon successful allocation, register A is set to 0, the remaining
 fields of the Logical Segment Handler are populated (typically, of no
 concern to the programmer), and the newly allocated segment will be
 made available for use in **MnemoSyne-X**'s **MAIN** page (see 
-[Page Structure Section](#page_structure)). Any other value returned
+[Page Structure Section](#page-structure)). Any other value returned
 in register A indicates either failure (bit 7 set) or a warning (bit
 7 reset).
 
@@ -664,7 +668,7 @@ every active logical segment it finds. The release priority for all
 these segments shall be passed on register A.
 
 
-## _mnemo_flushAll
+### _mnemo_flushAll
 
     ; ----------------------------------------------------------------
     ;	- Flushes all pending, released segments to disk
@@ -702,7 +706,7 @@ a failure.
 
 **_mnemo_switchAuxPage** will make the Logical Segment associated with
 the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
-**AUX** page (see [Page Structure Section](#page_structure)).
+**AUX** page (see [Page Structure Section](#page-structure)).
 
 
 ### _mnemo_switchMainPage
@@ -722,7 +726,7 @@ the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 
 **_mnemo_switchMainPage** will make the Logical Segment associated with
 the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
-**MAIN** page (see [Page Structure Section](#page_structure)).
+**MAIN** page (see [Page Structure Section](#page-structure)).
 
 
 ### _mnemo_getManagedSegments
@@ -791,7 +795,7 @@ The possible configurations are:
 
 ### MNEMO_MAIN_SWAP_PAGE
 This defines **MnemoSyne-X** **MAIN** page (please check
-[Page Structure Section](#page_structure)), which can be page 1 or 2.
+[Page Structure Section](#page-structure)), which can be page 1 or 2.
 A value "1" will make **MAIN** page 1, and **AUX** page 2. Anything
 else will make **MAIN** page 2 and **AUX** page 1.
 
