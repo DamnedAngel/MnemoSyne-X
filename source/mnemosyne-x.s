@@ -91,7 +91,7 @@ mnemo_getSlot_secondaryShiftContinue:
 	rlca
 
 mnemo_getSlot_secondaryShiftDone:
-	and		#0x00001100
+	and		#0b00001100
 	or		c
 	ret
 
