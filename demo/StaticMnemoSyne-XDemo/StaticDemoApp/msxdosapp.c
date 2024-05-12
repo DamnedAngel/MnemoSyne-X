@@ -20,7 +20,7 @@ LOGSEGHANDLER seg0, seg1, seg2;
 #define 			Peekw( address )		( *( (volatile unsigned int*)(address) ) )
 
 
-#define 			MNEMO_MAIN_SWAP_PAGE_ADDR	0x4000
+#define 			MNEMO_MAIN_SWAP_PAGE_ADDR	0x8000
 #define				MNEMO_MAIN_SEGPAYLOAD		MNEMO_MAIN_SWAP_PAGE_ADDR + 16
 
 #define 			TEST_SEGMENTS				512
