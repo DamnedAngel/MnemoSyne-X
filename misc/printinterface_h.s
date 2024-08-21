@@ -7,8 +7,8 @@
 .globl __print
 .globl _linefeed
 
-.globl printchar
-.globl _PrintDec
+.globl printChar
+.globl _printDec
 
 .macro print msg
 	ld		hl, #msg

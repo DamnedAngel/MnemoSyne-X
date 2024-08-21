@@ -16,4 +16,4 @@
 ../source/mnemosyne-x_stdpersist.s
 
 ;../misc/random.s
-;../misc/printdec.s
+;../misc/printDec.s

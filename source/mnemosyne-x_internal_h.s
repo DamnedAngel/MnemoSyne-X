@@ -9,7 +9,7 @@
 
 .include "msxbios.s"
 .include "printinterface_h.s"
-.include "printdec_h.s"
+.include "printDec_h.s"
 .include "random_h.s"
 .include "mnemosyne-x_rammapper_h.s"
 .include "mnemosyne-x_general_h.s"

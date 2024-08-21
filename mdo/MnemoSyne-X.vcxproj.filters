@@ -64,7 +64,7 @@
     <ClInclude Include="..\source\mnemosyne-x_rammapper.h">
       <Filter>C Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\misc\printdec.h">
+    <ClInclude Include="..\misc\printDec.h">
       <Filter>C Header Files\Misc</Filter>
     </ClInclude>
     <ClInclude Include="..\misc\printinterface.h">
@@ -117,7 +117,7 @@
     <None Include="..\source\mnemosyne-x_rammapper.s">
       <Filter>ASM Source Files</Filter>
     </None>
-    <None Include="..\misc\printdec_h.s">
+    <None Include="..\misc\printDec_h.s">
       <Filter>ASM Header Files\Misc</Filter>
     </None>
     <None Include="..\misc\printinterface_h.s">
@@ -126,7 +126,7 @@
     <None Include="..\misc\random_h.s">
       <Filter>ASM Header Files\Misc</Filter>
     </None>
-    <None Include="..\misc\printdec.s">
+    <None Include="..\misc\printDec.s">
       <Filter>ASM Source Files\Misc</Filter>
     </None>
     <None Include="..\misc\random.s">

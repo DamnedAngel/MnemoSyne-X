@@ -74,11 +74,11 @@ flowchart
         subgraph Misc
             subgraph Misc_HEADERS
                 RANDOM_H.S["random_h.s"]:::miscHeader
-                PRINTDEC_H.S["printdec_h.s"]:::miscHeader
+                printDec_H.S["printDec_h.s"]:::miscHeader
                 PRINTINTERFACE_H.S["printinterface_h.s"]:::miscHeader
             end
         RANDOM.S["random.s"]:::miscSource
-        PRINTDEC.S["printdec.s"]:::miscSource
+        printDec.S["printDec.s"]:::miscSource
         end
         
         subgraph MnemoSyne-X_MDO
@@ -147,7 +147,7 @@ add them to **LibrarySources.txt**):
     source/mnemosyne-x_stdpersist.s
     
     misc/random.s
-    misc/printdec.s
+    misc/printDec.s
 
 2. Add the following include paths to your build process (if you are 
 using my
@@ -282,12 +282,12 @@ Configure both projects, as described below:
 
 14. In ApplicationProject -> Symbols.txt, replace the line **\_[a-zA-Z0-9]\*\_hook** with **\_[a-zA-Z0-9\_]\*\_hook** (This is a Bug in the MSX-DOS template. Will be solved in the future).
 
-15. In ApplicationProject -> Symbols.txt, add the line **printchar** (also a bug to be corrected in the MSX-DOS template).
+15. In ApplicationProject -> Symbols.txt, add the line **printChar** (also a bug to be corrected in the MSX-DOS template).
 
 16. Either add random.s to the **MnemoSyne-X** MDO project 
 (MnemoSyne-X -> ApplicationSources.txt ->  ../misc/random.s) or your application project and 
 export the symbol to the MDO adding it to application's Symbols.txt file.
-16.1. Idem to _PrintDec (../misc/printdec.s).
+16.1. Idem to _printDec (../misc/printDec.s).
 16.2. In the example, both are added to the application and the symbols exported to the MDO.
 
 All these steps are contemplated in the **MDOMnemoSyne-XDemo** bundled in **MnemoSyne-X** package.

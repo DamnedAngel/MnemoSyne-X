@@ -13,7 +13,7 @@ _mdoLoad
 _mdoRelease
 _mdoLink
 _mdoUnlink
-_mdoAbend
+_onUnlinkedMODHookCalled
 s__AFTERHEAP s__A PARENT_A
 
 ;[a-zA-Z0-9]*_init

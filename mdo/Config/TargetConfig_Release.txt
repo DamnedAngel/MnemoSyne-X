@@ -42,8 +42,7 @@ MSXDOSPRINT			        _ON     			; Allows pipe and redirection. _OFF: not define
 .FILESYSTEM
 MSX_FILE_NAME		        MNEMOSX
 MSX_FILE_EXTENSION          DRV
-MSX_BIN_PATH		        ..\demo\MDOMnemoSyne-XDemo\MDODemoApp\[PROFILE]\bin
-;MSX_BIN_PATH		        ..\..\..\projects\SCAMM\SCAMM\[PROFILE]\bin
+MSX_BIN_PATH		        ..\..\..\projects\SCAMM\SCAMM\[PROFILE]\bin
 MSX_OBJ_PATH		        [PROFILE]\objs
 MSX_DEV_PATH		        ..\..\..
 MSX_LIB_PATH		        [MSX_DEV_PATH]\libs

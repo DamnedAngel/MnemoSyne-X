@@ -1,21 +1,21 @@
 ;----------------------------------------------------------
-;		printdec.s
+;		printDec.s
 ;----------------------------------------------------------
 ;		240113 - danilo angelo
 ;----------------------------------------------------------
 ;		Implements:
-;			void _PrintDec ( unsigned int number );
+;			void _printDec ( unsigned int number );
 ;----------------------------------------------------------
 	.include "applicationsettings.s"	; or define __SDCCCALL
 	.include "targetconfig.s"			; or define 
 
-	.globl printchar
+	.globl printChar
 
 	.area _CODE
 
 ; ----------------------------------------------------------
-;	void _PrintDec ( unsigned int number );
-_PrintDec::
+;	void _printDec ( unsigned int number );
+_printDec::
 	push	ix
 
 .ifeq __SDCCCALL
@@ -68,13 +68,13 @@ findDigit_printChar:
 	inc		e
 .ifne MSXDOSPRINT
 	exx
-	call	printchar
+	call	printChar
 	exx
 .else
 	push	hl
 	push	de
 	push	bc
-	call	printchar
+	call	printChar
 	pop		bc
 	pop		de
 	pop		hl

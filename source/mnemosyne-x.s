@@ -15,9 +15,9 @@
 .endif
 .endm
 
-.macro __MNEMOPRINTDEC
+.macro __MNEMOprintDec
 .ifeq (MNEMO_VERBOSE_MODE - 1)
-	call	_PrintDec
+	call	_printDec
 .endif
 .endm
 
@@ -377,7 +377,7 @@ _mnemo_init_indexSegAllocLoop:
 	ld		l, a					; primary mapper only
 	call	_AllocateSegment		; alternate regs are preserved
 	ld		a, #MNEMO_ERROR_NOINDEXSEG
-	jp c,	_mnemo_init_end		; No more available segments
+	jp c,	_mnemo_init_end			; No more available segments
 	
 	; save segHandler
 	ld		a, e
@@ -449,7 +449,7 @@ _mnemo_init_segAllocLoop:
 .ifeq (MNEMO_VERBOSE_MODE - 1)
 _mnemo_init_printDash:
 	ld		a, #'-'
-	call	printchar
+	call	printChar
 .endif
 
 _mnemo_init_inPhysSegCounter:
@@ -477,7 +477,7 @@ _mnemo_init_cont:
 	pop		hl
 
 	push	hl
-	__MNEMOPRINTDEC
+	__MNEMOprintDec
 	__MNEMOPRINT	segmentsAllocatedMsg
 	__MNEMOPRINT	memoryManaged1Msg
 	pop		hl
@@ -488,12 +488,12 @@ _mnemo_init_cont:
 	add		hl, hl
 	add		hl, hl
 	ld		(#_managedMemorySize), hl
-	__MNEMOPRINTDEC
+	__MNEMOprintDec
 	__MNEMOPRINT	memoryManaged2Msg
 
 	__MNEMOPRINT	mnemosynexVirtualMemSizeMsg
 	ld		hl, #MNEMO_MAX_LOGICAL_MEMORY
-	__MNEMOPRINTDEC
+	__MNEMOprintDec
 	__MNEMOPRINT	megaBytesMsg
 
 _mnemo_init_end:
