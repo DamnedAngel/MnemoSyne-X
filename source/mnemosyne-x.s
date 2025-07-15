@@ -496,9 +496,12 @@ _mnemo_init_cont:
 	__MNEMOPRINTDEC
 	__MNEMOPRINT	megaBytesMsg
 
-_mnemo_init_end:
+	or		a			; success
+_mnemo_init_end::
 	ld		hl, #pageConfigGlobalBuffer
+	push	af
 	call	mnemo_restorePageLayout
+	pop		af
 	pop		ix
 	ret
 
