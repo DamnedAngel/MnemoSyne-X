@@ -8,10 +8,6 @@
 ;	MDO hierarchy
 MDO_APPLICATION_PROJECT_PATH	../demo/MDOMnemoSyne-XDemo/MDODemoApp
 MDO_PARENT_PROJECT_PATH			../demo/MDOMnemoSyne-XDemo/MDODemoApp
-;MDO_APPLICATION_PROJECT_PATH	../../../projects/SCAMM/SCAMM
-;MDO_PARENT_PROJECT_PATH		../../../projects/SCAMM/SCAMM
-
-
 
 ;----------------------------------------------------------
 ;	MDO settings
@@ -43,6 +39,7 @@ MDO_HOOK_IMPLEMENTATION			mnemo_flushAll					_mnemo_flushAll
 
 MDO_HOOK_IMPLEMENTATION			mnemo_switchAuxPage				_mnemo_switchAuxPage
 MDO_HOOK_IMPLEMENTATION			mnemo_switchMainPage			_mnemo_switchMainPage
+MDO_HOOK_IMPLEMENTATION			mnemo_getSlot					_mnemo_getSlot
 
 MDO_HOOK_IMPLEMENTATION			mnemo_getManagedSegments		_mnemo_getManagedSegments
 MDO_HOOK_IMPLEMENTATION			mnemo_getUsedSegments			_mnemo_getUsedSegments

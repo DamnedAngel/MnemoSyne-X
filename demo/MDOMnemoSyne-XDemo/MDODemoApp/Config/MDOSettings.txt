@@ -32,6 +32,7 @@ MDO_HOOK		unsigned char|mnemo_flushAll|(void)
 
 MDO_HOOK		void|mnemo_switchAuxPage|(LOGSEGHANDLER*)
 MDO_HOOK		void|mnemo_switchMainPage|(LOGSEGHANDLER*)
+MDO_HOOK		unsigned char|mnemo_getSlot|(unsigned char)
 
 MDO_HOOK		unsigned int |mnemo_getManagedSegments|(void)
 MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)

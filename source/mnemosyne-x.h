@@ -188,6 +188,20 @@ extern void mnemo_switchMainPage(LOGSEGHANDLER*) __sdcccall(1);
 
 /*
 ; ----------------------------------------------------------------
+;	- Get slot ID of a page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: page (0-3)
+;
+; OUTPUTS:
+;   - A: slot ID formatted F000SSPP
+; ----------------------------------------------------------------
+*/
+extern unsigned char mnemo_getSlot(unsigned char page) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
 ;	- Get number of Managed Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:
