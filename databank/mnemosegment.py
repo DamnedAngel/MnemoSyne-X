@@ -1,4 +1,4 @@
-# ---------------- ------------------------------------------------
+# ----------------------------------------------------------------
 #	mnemosegment.py
 # ----------------------------------------------------------------
 #	240211 - DamnedAngel
@@ -13,8 +13,7 @@ from mnemoexception import MnemoException
 
 class MnemoSegment:
     page = 2
-    segHeader = 256*4
-    headerSize = 8
+    headerSize = 16
     maxSize = 16*1024
 
     def __init__(self, name:str, number: int):
@@ -67,7 +66,7 @@ class MnemoSegment:
 
     def writeCHeader(self, file):
         if len(self.resources) > 0:
-            addr = (MnemoSegment.page << 14) + MnemoSegment.segHeader
+            addr = (MnemoSegment.page << 14) + MnemoSegment.headerSize
             sNumber = str(self.number).zfill(5)
             if self.name == sNumber:
                 n = self.name
@@ -86,7 +85,7 @@ class MnemoSegment:
 
     def writeASMHeader(self, file):
         if len(self.resources) > 0:
-            addr = (MnemoSegment.page << 14) + MnemoSegment.segHeader
+            addr = (MnemoSegment.page << 14) + MnemoSegment.headerSize
             sNumber = str(self.number).zfill(5)
             if self.name == sNumber:
                 n = self.name
