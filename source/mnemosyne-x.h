@@ -167,6 +167,9 @@ extern unsigned char mnemo_flushAll(void) __sdcccall(1);
 ;
 ; OUTPUTS:
 ;   - None
+;
+; NOTES:
+;   - Interrupts disabled if a slot change was needed
 ; ----------------------------------------------------------------
 */
 extern void mnemo_switchAuxPage(LOGSEGHANDLER*) __sdcccall(1);
@@ -181,6 +184,9 @@ extern void mnemo_switchAuxPage(LOGSEGHANDLER*) __sdcccall(1);
 ;
 ; OUTPUTS:
 ;   - None
+;
+; NOTES:
+;   - Interrupts disabled if a slot change was needed
 ; ----------------------------------------------------------------
 */
 extern void mnemo_switchMainPage(LOGSEGHANDLER*) __sdcccall(1);

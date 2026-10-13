@@ -343,6 +343,10 @@ _mnemo_init::
 .endif
 	ld hl,	#0
 	ld		(#_nPhysicalSegsInUse), hl
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	dec		hl
+	ld		(#auxPageSlot), hl	; auxPageSlot, mainPageSlot = unknown
+.endif
 
 	__MNEMOPRINT	initializingMnemosynexMsg
 
@@ -1118,6 +1122,7 @@ _mnemo_flush_next:
 ;
 ; CHANGES:
 ;   - All registers
+;   - Interrupts disabled if a slot change was needed
 ; ----------------------------------------------------------------
 _mnemo_switchAuxPage::
 	ld		a, (hl)			; segNumber
@@ -1129,8 +1134,13 @@ _mnemo_switchAuxPage::
 	ret nz
 	inc		hl
 	ld		a, (hl)			; slotid
+	and		#MNEMO_SLOTID_MASK
+	ld		hl, #auxPageSlot
+	cp		(hl)
+	ret z					; slot already selected
+	ld		(hl), a
 	ld		h, #MNEMO_AUX_SWAP_PAGE << 6	; Page
-	jp		BIOS_ENASLT		; select slot
+	jp		BIOS_ENASLT		; select slot (returns with di)
 .else
 	ret
 .endif
@@ -1146,6 +1156,7 @@ _mnemo_switchAuxPage::
 ;
 ; CHANGES:
 ;   - All registers
+;   - Interrupts disabled if a slot change was needed
 ; ----------------------------------------------------------------
 _mnemo_switchMainPage::
 	ld		a, (hl)			; segNumber
@@ -1157,8 +1168,13 @@ _mnemo_switchMainPage::
 	ret nz
 	inc		hl
 	ld		a, (hl)			; slotid
+	and		#MNEMO_SLOTID_MASK
+	ld		hl, #mainPageSlot
+	cp		(hl)
+	ret z					; slot already selected
+	ld		(hl), a
 	ld		h, #MNEMO_MAIN_SWAP_PAGE << 6	; Page
-	jp		BIOS_ENASLT		; select slot
+	jp		BIOS_ENASLT		; select slot (returns with di)
 .else
 	ret
 .endif
@@ -1276,6 +1292,8 @@ _nPhysicalSegsInUse::		.ds 2
 primaryMapperSlot::			.ds 1
 usePrimaryMapperOnly::		.ds 1
 mapperQueryTag::			.ds 2
+auxPageSlot::				.ds 1	; slot selected in aux page by MnemoSyne-X
+mainPageSlot::				.ds 1	; slot selected in main page by MnemoSyne-X
 .endif
 
 segIndexSegment::			.ds 1

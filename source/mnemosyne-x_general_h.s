@@ -77,6 +77,8 @@ MNEMO_FLUSH								= 0b01000000
 
 MNEMO_FLUSH_BIT							= 6
 
+MNEMO_SLOTID_MASK						= 0b10001111	; slot ID bits (F000SSPP) of a slot byte
+
 
 ; ----------------------------------------------------------------
 ;	- Segment header offsets
