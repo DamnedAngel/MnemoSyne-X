@@ -56,6 +56,15 @@ MNEMO_SEGMODE_READWRITE					= 3
 
 
 ; ----------------------------------------------------------------
+;	- SegHandlers offsets
+; ----------------------------------------------------------------
+MNEMO_SEGHOFFSET_SEGNUMBER				= 0
+MNEMO_SEGHOFFSET_MAPPERSLOT				= 1
+
+MNEMO_SEGHANDLER_SIZE					= 2
+
+
+; ----------------------------------------------------------------
 ;	- LogSegHandlers offsets
 ; ----------------------------------------------------------------
 MNEMO_LOGSEGHOFFSET_SEGHANDLER			= 0
@@ -63,6 +72,8 @@ MNEMO_LOGSEGHOFFSET_PSEGHANDLER			= 2
 MNEMO_LOGSEGHOFFSET_PLOGSEGTABLEITEM	= 4
 MNEMO_LOGSEGHOFFSET_LOGSEGNUMBER		= 6
 MNEMO_LOGSEGHOFFSET_SEGMODE				= 8
+
+MNEMO_LOGSEGHANDLER_SIZE				= 9
 
 
 ; ----------------------------------------------------------------
