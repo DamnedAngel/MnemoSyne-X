@@ -333,6 +333,30 @@ will define which page will be considered the **MAIN** and **AUX** pages
 by **MnemoSyne-X**. Please check [Configuration Section](#configuration)
 for further info.
 
+### Slot Selection
+Unless initialized to use the primary mapper only, **MnemoSyne-X**
+remembers which slot it selected in the **AUX** and **MAIN** pages
+and only selects a slot (BIOS ENASLT) when a segment lives in a
+mapper other than the one already selected in that page. Switching
+between segments of the same mapper costs only the mapper port write.
+
+If the application selects another slot in the **AUX** or **MAIN**
+page by itself, it must select the previous slot back before calling
+**MnemoSyne-X** again. BIOS and BDOS calls that restore the slots
+before returning are safe.
+
+### Interrupts
+**MnemoSyne-X** does not preserve the interrupt state. Any API routine
+may return with interrupts disabled:
+- when it selects a slot (see [Slot Selection Section](#slot-selection)),
+since BIOS ENASLT returns with interrupts disabled;
+- when it loads or saves a segment (**_mnemo_activateLogSeg**,
+**_mnemo_flushAll** and **_mnemo_finalize**), since the standard
+persistence routines disable interrupts.
+
+The application must enable interrupts again (EI) when it needs them,
+for instance before a HALT, which would otherwise hang the computer.
+
 ### Logical Segments
 Logical Segments are identifiable and manage instances of standard MSX
 Physical Segments in RAM mappers.
@@ -702,11 +726,16 @@ a failure.
     ;
     ; CHANGES:
     ;   - All registers
+    ;   - Interrupts disabled if a slot change was needed
     ; ----------------------------------------------------------------
 
 **_mnemo_switchAuxPage** will make the Logical Segment associated with
 the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 **AUX** page (see [Page Structure Section](#page-structure)).
+It selects a slot only if the segment's mapper is not the one already
+selected in that page, and then returns with interrupts disabled (see
+[Slot Selection Section](#slot-selection) and
+[Interrupts Section](#interrupts)).
 
 
 ### _mnemo_switchMainPage
@@ -722,11 +751,16 @@ the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
     ;
     ; CHANGES:
     ;   - All registers
+    ;   - Interrupts disabled if a slot change was needed
     ; ----------------------------------------------------------------
 
 **_mnemo_switchMainPage** will make the Logical Segment associated with
 the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 **MAIN** page (see [Page Structure Section](#page-structure)).
+It selects a slot only if the segment's mapper is not the one already
+selected in that page, and then returns with interrupts disabled (see
+[Slot Selection Section](#slot-selection) and
+[Interrupts Section](#interrupts)).
 
 
 ### _mnemo_getManagedSegments
