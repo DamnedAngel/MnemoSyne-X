@@ -103,7 +103,7 @@
 ;   - A: Error code
 ;
 ; CHANGES:
-;   - A, DE, HL
+;   - All registers
 ; ----------------------------------------------------------------
 .globl _mnemo_releaseLogSeg
 
@@ -119,7 +119,7 @@
 ;   - A: Error code
 ;
 ; CHANGES:
-;   - A, DE, HL
+;   - All registers
 ; ----------------------------------------------------------------
 .globl mnemo_releaseLogSegHL
 
