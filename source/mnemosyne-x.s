@@ -113,6 +113,47 @@ mnemo_getSlot_secondaryShiftDone:
 
 
 ; ----------------------------------------------------------------
+;	- Get the physical segment mapped in the aux page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: SEGHANDLER of the current AUX page mapping
+;		  (E: segment number, D: slot ID formatted F000SSPP),
+;
+; CHANGES:
+;   - AF, BC, DE, H
+; ----------------------------------------------------------------
+_mnemo_getAuxPage::
+	__GetSlotAux
+	ld		d, a
+	__GetSegAux
+	ld		e, a
+	ret
+
+; ----------------------------------------------------------------
+;	- Get the physical segment mapped in the main page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: SEGHANDLER of the current MAIN page mapping
+;		  (E: segment number, D: slot ID formatted F000SSPP),
+;
+; CHANGES:
+;   - AF, BC, DE, H
+; ----------------------------------------------------------------
+_mnemo_getMainPage::
+	__GetSlotMain
+	ld		d, a
+	__GetSegMain
+	ld		e, a
+	ret
+
+
+; ----------------------------------------------------------------
 ;	- Save AUX and MAIN pages configurations
 ; ----------------------------------------------------------------
 ; INPUTS:
