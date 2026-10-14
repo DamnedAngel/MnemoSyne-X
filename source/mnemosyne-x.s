@@ -617,8 +617,14 @@ _mnemo_finalize::
 ;   - All regs
 ; ----------------------------------------------------------------
 _mnemo_setStdPersistence::
-	ld		de, #0
-	push	de
+	; pSaveSeg goes under the return address, as the caller of
+	; _mnemo_setPersistence pushes it
+	pop		hl						; return address
+	ld		de, #_standardSave
+	push	de						; pSaveSeg
+	push	hl
+	ld		de, #_standardLoad		; pLoadSeg
+	; falls through to _mnemo_setPersistence (A = bank)
 
 
 ; ----------------------------------------------------------------
