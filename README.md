@@ -47,6 +47,7 @@ flowchart
                 MS-X_C_H.S["mnemosyne-x_config.s"]:::cfgHeader
                 MS-X_G_H.S["mnemosyne-x_general_h.s"]:::asmHeader
                 MS-X_H.S["mnemosyne-x_h.s"]:::asmHeader
+                MS-X_MDO_H.S["mnemosyne-x_mdo_h.s"]:::asmHeader
                 MS-X_I_H.S["mnemosyne-x_internal_h.s"]:::asmHeader
                 MS-X_SP_H.S["mnemosyne-x_stdpersist_h.s"]:::asmHeader
                 MS-X_D_H.S["mnemosyne-x_dirty_h.s"]:::asmDirtyHeader
@@ -59,6 +60,7 @@ flowchart
 
             MS-X_G_H.S --> MS-X_C_H.S
             MS-X_H.S --> MS-X_G_H.S
+            MS-X_MDO_H.S --> MS-X_G_H.S
             MS-X_I_H.S --> MS-X_G_H.S
             MS-X_I_H.S --> MS-X_RM_H.S
 
@@ -237,7 +239,10 @@ Configure both projects, as described below:
 
 11. In ApplicationProject's C application source, add the line **#include "mnemosyne-x.h"** _BEFORE_ **#include "mdointerface.h"**
 
-12. In ApplicationProject's ASM application source, add the line **#include "mnemosyne-x_h.s"**
+12. In ApplicationProject's ASM application source, add the line **.include "mnemosyne-x_mdo_h.s"**
+(not **mnemosyne-x_h.s**, which declares the routines linked together with **MnemoSyne-X**).
+It declares the **_mnemo_\*_hook** symbols of all the hooks listed in step 2, so all of them must be declared.
+The same applies to ASM sources of any other MDO in the application, which inherit the hooks from their parent.
 
 13. Add code to (example project available) the  ApplicationProject:
 

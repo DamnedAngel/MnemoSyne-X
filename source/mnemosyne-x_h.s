@@ -5,6 +5,9 @@
 ; ----------------------------------------------------------------
 ;	MnemoSyne-X: a virtual memory system for MSX.
 ;	This file contains the asm headers for integrating MnemoSyne-X.
+;	For programs linked together with MnemoSyne-X; programs and
+;	MDOs that call it through MDO hooks must include
+;   mnemosyne-x_mdo_h.s instead.
 ; ----------------------------------------------------------------
 
 .include "mnemosyne-x_general_h.s"
