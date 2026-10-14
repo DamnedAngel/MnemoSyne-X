@@ -461,6 +461,32 @@ _standardSave_saveIndex::
 	ldir
 	jp		persistCommon_saveEntry
 
+; ----------------------------------------------------------------
+;	- Standard ensure routine for MnemoSyne-X: writes the buffers
+;	  of the open Databank file to disk
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - A:  0  = Success (or no Databank file open)
+;		  >0 = Error
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+_standardEnsure::
+	ld		a, (#fileHandle)	; 0xff if file not open
+	ld		b, a
+	inc		a
+	ret z					; no file open: A = 0
+	ld		c, #BDOS_ENSURE
+	call	BDOS_SYSCAL
+	or		a
+	ret z
+	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
+	ret
+
 fileHandle::				.db		#0xff
 
 ;   ==================================

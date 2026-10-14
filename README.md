@@ -533,6 +533,13 @@ however, interesting to provide way of having custom Databank formats
 generation (i.e. random levels for a game), or simply accessing
 different medias (mapped drives, internet access, whatever).
 
+At the moment, **MnemoSyne-X** does not notify custom persistence
+routines when a flush ends: a custom segment save routine must have
+completed its writes when it returns (any buffering of its own must be
+written before returning). The final buffer writing done by
+[_mnemo_flushAll](#_mnemo_flushAll) covers the standard persistence
+only.
+
 
 ### _mnemo_activateLogSeg
 
@@ -717,8 +724,13 @@ these segments shall be passed on register A.
 
 **_mnemo_flushAll** will release and persist all non-persisted
 segments with mode **MNEMO_SEGMODE_READWRITE** to disk. If the flush
-process succeeds, register A is set to 0. Any other value denotes 
+process succeeds, register A is set to 0. Any other value denotes
 a failure.
+
+At the end, **_mnemo_flushAll** makes sure the buffers of the
+standard persistence's open Databank file are written to disk. There
+is no such final step for custom persistence routines (see
+[_mnemo_setPersistence](#_mnemo_setPersistence)).
 
 
 ### _mnemo_switchAuxPage

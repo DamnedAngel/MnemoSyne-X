@@ -1152,14 +1152,9 @@ _mnemo_flush_next:
 	add		hl, de
 	jr c,	_mnemo_flushAll_loop
 
-	; Ensure last files buffers are written to disk
-	;ld		a, (#fileHandle)
-	ld		b, a
-	ld		c, #BDOS_ENSURE
-	call	BDOS_SYSCAL
-	or		a
-	jr z,	mnemo_restoreAuxPageAndReturnStatus		; same ending
-	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
+	; Ensure last file buffers of the standard persistence are
+	; written to disk (custom persistence has not Ensure ATM).
+	call	_standardEnsure
 	jr		mnemo_restoreAuxPageAndReturnStatus		; same ending
 
 
