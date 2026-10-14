@@ -199,7 +199,7 @@ Configure both projects, as described below:
 .
 
 	; --- MnemoSyneX ---
-	MDO_HOOK		unsigned char|mnemo_init|(bool)
+	MDO_HOOK		unsigned char|mnemo_init|(bool, char*)
 	MDO_HOOK		void|mnemo_finalize|(void)
 
 	MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
@@ -208,7 +208,7 @@ Configure both projects, as described below:
 	MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
 	MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)
 	MDO_HOOK		unsigned char|mnemo_releaseLogSegHL|(unsigned char, LOGSEGHANDLER*)		; ASM ONLY!!!
-	MDO_HOOK		unsigned char|mnemo_releaseAll|(unsigned char)
+	MDO_HOOK		void|mnemo_releaseAll|(unsigned char)
 	MDO_HOOK		unsigned char|mnemo_flushAll|(void)
 
 	MDO_HOOK		void|mnemo_switchAuxPage|(LOGSEGHANDLER*)
