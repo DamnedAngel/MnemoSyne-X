@@ -557,7 +557,7 @@ _mnemo_init_cont:
 	__MNEMOPRINTDEC
 	__MNEMOPRINT	megaBytesMsg
 
-	or		a			; success
+	xor		a			; success (A = 0)
 _mnemo_init_end::
 	ld		hl, #pageConfigGlobalBuffer
 	push	af
