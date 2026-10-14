@@ -592,10 +592,60 @@ _mnemo_finalize::
 	call	_mnemo_flushAll
 	__MNEMOPRINT	okMsg
 
-	; TODO: Decide whether to deallocate segments.
-	; In principle, that is not needed, since MSX-DOS will
-	; deallocate them automatically.
+	; close the standard persistence's Databank file
+	call	_standardClose
+
 	push	ix
+
+	; free the physical segments (Segment Table in aux page)
+	ld		hl, #segTableSegment
+	call	_mnemo_switchAuxPage
+	ld		hl, #MNEMO_AUX_SWAP_PAGE_ADDR
+
+_mnemo_finalize_freePhysSegLoop:
+	ld		de, (#afterSegTable)
+	or		a
+	sbc		hl, de
+	add		hl, de
+	jr nc,	_mnemo_finalize_freeIndexSegs
+	ld		a, (hl)					; segment number
+	inc		hl
+	ld		e, (hl)					; slot (allocation bits masked by _FreeSegment)
+	inc		hl
+	push	hl
+	ld		l, e
+	call	_FreeSegment
+	pop		hl
+	jr		_mnemo_finalize_freePhysSegLoop
+
+	; free the index segments (and the Segment Table segment,
+	; still mapped in aux page until the page layout is restored)
+_mnemo_finalize_freeIndexSegs:
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		hl, #bufferSegment
+	ld		b, #MNEMO_INDEX_SEGMENTS + 2
+.else
+	ld		hl, #segTableSegment
+	ld		b, #MNEMO_INDEX_SEGMENTS + 1
+.endif
+
+_mnemo_finalize_freeIndexSegLoop:
+	ld		a, (hl)					; segment number
+	inc		hl
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		e, (hl)					; slot
+	inc		hl
+.else
+	ld		e, #0					; primary mapper
+.endif
+	push	hl
+	push	bc
+	ld		l, e
+	call	_FreeSegment
+	pop		bc
+	pop		hl
+	djnz	_mnemo_finalize_freeIndexSegLoop
+
 	ld		hl, #pageConfigGlobalBuffer
 	call	mnemo_restorePageLayout
 	pop		ix

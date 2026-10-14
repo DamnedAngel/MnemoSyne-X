@@ -474,6 +474,12 @@ succeeds, register A is set to 0. Any other value denotes a failure.
 **_mnemo_finalize** finalizes **MnemoSyne-X** subsystem and releases
 mapper segments. It receives no parameters and returns nothing.
 
+Before releasing the mapper segments, **_mnemo_finalize** releases and
+flushes all logical segments (see [_mnemo_flushAll](#_mnemo_flushAll))
+and closes the standard persistence's open Databank file. After
+**_mnemo_finalize**, **_mnemo_init** may start a new session, with the
+same or another Databank name.
+
 It is a good practice to call **_mnemo_finalize** before exiting to
 MSX-DOS/Nextor.
 
@@ -534,11 +540,12 @@ generation (i.e. random levels for a game), or simply accessing
 different medias (mapped drives, internet access, whatever).
 
 At the moment, **MnemoSyne-X** does not notify custom persistence
-routines when a flush ends: a custom segment save routine must have
-completed its writes when it returns (any buffering of its own must be
-written before returning). The final buffer writing done by
-[_mnemo_flushAll](#_mnemo_flushAll) covers the standard persistence
-only.
+routines when a flush or the session ends: a custom segment save
+routine must have completed its writes when it returns (any buffering
+of its own must be written before returning). The final buffer writing
+done by [_mnemo_flushAll](#_mnemo_flushAll) and the Databank closing
+done by [_mnemo_finalize](#_mnemo_finalize) cover the standard
+persistence only.
 
 
 ### _mnemo_activateLogSeg
