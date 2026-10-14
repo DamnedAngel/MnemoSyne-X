@@ -639,6 +639,8 @@ _mnemo_setPersistence::
 	; Set Segment Table segment in Aux Page
 	push	de
 	push	af
+	ld		hl, #auxSegHandlerTemp
+	call	mnemo_saveAuxPageConfig
 	ld		hl, #segTableSegment
 	call	_mnemo_switchAuxPage
 
@@ -662,7 +664,10 @@ _mnemo_setPersistence::
 	ld		(hl), e
 	inc		hl
 	ld		(hl), d
-	ret
+
+	; restore Aux Page
+	ld		hl, #auxSegHandlerTemp
+	jp		_mnemo_switchAuxPage
 	
 	
 ; ----------------------------------------------------------------
@@ -945,7 +950,7 @@ _mnemo_activateLogSeg_segOutOfRangeError:
 
 _mnemo_activateLogSeg_noFreePhysSegError:
 	ld		a, #MNEMO_ERROR_NOFREEPHYSSEG
-	jr		_mnemo_activateLogSeg_end
+	jr		_mnemo_activateLogSeg_restoreAuxSeg	; the search mapped the segment table in aux page
 
 
 ; ----------------------------------------------------------------
