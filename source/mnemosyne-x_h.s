@@ -197,6 +197,38 @@
 
 
 ; ----------------------------------------------------------------
+;	- Get the physical segment mapped in the aux page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: SEGHANDLER of the current AUX page mapping
+;		  (E: segment number, D: slot ID formatted F000SSPP)
+;
+; CHANGES:
+;   - AF, BC, DE, H
+; ----------------------------------------------------------------
+.globl _mnemo_getAuxPage
+
+
+; ----------------------------------------------------------------
+;	- Get the physical segment mapped in the main page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: SEGHANDLER of the current MAIN page mapping
+;		  (E: segment number, D: slot ID formatted F000SSPP)
+;
+; CHANGES:
+;   - AF, BC, DE, H
+; ----------------------------------------------------------------
+.globl _mnemo_getMainPage
+
+
+; ----------------------------------------------------------------
 ;	- Get number of Managed Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:

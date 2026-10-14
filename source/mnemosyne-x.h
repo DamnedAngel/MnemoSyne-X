@@ -208,6 +208,36 @@ extern unsigned char mnemo_getSlot(unsigned char page) __sdcccall(1);
 
 /*
 ; ----------------------------------------------------------------
+;	- Get the physical segment mapped in the aux page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: SEGHANDLER of the current AUX page mapping
+;		  (low byte: segment number, high byte: slot ID)
+; ----------------------------------------------------------------
+*/
+extern unsigned int mnemo_getAuxPage(void) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
+;	- Get the physical segment mapped in the main page
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - DE: SEGHANDLER of the current MAIN page mapping
+;		  (low byte: segment number, high byte: slot ID)
+; ----------------------------------------------------------------
+*/
+extern unsigned int mnemo_getMainPage(void) __sdcccall(1);
+
+
+/*
+; ----------------------------------------------------------------
 ;	- Get number of Managed Physical Segments
 ; ----------------------------------------------------------------
 ; INPUTS:

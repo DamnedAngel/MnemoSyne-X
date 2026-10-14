@@ -211,6 +211,9 @@ Configure both projects, as described below:
 
 	MDO_HOOK		void|mnemo_switchAuxPage|(LOGSEGHANDLER*)
 	MDO_HOOK		void|mnemo_switchMainPage|(LOGSEGHANDLER*)
+	MDO_HOOK		unsigned char|mnemo_getSlot|(unsigned char)
+	MDO_HOOK		unsigned int|mnemo_getAuxPage|(void)
+	MDO_HOOK		unsigned int|mnemo_getMainPage|(void)
 
 	MDO_HOOK		unsigned int |mnemo_getManagedSegments|(void)
 	MDO_HOOK		unsigned int |mnemo_getUsedSegments|(void)
@@ -762,6 +765,58 @@ selected in that page, and then returns with interrupts disabled (see
 [Slot Selection Section](#slot-selection) and
 [Interrupts Section](#interrupts)).
 
+
+### _mnemo_getAuxPage
+
+    ; ----------------------------------------------------------------
+    ;	- Get the physical segment mapped in the aux page
+    ; ----------------------------------------------------------------
+    ; INPUTS:
+    ;	- None
+    ;
+    ; OUTPUTS:
+    ;   - DE: SEGHANDLER of the current AUX page mapping
+    ;		  (E: segment number, D: slot ID formatted F000SSPP),
+    ;
+    ; CHANGES:
+    ;   - AF, BC, DE, H
+    ; ----------------------------------------------------------------
+
+**_mnemo_getAuxPage** returns the physical segment currently mapped in
+**MnemoSyne-X**'s **AUX** page (see [Page Structure Section](#page-structure))
+as a SEGHANDLER in DE, so that it can be stored with a single
+`ld (pSegHandler), de` and mapped back later with
+[_mnemo_switchAuxPage](#_mnemo_switchauxpage). It does not change the
+interrupt state. The value is a snapshot of the physical mapping: if the
+page holds a Logical Segment that is released and reused before the
+snapshot is mapped back, the new contents will be mapped. To come back
+to a Logical Segment later, keep its Logical Segment Handler instead.
+
+### _mnemo_getMainPage
+
+    ; ----------------------------------------------------------------
+    ;	- Get the physical segment mapped in the main page
+    ; ----------------------------------------------------------------
+    ; INPUTS:
+    ;	- None
+    ;
+    ; OUTPUTS:
+    ;   - DE: SEGHANDLER of the current MAIN page mapping
+    ;		  (E: segment number, D: slot ID formatted F000SSPP),
+    ;
+    ; CHANGES:
+    ;   - AF, BC, DE, H
+    ; ----------------------------------------------------------------
+
+**_mnemo_getMainPage** returns the physical segment currently mapped in
+**MnemoSyne-X**'s **MAIN** page (see [Page Structure Section](#page-structure))
+as a SEGHANDLER in DE, so that it can be stored with a single
+`ld (pSegHandler), de` and mapped back later with
+[_mnemo_switchMainPage](#_mnemo_switchmainpage). It does not change the
+interrupt state. The value is a snapshot of the physical mapping: if the
+page holds a Logical Segment that is released and reused before the
+snapshot is mapped back, the new contents will be mapped. To come back
+to a Logical Segment later, keep its Logical Segment Handler instead.
 
 ### _mnemo_getManagedSegments
     ; ----------------------------------------------------------------
