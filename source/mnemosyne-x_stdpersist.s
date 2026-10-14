@@ -487,6 +487,43 @@ _standardEnsure::
 	ld		a, #MNEMO_ERROR_SEGWRITEFAIL
 	ret
 
+; ----------------------------------------------------------------
+;	- Standard close routine for MnemoSyne-X: closes the open
+;	  Databank file
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - A:  0  = Success (or no Databank file open)
+;		  >0 = Error
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+_standardClose::
+	ld		a, (#fileHandle)	; 0xff if file not open
+	ld		b, a
+	inc		a
+	ret z					; no file open: A = 0
+	ld		c, #BDOS_CLOSE
+	call	BDOS_SYSCAL
+	ld		c, a
+
+	; no file open, even if the close failed
+	ld		a, #0xff
+	ld		(#fileHandle), a
+	ld		hl, #fileExtension + 2
+	ld		(hl), #'_'
+	inc		hl
+	ld		(hl), #'_'
+
+	ld		a, c
+	or		a
+	ret z
+	ld		a, #MNEMO_ERROR_FILECLOSEFAIL
+	ret
+
 fileHandle::				.db		#0xff
 
 ;   ==================================

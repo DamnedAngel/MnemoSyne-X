@@ -188,7 +188,11 @@ _FreeSegment::
 .else
 	ld		b, l						; mapper
 .endif
-	and		#0b10001111					; make xxx irrelevant. TO DO: check if need
+	ld		c, a						; segment number
+	ld		a, b
+	and		#0b10001111					; slot ID only (F000SSPP): make xxx irrelevant
+	ld		b, a
+	ld		a, c
 
 	push 	ix
 	call	__Free

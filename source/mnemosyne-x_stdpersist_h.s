@@ -55,3 +55,20 @@
 ;   - All registers
 ; ----------------------------------------------------------------
 .globl _standardEnsure
+
+
+; ----------------------------------------------------------------
+;	- Standard close routine for MnemoSyne-X: closes the open
+;	  Databank file
+; ----------------------------------------------------------------
+; INPUTS:
+;	- None
+;
+; OUTPUTS:
+;   - A:  0  = Success (or no Databank file open)
+;		  >0 = Error
+;
+; CHANGES:
+;   - All registers
+; ----------------------------------------------------------------
+.globl _standardClose
