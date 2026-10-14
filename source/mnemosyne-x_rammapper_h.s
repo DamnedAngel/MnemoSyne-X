@@ -90,8 +90,8 @@
 ;		>0	Other mapper
 ;
 ; OUTPUTS:
-;	- [__SDCCCALL(0)] a:	Success
-;	- [__SDCCCALL(1)] l:	Success
+;	- [__SDCCCALL(0)] l:	Success
+;	- [__SDCCCALL(1)] a:	Success
 ;
 ;	Success:
 ;		0	False, fail
@@ -109,8 +109,8 @@
 ;	- [__SDCCCALL(1)] a:	Memory Page (0-3)
 ;
 ; OUTPUTS:
-;	- [__SDCCCALL(0)] a:	Segment number
-;	- [__SDCCCALL(1)] l:	Segment number
+;	- [__SDCCCALL(0)] l:	Segment number
+;	- [__SDCCCALL(1)] a:	Segment number
 ;
 ; CHANGES:
 ;   - All registers

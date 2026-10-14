@@ -169,8 +169,8 @@ _AllocateSegment_end:
 ;		>0	Other mapper
 ;
 ; OUTPUTS:
-;	- [__SDCCCALL(0)] a:	Success
-;	- [__SDCCCALL(1)] l:	Success
+;	- [__SDCCCALL(0)] l:	Success
+;	- [__SDCCCALL(1)] a:	Success
 ;
 ;	Success:
 ;		0	False, fail
@@ -199,8 +199,13 @@ _FreeSegment::
 	pop		ix
 
 	xor		a							; Zero, false, fail
-	ret nc
+	jr nc,	_FreeSegment_end
 	inc		a							; One, true, success
+
+_FreeSegment_end:
+.ifeq __SDCCCALL
+	ld		l, a
+.endif
 	ret
 
 ; ----------------------------------------------------------------
@@ -211,8 +216,8 @@ _FreeSegment::
 ;	- [__SDCCCALL(1)] a:	Memory Page (0-3)
 ;
 ; OUTPUTS:
-;	- [__SDCCCALL(0)] a:	Segment number
-;	- [__SDCCCALL(1)] l:	Segment number
+;	- [__SDCCCALL(0)] l:	Segment number
+;	- [__SDCCCALL(1)] a:	Segment number
 ;
 ; CHANGES:
 ;   - All registers
