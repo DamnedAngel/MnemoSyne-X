@@ -297,6 +297,8 @@ _standardLoad::
 
 _standardLoad_readSegment::
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	xor		a
+	ld		(#isSecondaryMapper), a	; direct read: no copy from the buffer
 	ld		a, (#usePrimaryMapperOnly)
 	or		a
 	jr nz,	_standardLoad_readToMainPage
