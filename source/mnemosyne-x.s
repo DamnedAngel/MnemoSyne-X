@@ -400,10 +400,8 @@ _mnemo_init::
 	call	_GetRamMapperBaseTable
 	ex		de, hl
 	ld		(#_pMapperBaseTable), hl
-.ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (hl)
 	ld		(#primaryMapperSlot), a
-.endif
 
 	; save page layout
 	ld		hl, #pageConfigGlobalBuffer
@@ -481,12 +479,11 @@ _mnemo_init_initBankPersistTable:
 _mnemo_init_segAllocLoop:
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		a, (#mapperQueryTag)
-	ld		l, a					; which mappers
-	xor		a						; user segment
 .else
-	xor		a						; user segment
-	ld		l, a					; which mappers
+	ld		a, (#primaryMapperSlot)	; primary mapper slot only: DOS2 returns its slot ID
 .endif
+	ld		l, a					; which mappers
+	xor		a						; user segment
 	call	_AllocateSegment
 	ld		hl, (#afterSegTable)
 	jr c,	_mnemo_init_cont	; No more available segments
@@ -1384,9 +1381,9 @@ _pMapperBaseTable::			.ds 2
 _nPhysicalSegs::			.ds 2
 _managedMemorySize::		.ds 2
 _nPhysicalSegsInUse::		.ds 2
+primaryMapperSlot::			.ds 1
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
-primaryMapperSlot::			.ds 1
 usePrimaryMapperOnly::		.ds 1
 mapperQueryTag::			.ds 2
 auxPageSlot::				.ds 1	; slot selected in aux page by MnemoSyne-X
