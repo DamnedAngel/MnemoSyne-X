@@ -366,6 +366,11 @@ mnemo_commonSave_markFlushed:
 ;
 ; OUTPUTS:
 ;   - A:  0 = Success
+;		  MNEMO_ERROR_NOINDEXSEG = Not enough free segments in the
+;			primary mapper for the index segments
+;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
+;			after the index segments
+;		  Nothing is allocated when init fails.
 ;
 ; CHANGES:
 ;   - All registers
@@ -420,15 +425,71 @@ _mnemo_init_setQueryTag:
 
 	__MNEMOPRINT	okMsg
 
+	; check the free segments BEFORE allocating any: the index segments
+	; always come from the primary mapper (first entry of the mapper
+	; table: slot, segments, free segments, ...) and at least one physical
+	; segment must remain
+	ld		hl, (#_pMapperBaseTable)
+	inc		hl
+	inc		hl
+	ld		a, (hl)					; free segments of the primary mapper
+	cp		#MNEMO_INTERNAL_SEGMENTS
+	ld		a, #MNEMO_ERROR_NOINDEXSEG
+	jp c,	_mnemo_init_end
+
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	ld		a, (#usePrimaryMapperOnly)
+	or		a
+	jr nz,	_mnemo_init_checkPhysSeg
+
+	; all mappers: sum the free segments of every entry of the table
+	; (the table ends with a zero slot)
+	ld		hl, (#_pMapperBaseTable)
+	ld		de, #0
+_mnemo_init_sumFreeSegsLoop:
+	ld		a, (hl)
+	or		a
+	jr z,	_mnemo_init_sumFreeSegsEnd
+	inc		hl
+	inc		hl
+	ld		a, e
+	add		a, (hl)					; free segments of this mapper
+	ld		e, a
+	ld		a, d
+	adc		a, #0
+	ld		d, a
+	ld		bc, #6					; next entry (8 bytes)
+	add		hl, bc
+	jr		_mnemo_init_sumFreeSegsLoop
+
+_mnemo_init_sumFreeSegsEnd:
+	ld		a, e
+	sub		#(MNEMO_INTERNAL_SEGMENTS + 1)
+	ld		a, d
+	sbc		a, #0
+	jr		_mnemo_init_checkPhysSegResult
+
+_mnemo_init_checkPhysSeg:
+.endif
+	; primary mapper only: its free segments must also hold a physical segment
+	ld		hl, (#_pMapperBaseTable)
+	inc		hl
+	inc		hl
+	ld		a, (hl)
+	cp		#(MNEMO_INTERNAL_SEGMENTS + 1)
+
+_mnemo_init_checkPhysSegResult:
+	ld		a, #MNEMO_ERROR_NOFREEPHYSSEG
+	jp c,	_mnemo_init_end
+
 	; allocate index segments
 	__MNEMOPRINT	allocatingIndexSegmentsMsg
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		hl, #bufferSegment
-	ld		b, #MNEMO_INDEX_SEGMENTS + 2
 .else
 	ld		hl, #segTableSegment
-	ld		b, #MNEMO_INDEX_SEGMENTS + 1
 .endif
+	ld		b, #MNEMO_INTERNAL_SEGMENTS
 
 _mnemo_init_indexSegAllocLoop:
 	exx
@@ -620,11 +681,10 @@ _mnemo_finalize_freePhysSegLoop:
 _mnemo_finalize_freeIndexSegs:
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
 	ld		hl, #bufferSegment
-	ld		b, #MNEMO_INDEX_SEGMENTS + 2
 .else
 	ld		hl, #segTableSegment
-	ld		b, #MNEMO_INDEX_SEGMENTS + 1
 .endif
+	ld		b, #MNEMO_INTERNAL_SEGMENTS
 
 _mnemo_finalize_freeIndexSegLoop:
 	ld		a, (hl)					; segment number

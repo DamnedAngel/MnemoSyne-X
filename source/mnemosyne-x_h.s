@@ -24,6 +24,11 @@
 ;
 ; OUTPUTS:
 ;   - A:  0 = Success
+;		  MNEMO_ERROR_NOINDEXSEG = Not enough free segments in the
+;			primary mapper for the index segments
+;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
+;			after the index segments
+;		  Nothing is allocated when init fails.
 ;
 ; CHANGES:
 ;   - All registers
