@@ -22,6 +22,15 @@
 ; ----------------------------------------------------------------
 MNEMO_MAPPER_DEVICE_ID				= 4									; always 4 (memory mapper)
 
+; Mapper segments taken by mnemo_init for its own bookkeeping: the index
+; segments, the Segment Table segment and, with MNEMO_PRIMARY_MAPPER_ONLY = 0,
+; the buffer segment
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+MNEMO_INTERNAL_SEGMENTS				= MNEMO_INDEX_SEGMENTS + 2
+.else
+MNEMO_INTERNAL_SEGMENTS				= MNEMO_INDEX_SEGMENTS + 1
+.endif
+
 
 ; ----------------------------------------------------------------
 ;	- Macros

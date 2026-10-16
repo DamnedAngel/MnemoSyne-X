@@ -447,6 +447,10 @@ to C projects (SDCCCALL(1) must be used).
     ;
     ; OUTPUTS:
     ;   - A:  0 = Success
+    ;		  MNEMO_ERROR_NOINDEXSEG = Not enough free segments in the
+    ;			primary mapper for the index segments
+    ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
+    ;			after the index segments
     ;
     ; CHANGES:
     ;   - All registers
@@ -455,6 +459,12 @@ to C projects (SDCCCALL(1) must be used).
 **_mnemo_init** initializes **MnemoSyne-X** subsystem and must be
 called before any other accesses to the system. If initialization
 succeeds, register A is set to 0. Any other value denotes a failure.
+
+Before allocating anything, **_mnemo_init** checks the free segments
+reported by the mapper routines: the primary mapper must hold the index
+segments and, with all mappers in use, the free segments of all mappers
+must leave at least one segment to manage. If it does not, **_mnemo_init**
+returns an error and has allocated nothing.
 
 ### _mnemo_finalize
 
