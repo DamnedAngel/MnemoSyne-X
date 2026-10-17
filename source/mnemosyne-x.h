@@ -38,21 +38,17 @@ typedef struct {
 ;	- Init MnemoSyne-X.
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- [MNEMO_PRIMARY_MAPPER_ONLY = 1] None
-;	- [MNEMO_PRIMARY_MAPPER_ONLY = 0] bool primaryMapperOnly
+;	- bool primaryMapperOnly
 ;			false = All mappers
 ;			true  = Primary mapper only
+;			(ignored if MNEMO_PRIMARY_MAPPER_ONLY = 1)
 ;	- char[8]*: databanks filename
 ;
 ; OUTPUTS:
 ;   - unsigned char:  0 = Success
 ; ----------------------------------------------------------------
 */
-#ifdef MNEMO_PRIMARY_MAPPER_ONLY
-extern void mnemo_init(void) __sdcccall(1);
-#else
-extern unsigned char mnemo_init(bool, char*) __sdcccall(1);
-#endif
+extern unsigned char mnemo_init(bool primaryMapperOnly, char* databankName) __sdcccall(1);
 
 /*
 ; ----------------------------------------------------------------
@@ -87,9 +83,9 @@ extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
-;	- DE: pLoadSeg
-;   - Stack: pSaveSeg
+;	- unsigned char bank: Bank number
+;	- MNEMO_LOADSEG pLoadSeg: routine that loads a segment
+;	- MNEMO_SAVESEG pSaveSeg: routine that saves a segment
 ;
 ; OUTPUTS:
 ;	- None
@@ -98,7 +94,9 @@ extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
 ;   - All regs
 ; ----------------------------------------------------------------
 */
-extern void mnemo_setPersistence(unsigned char, unsigned int*, unsigned int*) __sdcccall(1);
+typedef unsigned char (*MNEMO_LOADSEG)(void) __sdcccall(1);
+typedef unsigned char (*MNEMO_SAVESEG)(unsigned char checkBank) __sdcccall(1);
+extern void mnemo_setPersistence(unsigned char bank, MNEMO_LOADSEG pLoadSeg, MNEMO_SAVESEG pSaveSeg) __sdcccall(1);
 
 
 /*
