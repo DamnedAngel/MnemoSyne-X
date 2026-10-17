@@ -42,10 +42,13 @@ typedef struct {
 ;			false = All mappers
 ;			true  = Primary mapper only
 ;			(ignored if MNEMO_PRIMARY_MAPPER_ONLY = 1)
-;	- char[8]*: databanks filename
+;	- char*: databanks filename: up to 8 characters; a shorter name
+;			ends at its first space or zero (8 bytes are read)
 ;
 ; OUTPUTS:
 ;   - unsigned char:  0 = Success
+;			MNEMO_ERROR_BADFILENAME = The databanks filename is empty
+;			(it starts with a space or a zero)
 ; ----------------------------------------------------------------
 */
 extern unsigned char mnemo_init(bool primaryMapperOnly, char* databankName) __sdcccall(1);

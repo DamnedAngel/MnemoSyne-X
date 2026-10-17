@@ -362,10 +362,13 @@ mnemo_commonSave_markFlushed:
 ;	- A: Use primary mappers only (if MNEMO_PRIMARY_MAPPER_ONLY = 0).
 ;			0 = All mappers
 ;			1 = Primary mapper only
-;	- DE: pointer to an 8-byte string with the filename
+;	- DE: pointer to a string with the databanks filename: up to 8
+;			characters; a shorter name ends at its first space or zero
 ;
 ; OUTPUTS:
 ;   - A:  0 = Success
+;		  MNEMO_ERROR_BADFILENAME = The databanks filename is empty (it
+;			starts with a space or a zero)
 ;		  MNEMO_ERROR_NOINDEXSEG = Not enough free segments in the
 ;			primary mapper for the index segments
 ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
@@ -376,11 +379,32 @@ mnemo_commonSave_markFlushed:
 ;   - All registers
 ; ----------------------------------------------------------------
 _mnemo_init::
-	; copy filename
+	; copy filename (8 bytes at most are read)
 	ld		hl, #fileName
 	ex		de, hl
 	ld		bc, #8
 	ldir
+
+	; the name ends at its first space or zero: fileNameLength = its characters
+	ld		hl, #fileName
+	ld		b, #8
+_mnemo_init_nameLengthLoop:
+	ld		a, (hl)
+	or		a
+	jr z,	_mnemo_init_nameLengthEnd
+	cp		#' '
+	jr z,	_mnemo_init_nameLengthEnd
+	inc		hl
+	djnz	_mnemo_init_nameLengthLoop
+_mnemo_init_nameLengthEnd:
+	ld		de, #fileName
+	or		a
+	sbc		hl, de
+	ld		a, l
+	ld		(#fileNameLength), a
+	or		a
+	ld		a, #MNEMO_ERROR_BADFILENAME
+	ret z							; empty name: nothing was done yet
 
 	push	ix
 
@@ -1431,6 +1455,7 @@ okMsg:							.asciz " [OK]\r\n"
 ;
 
 fileName::					.ascii	'THETRIAL'
+fileNameLength::			.ds 1
 fileExtension::				.asciz	'.___'
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
