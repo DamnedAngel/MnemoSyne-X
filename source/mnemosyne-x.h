@@ -134,7 +134,11 @@ extern unsigned char mnemo_activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcc
 ;	- DE: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the segment is released and the handler is
+;			invalidated (its pSegHandler = 0xFFFF)
+;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+;		  active segment (invalidated, never activated, released by
+;		  mnemo_releaseAll, or reused): nothing was changed
 ; ----------------------------------------------------------------
 */
 extern unsigned char mnemo_releaseLogSeg(unsigned char priority, LOGSEGHANDLER* pSegHandler) __sdcccall(1);
@@ -148,7 +152,8 @@ extern unsigned char mnemo_releaseLogSeg(unsigned char priority, LOGSEGHANDLER* 
 ;	- A: Release priority (0 - 2)
 ;
 ; OUTPUTS:
-;   - None
+;   - None. The handlers of the released segments are not invalidated:
+;	  they must not be released afterwards
 ; ----------------------------------------------------------------
 */
 extern void mnemo_releaseAll(unsigned char priority) __sdcccall(1);

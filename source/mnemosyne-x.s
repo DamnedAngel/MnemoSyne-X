@@ -1170,6 +1170,26 @@ _mnemo_activateLogSeg_noFreePhysSegError:
 
 
 ; ----------------------------------------------------------------
+;	- Release priority: keeps its bits only and limits it to 2
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Release priority
+;
+; OUTPUTS:
+;   - A: Release priority (MNEMO_ALLOC_KEEPPRIORITY0 - 2)
+;
+; CHANGES:
+;   - AF
+; ----------------------------------------------------------------
+mnemo_clampReleasePriority:
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE
+	ret nz
+	ld		a, #MNEMO_ALLOC_KEEPPRIORITY2
+	ret
+
+
+; ----------------------------------------------------------------
 ;	- Releases segment from a logSegHandler pointed by DE (SDCCCALL(1))
 ; ----------------------------------------------------------------
 ; INPUTS:
@@ -1177,10 +1197,14 @@ _mnemo_activateLogSeg_noFreePhysSegError:
 ;	- DE: pLogSegHandler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success: the segment is released and the handler is
+;			invalidated (its pSegHandler = 0xFFFF)
+;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+;		  active segment (invalidated, never activated, released by
+;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched
 ; ----------------------------------------------------------------
 _mnemo_releaseLogSeg::
 	ex		de, hl
@@ -1201,26 +1225,37 @@ _mnemo_releaseLogSeg::
 mnemo_releaseLogSegHL::
 	push	ix
 
-	; assure priority <= 2
-	ld		b, a
-	and		#MNEMO_ALLOC_MASK
-	cp		#MNEMO_ALLOC_INUSE
-	ld		a, b
-	jr nz,	mnemo_releaseLogSegHL_cont
-	sub		#MNEMO_ALLOC_KEEPPRIORITY1		; priority from 3 to 2
-
-mnemo_releaseLogSegHL_cont:
+	call	mnemo_clampReleasePriority
 	call	mnemo_allocationInitialServices
 	
-	; assert segNumber
+	; assert pSegHandler: even and inside the segment table
 	ld		hl, #segTableSegment
 	call	_mnemo_switchAuxPage
+	ld		hl, (#pSegHandler)
+	bit		0, l
+	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
+	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
+	or		a
+	sbc		hl, de
+	jr c,	mnemo_releaseLogSegHL_outdatedSegHandler
+	add		hl, de
+	ld		de, (#afterSegTable)
+	or		a
+	sbc		hl, de
+	jr nc,	mnemo_releaseLogSegHL_outdatedSegHandler
+
+	; assert segNumber
 	ld		hl, (#pSegHandler)
 	ld		a, (#segNumber)
 	cp		(hl)
 	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
 	inc		hl
 	ld		a, (hl)
+	ld		c, a
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE						; the segment must be active
+	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
+	ld		a, c
 	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	ld		e, a
 	ld		a, (#mapperSlot)
@@ -1241,12 +1276,17 @@ mnemo_releaseLogSegHL_cont:
 	dec		hl
 	ld		(#_nPhysicalSegsInUse), hl
 	
-	; update release priority
+	; update release priority and invalidate the handler
 	ld		hl, #auxSegHandlerTemp
 	call	_mnemo_switchAuxPage
 	ld		hl, (#pLogSegHandler)
 	inc		hl
 	ld		a, (#mapperSlot)
+	ld		(hl), a
+	inc		hl
+	ld		a, #0xFF
+	ld		(hl), a						; pSegHandler = 0xFFFF
+	inc		hl
 	ld		(hl), a
 	xor		a
 	pop		ix
@@ -1270,14 +1310,16 @@ mnemo_restoreAuxPageAndReturnStatus:
 ;	- A: Release priority (0 - 2)
 ;
 ; OUTPUTS:
-;   - None
+;   - None (A is undefined). The handlers of the released segments are
+;	  not invalidated: they must not be released afterwards
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched
 ; ----------------------------------------------------------------
 _mnemo_releaseAll::
 	push	ix
 
+	call	mnemo_clampReleasePriority
 	call	mnemo_allocationInitialServices2
 
 	ld		hl, #segTableSegment

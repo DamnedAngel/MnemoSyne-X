@@ -706,10 +706,14 @@ effect at once, but does not force a new load.
     ;	- DE: pLogSegHandler
     ;
     ; OUTPUTS:
-    ;   - None
+    ;   - A: 0 = Success: the segment is released and the handler is
+    ;			invalidated (its pSegHandler = 0xFFFF)
+    ;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+    ;		  active segment (invalidated, never activated, released by
+    ;		  _mnemo_releaseAll, or reused): nothing was changed
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX is restored; MAIN is untouched
     ; ----------------------------------------------------------------
 
 **_mnemo_releaseLogSeg** releases an allocated logical segment.
@@ -725,6 +729,18 @@ The release priority are the following:
 
 To learn more how the release priorities are used by **MnemoSyne-X** 
 please refer to [_mnemo_activateLogSeg](#_mnemo_activateLogSeg).
+
+Only these three values are valid: the other bits of A are ignored
+and a value that denotes an active segment (3) is taken as
+MNEMO_ALLOC_KEEPPRIORITY2.
+
+A successful release invalidates the Logical Segment Handler (its
+*pSegHandler* becomes 0xFFFF), so it cannot be released twice, nor
+release a physical segment that another Logical Segment is using
+meanwhile. Releasing a handler that does not hold an active segment
+(already released, never activated, or invalidated) changes nothing
+and returns *MNEMO_WARN_OUTDATEDPSEGHANDLER*. The handler is valid
+again after the next successful [_mnemo_activateLogSeg](#_mnemo_activateLogSeg).
 
 
 ### mnemo_releaseLogSegHL
@@ -754,15 +770,21 @@ Same as above, but the Logical Segment Handler is passed on HL.
     ;	- A: Release priority (0 - 2)
     ;
     ; OUTPUTS:
-    ;   - None
+    ;   - None (A is undefined)
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX is restored; MAIN is untouched
     ; ----------------------------------------------------------------
 
 **_mnemo_releaseAll** will scan the physical segments pool and release
 every active logical segment it finds. The release priority for all
-these segments shall be passed on register A.
+these segments shall be passed on register A (see
+[_mnemo_releaseLogSeg](#_mnemo_releaseLogSeg) for the valid values).
+
+**_mnemo_releaseAll** does not know the Logical Segment Handlers, so
+it does not invalidate them: a handler must not be released after
+**_mnemo_releaseAll**, because its physical segment may be in use by
+another Logical Segment by then.
 
 
 ### _mnemo_flushAll

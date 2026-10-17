@@ -117,10 +117,14 @@
 ;	- DE: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success: the segment is released and the handler is
+;			invalidated (its pSegHandler = 0xFFFF)
+;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+;		  active segment (invalidated, never activated, released by
+;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched
 ; ----------------------------------------------------------------
 .globl _mnemo_releaseLogSeg
 
@@ -133,10 +137,12 @@
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success; MNEMO_WARN_OUTDATEDPSEGHANDLER = the handler does
+;		  not hold an active segment: nothing was changed (see
+;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched
 ; ----------------------------------------------------------------
 .globl mnemo_releaseLogSegHL
 
