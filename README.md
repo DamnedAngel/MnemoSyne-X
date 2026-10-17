@@ -370,7 +370,7 @@ Logical Segments are identifiable and manage instances of standard MSX
 Physical Segments in RAM mappers.
 
 **MnemoSyne-X**, in its full configuration, identifies and manages at
-most 65565 logical segments (64k minus 1, since segment identifier
+most 65535 logical segments (64k minus 1, since segment identifier
 *0xffff* is used to denote an invalid segment).
 
 A Logical Segment may be made available by **MnemoSyne-X** in its
@@ -596,7 +596,8 @@ The (physical) Segment Handler (SEGHANDLER) is defined as:
 
 Upon calling **_mnemo_activateLogSeg**, the only relevant fields
 in the Logical Segment Handler pointed by HL that must be already
-filled are **logSegNumber** (a number between 0 and 65364), and 
+filled are **logSegNumber** (a number between 0 and 8192 * MNEMO_INDEX_SEGMENTS - 1,
+up to 65534; 0xffff is never valid), and 
 **segMode** (the mode the segment will operate). The possible modes
 are:
 

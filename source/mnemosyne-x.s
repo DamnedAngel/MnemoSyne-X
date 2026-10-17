@@ -801,6 +801,15 @@ _mnemo_activateLogSeg::
 
 	call	mnemo_allocationInitialServices
 
+.ifeq	(MNEMO_INDEX_SEGMENTS - 8)
+	; 0xFFFF (invalid logSegNumber) is inside the range of 8 index segments
+	ld		hl, (#logSegNumber)
+	inc		hl
+	ld		a, h
+	or		l
+	jp z,	_mnemo_activateLogSeg_segOutOfRangeError
+.endif
+
 	; transform logSegNumber in pLogSegTableSegment & pLogSegTableItem
 	ld		hl, (#logSegNumber)
 	xor		a
