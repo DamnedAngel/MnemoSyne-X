@@ -20,10 +20,13 @@
 ;	- [MNEMO_PRIMARY_MAPPER_ONLY = 0] A: Use primary mappers only
 ;			0 = All mappers
 ;			1 = Primary mapper only
-;	- DE: pointer to an 8-byte string with the databanks filename
+;	- DE: pointer to a string with the databanks filename: up to 8
+;			characters; a shorter name ends at its first space or zero
 ;
 ; OUTPUTS:
 ;   - A:  0 = Success
+;		  MNEMO_ERROR_BADFILENAME = The databanks filename is empty (it
+;			starts with a space or a zero)
 ;		  MNEMO_ERROR_NOINDEXSEG = Not enough free segments in the
 ;			primary mapper for the index segments
 ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage

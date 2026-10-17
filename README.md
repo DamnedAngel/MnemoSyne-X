@@ -411,7 +411,8 @@ Since each segment holds 16kbytes, a maximum 16bytes * 256 * 256 = 1GByte
 Virtual Memory may be managed by **MnemoSyne-X**.
 
 Each **Databank** file will be named XXXXXXXX._NN, where:
-- XXXXXXXX is a string passed as parameter to _mnemo_init; and
+- XXXXXXXX is a string of 1 to 8 characters passed as parameter to
+  _mnemo_init (see [_mnemo_init](#_mnemo_init)); and
 - NN is the 0-padded hexadecimal representation of the **Databank** number.
 
 The number of the **Databank** in which a given Logical Segment, among the
@@ -443,10 +444,13 @@ to C projects (SDCCCALL(1) must be used).
     ;	- A: Use primary mappers only (if MNEMO_PRIMARY_MAPPER_ONLY = 0).
     ;			0 = All mappers
     ;			1 = Primary mapper only
-    ;	- DE: pointer to an 8-byte string with the databanks filename
+    ;	- DE: pointer to a string with the databanks filename: up to 8
+    ;			characters; a shorter name ends at its first space or zero
     ;
     ; OUTPUTS:
     ;   - A:  0 = Success
+    ;		  MNEMO_ERROR_BADFILENAME = The databanks filename is empty
+    ;			(it starts with a space or a zero)
     ;		  MNEMO_ERROR_NOINDEXSEG = Not enough free segments in the
     ;			primary mapper for the index segments
     ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
@@ -459,6 +463,17 @@ to C projects (SDCCCALL(1) must be used).
 **_mnemo_init** initializes **MnemoSyne-X** subsystem and must be
 called before any other accesses to the system. If initialization
 succeeds, register A is set to 0. Any other value denotes a failure.
+
+The databanks filename has up to 8 characters, which become the
+beginning of every Databank file name (XXXXXXXX._NN). **_mnemo_init**
+reads 8 bytes from DE (a name shorter than 8 characters must still be
+followed by 8 readable bytes) and the name ends at the first space or
+zero among them, so a short name can be padded with spaces ("DATA    ")
+or with zeros. A C string literal of at most 7 characters works as is:
+it ends with a zero, and the bytes after it are ignored. Every character before the
+padding must be valid in a file name. A name that starts with a space or a
+zero is empty, and **_mnemo_init** fails with
+*MNEMO_ERROR_BADFILENAME* before doing anything else.
 
 Before allocating anything, **_mnemo_init** checks the free segments
 reported by the mapper routines: the primary mapper must hold the index

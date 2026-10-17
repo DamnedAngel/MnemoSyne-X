@@ -12,6 +12,7 @@
 
 .globl		_mnemo_switchAuxPage
 .globl		fileName
+.globl		fileNameLength
 .globl		fileExtension
 
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -115,7 +116,17 @@ persistCommon_fileClosed::
 	ld		(hl), e
 
 persistCommon_openFile::
-	ld		de, #fileName
+	; file name = the databanks filename (fileNameLength characters) + extension
+	ld		hl, #fileName
+	ld		de, #openName
+	ld		a, (#fileNameLength)
+	ld		c, a
+	ld		b, #0
+	ldir
+	ld		hl, #fileExtension
+	ld		bc, #5				; '.', '_', two digits and the end of the string
+	ldir
+	ld		de, #openName
 	xor		a
 	ld		c, #BDOS_OPEN
 	call	BDOS_SYSCAL
@@ -126,7 +137,7 @@ persistCommon_openFile::
 
 persistCommon_createFile::
 	; create file
-	ld		de, #fileName
+	ld		de, #openName
 	xor		a
 	ld		b, a
 	ld		c, #BDOS_CREATE
@@ -540,3 +551,4 @@ isSecondaryMapper::			.ds		1
 temp1::						.ds		1
 temp4::						.ds		4
 bankNumber::				.ds		1
+openName::					.ds		8 + 5
