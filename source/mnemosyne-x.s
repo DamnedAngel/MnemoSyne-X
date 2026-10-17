@@ -1371,15 +1371,21 @@ _mnemo_releaseAll_next:
 ;	- None
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success
+;		  An error of the segment save: the flush stops there, the
+;		  segments after it are not flushed and the failed one is still
+;		  pending (the call can be repeated)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+;	  disabled
+;   - Active segments are not flushed: only the released ones
 ; ----------------------------------------------------------------
 _mnemo_flushAll::
 	push	ix
 
-	call	mnemo_allocationInitialServices3
+	ld		hl, #pageConfigTempBuffer
+	call	mnemo_savePageLayout
 
 	ld		hl, #segTableSegment
 	call	_mnemo_switchAuxPage
@@ -1393,7 +1399,7 @@ _mnemo_flushAll_loop:
 	cp		#MNEMO_ERROR_SEGINUSE
 	jr z,	_mnemo_flush_next
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	mnemo_restoreAuxPageAndReturnStatus	; same ending
+	jr nz,	_mnemo_flushAll_end
 
 _mnemo_flush_next:
 	inc		hl
@@ -1407,7 +1413,14 @@ _mnemo_flush_next:
 	; Ensure last file buffers of the standard persistence are
 	; written to disk (custom persistence has not Ensure ATM).
 	call	_standardEnsure
-	jr		mnemo_restoreAuxPageAndReturnStatus		; same ending
+
+_mnemo_flushAll_end:
+	push	af
+	ld		hl, #pageConfigTempBuffer
+	call	mnemo_restorePageLayout
+	pop		af
+	pop		ix
+	ret
 
 
 ; ----------------------------------------------------------------

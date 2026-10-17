@@ -796,16 +796,30 @@ another Logical Segment by then.
     ;	- None
     ;
     ; OUTPUTS:
-    ;   - A: Error code
+    ;   - A: 0 = Success
+    ;		  An error of the segment save: the flush stops there, the
+    ;		  segments after it are not flushed and the failed one is still
+    ;		  pending (the call can be repeated)
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+    ;	  disabled
+    ;   - Active segments are not flushed: only the released ones
     ; ----------------------------------------------------------------
 
-**_mnemo_flushAll** will release and persist all non-persisted
-segments with mode **MNEMO_SEGMODE_READWRITE** to disk. If the flush
-process succeeds, register A is set to 0. Any other value denotes
-a failure.
+**_mnemo_flushAll** will persist all non-persisted, released segments
+with mode **MNEMO_SEGMODE_READWRITE** to disk. If the flush process
+succeeds, register A is set to 0. Any other value denotes a failure.
+
+Segments that are active (not released) are not flushed: release them
+first (see [_mnemo_releaseLogSeg](#_mnemo_releaseLogSeg) and
+[_mnemo_releaseAll](#_mnemo_releaseAll)). The segment that is in the
+**MAIN** page when **_mnemo_flushAll** is called is back in it when the
+call returns, with its content intact.
+
+On the first error the flush stops: the segments after the failed one
+are not flushed, and the failed one remains pending, so the call can
+be repeated.
 
 At the end, **_mnemo_flushAll** makes sure the buffers of the
 standard persistence's open Databank file are written to disk. There

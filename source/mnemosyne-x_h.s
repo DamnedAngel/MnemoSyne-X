@@ -169,10 +169,15 @@
 ;	- None
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success
+;		  An error of the segment save: the flush stops there, the
+;		  segments after it are not flushed and the failed one is still
+;		  pending (the call can be repeated)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+;	  disabled
+;   - Active segments are not flushed: only the released ones
 ; ----------------------------------------------------------------
 .globl _mnemo_flushAll
 

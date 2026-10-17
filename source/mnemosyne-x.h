@@ -167,7 +167,12 @@ extern void mnemo_releaseAll(unsigned char priority) __sdcccall(1);
 ;	- None
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success
+;		  An error of the segment save: the flush stops there, the
+;		  segments after it are not flushed and the failed one is still
+;		  pending (the call can be repeated)
+;   Active segments are not flushed: only the released ones. The AUX
+;   and MAIN pages are restored
 ; ----------------------------------------------------------------
 */
 extern unsigned char mnemo_flushAll(void) __sdcccall(1);
