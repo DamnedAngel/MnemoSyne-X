@@ -58,10 +58,11 @@
 ;	- Set a bank to standard persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range
 ;
 ; CHANGES:
 ;   - All regs
@@ -73,12 +74,14 @@
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;	- DE: pLoadSeg
 ;   - Stack: pSaveSeg
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range; nothing
+;			was changed (pSaveSeg is removed from the stack anyway)
 ;
 ; CHANGES:
 ;   - All regs

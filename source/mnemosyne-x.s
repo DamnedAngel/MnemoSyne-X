@@ -379,6 +379,9 @@ mnemo_commonSave_markFlushed:
 ;   - All registers
 ; ----------------------------------------------------------------
 _mnemo_init::
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	push	af						; A (mappers to use): the name check changes A
+.endif
 	; copy filename (8 bytes at most are read)
 	ld		hl, #fileName
 	ex		de, hl
@@ -403,14 +406,19 @@ _mnemo_init_nameLengthEnd:
 	ld		a, l
 	ld		(#fileNameLength), a
 	or		a
-	ld		a, #MNEMO_ERROR_BADFILENAME
-	ret z							; empty name: nothing was done yet
-
-	push	ix
-
+	jr nz,	_mnemo_init_nameOk
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	pop		af
+.endif
+	ld		a, #MNEMO_ERROR_BADFILENAME
+	ret								; empty name: nothing was done yet
+
+_mnemo_init_nameOk:
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	pop		af
 	ld		(#usePrimaryMapperOnly), a
 .endif
+	push	ix
 	ld hl,	#0
 	ld		(#_nPhysicalSegsInUse), hl
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -742,7 +750,9 @@ _mnemo_finalize_freeIndexSegLoop:
 ;	- A: Bank number
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range (see
+;			_mnemo_setPersistence)
 ;
 ; CHANGES:
 ;   - All regs
@@ -762,17 +772,30 @@ _mnemo_setStdPersistence::
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;	- DE: pLoadSeg
 ;   - Stack: pSaveSeg
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range; nothing
+;			was changed (pSaveSeg is removed from the stack anyway)
 ;
 ; CHANGES:
 ;   - All regs
 ; ----------------------------------------------------------------
 _mnemo_setPersistence::
+.ifne	(MNEMO_INDEX_SEGMENTS - 8)
+	; with 8 index segments every bank number (0-255) is valid
+	cp		#MNEMO_NUM_BANKS
+	jr c,	_mnemo_setPersistence_bankOk
+	pop		hl						; return address
+	pop		de						; pSaveSeg: clean stack as per sdcccall 1
+	push	hl
+	ld		a, #MNEMO_ERROR_BADBANK
+	ret
+_mnemo_setPersistence_bankOk:
+.endif
 	; Set Segment Table segment in Aux Page
 	push	de
 	push	af
@@ -804,7 +827,9 @@ _mnemo_setPersistence::
 
 	; restore Aux Page
 	ld		hl, #auxSegHandlerTemp
-	jp		_mnemo_switchAuxPage
+	call	_mnemo_switchAuxPage
+	xor		a
+	ret
 	
 	
 ; ----------------------------------------------------------------

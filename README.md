@@ -202,8 +202,8 @@ Configure both projects, as described below:
 	MDO_HOOK		unsigned char|mnemo_init|(bool, char*)
 	MDO_HOOK		void|mnemo_finalize|(void)
 
-	MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
-	MDO_HOOK		void|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
+	MDO_HOOK		unsigned char|mnemo_setStdPersistence|(unsigned char)
+	MDO_HOOK		unsigned char|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
 
 	MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
 	MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)
@@ -514,10 +514,11 @@ MSX-DOS/Nextor.
     ;	- Set a bank to standard persistence
     ; ----------------------------------------------------------------
     ; INPUTS:
-    ;	- A: Bank number
+    ;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
     ;
     ; OUTPUTS:
-    ;	- None
+    ;	- A:  0 = Success
+    ;		  MNEMO_ERROR_BADBANK = The bank number is out of range
     ;
     ; CHANGES:
     ;   - All regs
@@ -525,8 +526,10 @@ MSX-DOS/Nextor.
 
 **_mnemo_setStdPersistence** associates **MnemoSyne-X**'s standard
 persistence routines (Load and Save) to a given Databank. Databank
-number (0-255) must be especified in register A before calling
-**_mnemo_setStdPersistence**.
+number must be especified in register A before calling
+**_mnemo_setStdPersistence**. The Databanks that can hold logical
+segments are 0 to 32 * MNEMO_INDEX_SEGMENTS - 1 (up to 255); a higher
+number fails with *MNEMO_ERROR_BADBANK*, without changing anything.
 
 The standard persistence routines are default for all Databanks.
 
@@ -536,12 +539,13 @@ The standard persistence routines are default for all Databanks.
     ;	- Set bank persistence
     ; ----------------------------------------------------------------
     ; INPUTS:
-    ;	- A: Bank number
+    ;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
     ;	- DE: pLoadSeg
     ;   - Stack: pSaveSeg
     ;
     ; OUTPUTS:
-    ;	- None
+    ;	- A:  0 = Success
+    ;		  MNEMO_ERROR_BADBANK = The bank number is out of range
     ;
     ; CHANGES:
     ;   - All regs
@@ -549,14 +553,18 @@ The standard persistence routines are default for all Databanks.
 
 **_mnemo_setPersistence** associates custom persistence routines
 (Load and Save) to a given Databank. Pior to calling
-**_mnemo_setPersistence**, Databank number (0-255) must be especified
+**_mnemo_setPersistence**, Databank number (0 to
+32 * MNEMO_INDEX_SEGMENTS - 1, up to 255) must be especified
 in register A, DE must point to the custom segment load routine 
 (pLoadSeg) and the address of the custom segment load routine
 (pSaveSeg) must be pushed to the stack.
 
 In order to comply to SSDCCCALL(1) standard, **_mnemo_setPersistence**
 will clean pSaveSeg from the stack. The callee doesn't need to bother
-with it.
+with it, not even when it fails.
+
+A Databank number out of range (no logical segment can be stored in
+it) fails with *MNEMO_ERROR_BADBANK*, without changing anything.
 
 Custom persistence routines are not needed in many cases. They are,
 however, interesting to provide way of having custom Databank formats

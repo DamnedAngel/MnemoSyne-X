@@ -72,13 +72,14 @@ extern void mnemo_finalize(void) __sdcccall(1);
 ;	- Set a bank to standard persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- unsigned char bank: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;
 ; OUTPUTS:
-;	- None
+;	- unsigned char:  0 = Success
+;			MNEMO_ERROR_BADBANK = The bank number is out of range
 ; ----------------------------------------------------------------
 */
-extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
+extern unsigned char mnemo_setStdPersistence(unsigned char bank) __sdcccall(1);
 
 
 /*
@@ -86,12 +87,14 @@ extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- unsigned char bank: Bank number
+;	- unsigned char bank: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;	- MNEMO_LOADSEG pLoadSeg: routine that loads a segment
 ;	- MNEMO_SAVESEG pSaveSeg: routine that saves a segment
 ;
 ; OUTPUTS:
-;	- None
+;	- unsigned char:  0 = Success
+;			MNEMO_ERROR_BADBANK = The bank number is out of range; nothing
+;			was changed
 ;
 ; CHANGES:
 ;   - All regs
@@ -99,7 +102,7 @@ extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
 */
 typedef unsigned char (*MNEMO_LOADSEG)(void) __sdcccall(1);
 typedef unsigned char (*MNEMO_SAVESEG)(unsigned char checkBank) __sdcccall(1);
-extern void mnemo_setPersistence(unsigned char bank, MNEMO_LOADSEG pLoadSeg, MNEMO_SAVESEG pSaveSeg) __sdcccall(1);
+extern unsigned char mnemo_setPersistence(unsigned char bank, MNEMO_LOADSEG pLoadSeg, MNEMO_SAVESEG pSaveSeg) __sdcccall(1);
 
 
 /*
