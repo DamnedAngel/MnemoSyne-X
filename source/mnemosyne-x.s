@@ -839,10 +839,16 @@ _mnemo_setPersistence_bankOk:
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+;			and the handler is updated
+;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+;		  active), or an error of the segment save or load: nothing is
+;		  activated, the handler is not changed and MAIN is undefined
+;		  A < 0x80, A <> 0: warning, the segment is active
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored. Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_activateLogSeg::
 	push	ix
@@ -944,6 +950,15 @@ _mnemo_activateLogSeg::
 	sbc		hl, de
 	jr nz,	_mnemo_activateLogSeg_searchFreeSeg		; nope
 
+	; logSeg already in memory: it cannot be activated twice
+	ld		hl, (#pSegHandler)
+	inc		hl
+	ld		a, (hl)
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE
+	ld		a, #MNEMO_ERROR_SEGALREADYACTIVE
+	jp z,	_mnemo_activateLogSeg_restoreAuxSeg		; nothing was changed
+
 	; logSeg already loaded
 	ld		a, #1
 	ld		(#logSegLoaded), a
@@ -1029,7 +1044,7 @@ _mnemo_activateLogSeg_activateSegment:
 	xor		a					; dont check bank
 	call	mnemo_commonSave	; activate main seg and save if needed
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	_mnemo_activateLogSeg_restoreAuxSeg
+	jp nz,	_mnemo_activateLogSeg_restoreAuxSeg
 
 _mnemo_activateLogSeg_updateSegmentHeader:
 	ld		hl, (#logSegNumber)
@@ -1095,6 +1110,36 @@ _mnemo_activateLogSeg_checkReadMode:
 
 _mnemo_activateLogSeg_load:
 	call	MNEMO_SEGHDR_LOADHOOK
+	bit		MNEMO_ERROR_BIT, a
+	jr z,	_mnemo_activateLogSeg_restoreAuxSeg
+
+	; the load failed: undo the activation (the segment becomes free,
+	; with an invalid logSegNumber, and the logical segment is unmapped)
+	push	af
+	ld		hl, #segTableSegment
+	call	_mnemo_switchAuxPage
+	ld		hl, (#pSegHandler)
+	push	hl
+	call	_mnemo_switchMainPage
+	ld		hl, #0xffff
+	ld		(#MNEMO_SEGHDR_LOGSEGNUMBER), hl
+	pop		hl
+	inc		hl
+	ld		a, (hl)
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
+	or		#MNEMO_ALLOC_KEEPPRIORITY0
+	ld		(hl), a
+	ld		hl, (#_nPhysicalSegsInUse)
+	dec		hl
+	ld		(#_nPhysicalSegsInUse), hl
+	ld		hl, (#pLogSegTableSegment)
+	call	_mnemo_switchAuxPage
+	ld		hl, (#pLogSegTableItem)
+	ld		a, #0xff
+	ld		(hl), a
+	inc		hl
+	ld		(hl), a
+	pop		af
 
 _mnemo_activateLogSeg_restoreAuxSeg:
 	push	af

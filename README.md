@@ -590,10 +590,16 @@ persistence only.
     ;	- HL: pointer to logical segment handler
     ;
     ; OUTPUTS:
-    ;   - A:  0 = Success
+    ;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+    ;			and the handler is updated
+    ;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+    ;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+    ;		  active), or an error of the segment save or load: nothing is
+    ;		  activated, the handler is not changed and MAIN is undefined
+    ;		  A < 0x80, A <> 0: warning, the segment is active
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX is restored. Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_activateLogSeg** allocates a logical segment, activating it 
@@ -677,6 +683,17 @@ made available for use in **MnemoSyne-X**'s **MAIN** page (see
 [Page Structure Section](#page-structure)). Any other value returned
 in register A indicates either failure (bit 7 set) or a warning (bit
 7 reset).
+
+A logical segment that is already active cannot be activated again:
+the call fails with *MNEMO_ERROR_SEGALREADYACTIVE*, without changing
+anything. If the segment cannot be saved (the segment it replaces) or
+loaded, the call fails and leaves no trace: the physical segment is
+free again and the logical segment is not mapped, so the call can be
+repeated. After a failure, MAIN is undefined.
+
+With *MNEMO_SEGMODE_TEMP*, a logical segment still in memory keeps its
+previous content (it is not cleared). A different *segMode* takes
+effect at once, but does not force a new load.
 
 
 ### _mnemo_releaseLogSeg

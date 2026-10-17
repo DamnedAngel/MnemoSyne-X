@@ -95,10 +95,16 @@
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+;			and the handler is updated
+;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+;		  active), or an error of the segment save or load: nothing is
+;		  activated, the handler is not changed and MAIN is undefined
+;		  A < 0x80, A <> 0: warning, the segment is active
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored. Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_activateLogSeg
 
