@@ -353,6 +353,12 @@ page by itself, it must select the previous slot back before calling
 **MnemoSyne-X** again. BIOS and BDOS calls that restore the slots
 before returning are safe.
 
+The remembered slot is not checked against the hardware, to keep the
+switch fast. If the slot of one of these pages was changed and not
+restored, no error is reported: the segment number is written to a
+mapper that is not visible, and the application reads and writes the
+wrong memory.
+
 ### Interrupts
 **MnemoSyne-X** does not preserve the interrupt state. Any API routine
 may return with interrupts disabled:
@@ -364,6 +370,15 @@ persistence routines disable interrupts.
 
 The application must enable interrupts again (EI) when it needs them,
 for instance before a HALT, which would otherwise hang the computer.
+
+ENASLT is called only when the segment's mapper is not the one already
+in that page, so with several mappers an API call may return with
+interrupts disabled while the same call leaves them enabled on a
+single-mapper machine (or with the primary mapper only). To have
+interrupts enabled, execute EI after any API call but the getters.
+
+**MnemoSyne-X** is not reentrant: do not call it from an interrupt
+routine.
 
 ### Logical Segments
 Logical Segments are identifiable and manage instances of standard MSX
@@ -713,7 +728,8 @@ effect at once, but does not force a new load.
     ;		  _mnemo_releaseAll, or reused): nothing was changed
     ;
     ; CHANGES:
-    ;   - All registers but IX; AUX is restored; MAIN is untouched
+    ;   - All registers but IX; AUX is restored; MAIN is untouched.
+    ;     Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_releaseLogSeg** releases an allocated logical segment.
@@ -773,7 +789,8 @@ Same as above, but the Logical Segment Handler is passed on HL.
     ;   - None (A is undefined)
     ;
     ; CHANGES:
-    ;   - All registers but IX; AUX is restored; MAIN is untouched
+    ;   - All registers but IX; AUX is restored; MAIN is untouched.
+    ;     Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_releaseAll** will scan the physical segments pool and release
@@ -849,7 +866,12 @@ the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 It selects a slot only if the segment's mapper is not the one already
 selected in that page, and then returns with interrupts disabled (see
 [Slot Selection Section](#slot-selection) and
-[Interrupts Section](#interrupts)).
+[Interrupts Section](#interrupts)). Execute EI afterwards if needed.
+
+The handler is not validated. A Logical Segment Handler can be passed
+(it starts with a Segment Handler), but only while its segment is
+active: after the release, it still maps the physical segment, which
+may hold other data by then.
 
 
 ### _mnemo_switchMainPage
@@ -874,7 +896,12 @@ the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 It selects a slot only if the segment's mapper is not the one already
 selected in that page, and then returns with interrupts disabled (see
 [Slot Selection Section](#slot-selection) and
-[Interrupts Section](#interrupts)).
+[Interrupts Section](#interrupts)). Execute EI afterwards if needed.
+
+The handler is not validated. A Logical Segment Handler can be passed
+(it starts with a Segment Handler), but only while its segment is
+active: after the release, it still maps the physical segment, which
+may hold other data by then.
 
 
 ### _mnemo_getAuxPage
@@ -903,6 +930,10 @@ page holds a Logical Segment that is released and reused before the
 snapshot is mapped back, the new contents will be mapped. To come back
 to a Logical Segment later, keep its Logical Segment Handler instead.
 
+D holds the slot ID only (F000SSPP). The *mapperSlot* byte of a Logical
+Segment Handler also holds the release priority and flush flag (bits 4 to
+6), so mask it with MNEMO_SLOTID_MASK before comparing it with D.
+
 ### _mnemo_getMainPage
 
     ; ----------------------------------------------------------------
@@ -928,6 +959,10 @@ interrupt state. The value is a snapshot of the physical mapping: if the
 page holds a Logical Segment that is released and reused before the
 snapshot is mapped back, the new contents will be mapped. To come back
 to a Logical Segment later, keep its Logical Segment Handler instead.
+
+D holds the slot ID only (F000SSPP). The *mapperSlot* byte of a Logical
+Segment Handler also holds the release priority and flush flag (bits 4 to
+6), so mask it with MNEMO_SLOTID_MASK before comparing it with D.
 
 ### _mnemo_getManagedSegments
     ; ----------------------------------------------------------------

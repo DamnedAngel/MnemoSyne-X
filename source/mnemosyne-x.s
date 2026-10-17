@@ -1204,7 +1204,8 @@ mnemo_clampReleasePriority:
 ;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_releaseLogSeg::
 	ex		de, hl
@@ -1217,10 +1218,13 @@ _mnemo_releaseLogSeg::
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success; MNEMO_WARN_OUTDATEDPSEGHANDLER = the handler does
+;		  not hold an active segment: nothing was changed (see
+;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 mnemo_releaseLogSegHL::
 	push	ix
@@ -1314,7 +1318,8 @@ mnemo_restoreAuxPageAndReturnStatus:
 ;	  not invalidated: they must not be released afterwards
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_releaseAll::
 	push	ix

@@ -124,7 +124,8 @@
 ;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_releaseLogSeg
 
@@ -142,7 +143,8 @@
 ;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl mnemo_releaseLogSegHL
 
