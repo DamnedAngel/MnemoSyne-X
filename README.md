@@ -354,6 +354,12 @@ will define which page will be considered the **MAIN** and **AUX** pages
 by **MnemoSyne-X**. Please check [Configuration Section](#configuration)
 for further info.
 
+### Registers
+Each routine documents the registers it changes (CHANGES). Where a
+routine says it preserves IX, it does so always; IY is preserved by the
+routines that can change it only with
+[MNEMO_PRESERVE_IY](#mnemo_preserve_iy) = 1.
+
 ### Slot Selection
 Unless initialized to use the primary mapper only, **MnemoSyne-X**
 remembers which slot it selected in the **AUX** and **MAIN** pages
@@ -488,7 +494,8 @@ to C projects (SDCCCALL(1) must be used).
     ;		  segments of the session are leaked)
     ;
     ; CHANGES:
-    ;   - All registers; AUX and MAIN are restored. Interrupts may be
+    ;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and
+    ;   MAIN are restored. Interrupts may be
     ;	  disabled
     ; ----------------------------------------------------------------
 
@@ -532,7 +539,8 @@ segments of the first session would not be released.
     ;		  flushed are lost
     ;
     ; CHANGES:
-    ;   - All registers; AUX and MAIN are restored. Interrupts may be
+    ;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and
+    ;   MAIN are restored. Interrupts may be
     ;	  disabled
     ; ----------------------------------------------------------------
 
@@ -644,7 +652,7 @@ persistence only.
     ;		  A < 0x80, A <> 0: warning, the segment is active
     ;
     ; CHANGES:
-    ;   - All registers but IX; AUX is restored. Interrupts may be disabled
+    ;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored. Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_activateLogSeg** allocates a logical segment, activating it 
@@ -758,7 +766,7 @@ effect at once, but does not force a new load.
     ;		  _mnemo_releaseAll, or reused): nothing was changed
     ;
     ; CHANGES:
-    ;   - All registers but IX; AUX is restored; MAIN is untouched.
+    ;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
     ;     Interrupts may be disabled
     ; ----------------------------------------------------------------
 
@@ -819,7 +827,7 @@ Same as above, but the Logical Segment Handler is passed on HL.
     ;   - None (A is undefined)
     ;
     ; CHANGES:
-    ;   - All registers but IX; AUX is restored; MAIN is untouched.
+    ;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
     ;     Interrupts may be disabled
     ; ----------------------------------------------------------------
 
@@ -849,7 +857,7 @@ another Logical Segment by then.
     ;		  pending (the call can be repeated)
     ;
     ; CHANGES:
-    ;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+    ;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and MAIN are restored. Interrupts may be
     ;	  disabled
     ;   - Active segments are not flushed: only the released ones
     ; ----------------------------------------------------------------
@@ -1097,6 +1105,20 @@ for the number of physical segments available to the Virtual Memory
 system, this can be configured in **MNEMO_MAX_PHYSICAL_SEGMENTS**.
 The possible values for this setting is from 1 to 3072 (that is,
 48Mbytes max of physical RAM).
+
+### MNEMO_PRESERVE_IY
+By default **MnemoSyne-X** may return with the IY register changed:
+the BIOS, the BDOS and the persistence routines it calls do not
+guarantee it, and custom persistence routines may change it freely.
+With **MNEMO_PRESERVE_IY** = 1 every routine that can change IY
+(**_mnemo_init**, **_mnemo_finalize**, **_mnemo_activateLogSeg**,
+**_mnemo_releaseLogSeg**, **mnemo_releaseLogSegHL**,
+**_mnemo_releaseAll**, **_mnemo_flushAll** and the slot selection of
+**_mnemo_switchAuxPage** and **_mnemo_switchMainPage**) saves IY on
+entry and restores it before returning. The cost is two stack
+operations per call (one around the slot selection in the switch
+routines); the default is 0, and a config file without the setting
+also means 0. IX is always preserved by the routines that document it.
 
 ---
 

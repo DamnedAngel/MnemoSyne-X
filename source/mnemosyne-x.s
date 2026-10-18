@@ -378,7 +378,8 @@ mnemo_commonSave_markFlushed:
 ;		  segments of the session are leaked)
 ;
 ; CHANGES:
-;   - All registers; AUX and MAIN are restored. Interrupts may be
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and
+;   MAIN are restored. Interrupts may be
 ;	  disabled
 ; ----------------------------------------------------------------
 _mnemo_init::
@@ -422,6 +423,7 @@ _mnemo_init_nameOk:
 	ld		(#usePrimaryMapperOnly), a
 .endif
 	push	ix
+	__MNEMO_PUSH_IY
 	ld hl,	#0
 	ld		(#_nPhysicalSegsInUse), hl
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -656,6 +658,7 @@ _mnemo_init_end::
 	push	af
 	call	mnemo_restorePageLayout
 	pop		af
+	__MNEMO_POP_IY
 	pop		ix
 	ret
 
@@ -674,10 +677,12 @@ _mnemo_init_end::
 ;		  flushed are lost
 ;
 ; CHANGES:
-;   - All registers; AUX and MAIN are restored. Interrupts may be
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and
+;   MAIN are restored. Interrupts may be
 ;	  disabled
 ; ----------------------------------------------------------------
 _mnemo_finalize::
+	__MNEMO_PUSH_IY
 	__MNEMOPRINT	finalizingMnemosynexMsg
 
 	; release and flush all segments
@@ -757,6 +762,7 @@ _mnemo_finalize_freeIndexSegLoop:
 
 	__MNEMOPRINT	mnemosynexShutDownMsg	; the result is still on the stack
 	pop		af
+	__MNEMO_POP_IY
 	ret
 
 
@@ -865,10 +871,11 @@ _mnemo_setPersistence_bankOk:
 ;		  A < 0x80, A <> 0: warning, the segment is active
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored. Interrupts may be disabled
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored. Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_activateLogSeg::
 	push	ix
+	__MNEMO_PUSH_IY
 	xor		a
 
 	call	mnemo_allocationInitialServices
@@ -1174,6 +1181,7 @@ _mnemo_activateLogSeg_updateLogSegHandler:
 	ldir
 
 _mnemo_activateLogSeg_end:
+	__MNEMO_POP_IY
 	pop		ix
 	ret
 
@@ -1221,7 +1229,7 @@ mnemo_clampReleasePriority:
 ;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
 ;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_releaseLogSeg::
@@ -1240,11 +1248,12 @@ _mnemo_releaseLogSeg::
 ;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
 ;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 mnemo_releaseLogSegHL::
 	push	ix
+	__MNEMO_PUSH_IY
 
 	call	mnemo_clampReleasePriority
 	call	mnemo_allocationInitialServices
@@ -1310,6 +1319,7 @@ mnemo_releaseLogSegHL::
 	inc		hl
 	ld		(hl), a
 	xor		a
+	__MNEMO_POP_IY
 	pop		ix
 	ret
 
@@ -1321,6 +1331,7 @@ mnemo_restoreAuxPageAndReturnStatus:
 	ld		hl, #auxSegHandlerTemp
 	call	_mnemo_switchAuxPage
 	pop		af
+	__MNEMO_POP_IY
 	pop		ix
 	ret
 
@@ -1335,11 +1346,12 @@ mnemo_restoreAuxPageAndReturnStatus:
 ;	  not invalidated: they must not be released afterwards
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
 ;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_releaseAll::
 	push	ix
+	__MNEMO_PUSH_IY
 
 	call	mnemo_clampReleasePriority
 	call	mnemo_allocationInitialServices2
@@ -1382,6 +1394,7 @@ _mnemo_releaseAll_next:
 
 	ld		hl, #auxSegHandlerTemp
 	call	_mnemo_switchAuxPage
+	__MNEMO_POP_IY
 	pop		ix
 	ret
 
@@ -1399,12 +1412,13 @@ _mnemo_releaseAll_next:
 ;		  pending (the call can be repeated)
 ;
 ; CHANGES:
-;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and MAIN are restored. Interrupts may be
 ;	  disabled
 ;   - Active segments are not flushed: only the released ones
 ; ----------------------------------------------------------------
 _mnemo_flushAll::
 	push	ix
+	__MNEMO_PUSH_IY
 
 	ld		hl, #pageConfigTempBuffer
 	call	mnemo_savePageLayout
@@ -1441,6 +1455,7 @@ _mnemo_flushAll_end:
 	ld		hl, #pageConfigTempBuffer
 	call	mnemo_restorePageLayout
 	pop		af
+	__MNEMO_POP_IY
 	pop		ix
 	ret
 
@@ -1474,7 +1489,14 @@ _mnemo_switchAuxPage::
 	ret z					; slot already selected
 	ld		(hl), a
 	ld		h, #MNEMO_AUX_SWAP_PAGE << 6	; Page
+.ifne MNEMO_PRESERVE_IY
+	push	iy
+	call	BIOS_ENASLT		; select slot (returns with di)
+	pop		iy
+	ret
+.else
 	jp		BIOS_ENASLT		; select slot (returns with di)
+.endif
 .else
 	ret
 .endif
@@ -1508,7 +1530,14 @@ _mnemo_switchMainPage::
 	ret z					; slot already selected
 	ld		(hl), a
 	ld		h, #MNEMO_MAIN_SWAP_PAGE << 6	; Page
+.ifne MNEMO_PRESERVE_IY
+	push	iy
+	call	BIOS_ENASLT		; select slot (returns with di)
+	pop		iy
+	ret
+.else
 	jp		BIOS_ENASLT		; select slot (returns with di)
+.endif
 .else
 	ret
 .endif
