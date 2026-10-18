@@ -15,3 +15,4 @@ MNEMO_INDEX_SEGMENTS				= 4									; 1 (8kSegs/128Mb) to 8 (64ksegs/1Gb)
 MNEMO_PRIMARY_MAPPER_ONLY			= 0									; 1 ignores secondary mappers
 MNEMO_MAX_PHYSICAL_SEGMENTS			= 3072								; 3072 (48Mb) = max. Anything above this will default to 3072
 MNEMO_VERBOSE_MODE					= 1									; 0 = quiet mode; 1 = verbose mode
+MNEMO_PRESERVE_IY					= 0									; 1 = the API routines preserve IY (a little slower and larger)

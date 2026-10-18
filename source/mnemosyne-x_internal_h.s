@@ -35,6 +35,18 @@ MNEMO_INTERNAL_SEGMENTS				= MNEMO_INDEX_SEGMENTS + 1
 ; ----------------------------------------------------------------
 ;	- Macros
 ; ----------------------------------------------------------------
+.macro	__MNEMO_PUSH_IY
+.ifne MNEMO_PRESERVE_IY
+	push	iy
+.endif
+.endm
+
+.macro	__MNEMO_POP_IY
+.ifne MNEMO_PRESERVE_IY
+	pop		iy
+.endif
+.endm
+
 .macro	__PutSeg PAGE
 .ifeq PAGE
 	call	__PutP0

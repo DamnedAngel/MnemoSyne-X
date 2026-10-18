@@ -36,7 +36,8 @@
 ;		  segments of the session are leaked)
 ;
 ; CHANGES:
-;   - All registers; AUX and MAIN are restored. Interrupts may be
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and
+;   MAIN are restored. Interrupts may be
 ;	  disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_init
@@ -56,7 +57,8 @@
 ;		  flushed are lost
 ;
 ; CHANGES:
-;   - All registers; AUX and MAIN are restored. Interrupts may be
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and
+;   MAIN are restored. Interrupts may be
 ;	  disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_finalize
@@ -112,7 +114,7 @@
 ;		  A < 0x80, A <> 0: warning, the segment is active
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored. Interrupts may be disabled
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored. Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_activateLogSeg
 
@@ -132,7 +134,7 @@
 ;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
 ;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_releaseLogSeg
@@ -151,7 +153,7 @@
 ;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX is restored; MAIN is untouched.
 ;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl mnemo_releaseLogSegHL
@@ -185,7 +187,7 @@
 ;		  pending (the call can be repeated)
 ;
 ; CHANGES:
-;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+;   - All registers but IX (and IY if MNEMO_PRESERVE_IY = 1); AUX and MAIN are restored. Interrupts may be
 ;	  disabled
 ;   - Active segments are not flushed: only the released ones
 ; ----------------------------------------------------------------

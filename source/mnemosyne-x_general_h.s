@@ -10,6 +10,10 @@
 
 .include "mnemosyne-x_config_h.s"
 
+.ifndef MNEMO_PRESERVE_IY
+MNEMO_PRESERVE_IY					= 0		; configs without it: IY is not preserved
+.endif
+
 
 ; ----------------------------------------------------------------
 ;	- Warning codes
