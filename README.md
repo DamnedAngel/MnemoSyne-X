@@ -200,7 +200,7 @@ Configure both projects, as described below:
 
 	; --- MnemoSyneX ---
 	MDO_HOOK		unsigned char|mnemo_init|(bool, char*)
-	MDO_HOOK		void|mnemo_finalize|(void)
+	MDO_HOOK		unsigned char|mnemo_finalize|(void)
 
 	MDO_HOOK		unsigned char|mnemo_setStdPersistence|(unsigned char)
 	MDO_HOOK		unsigned char|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
@@ -336,6 +336,19 @@ If should be safe to call **MnemoSyne-X**'s API from a user routine in
 **MAIN** page is where **MnemoSyne-X** will make segments available after
 allocating them.
 
+What each routine does with the **MAIN** page:
+
+| Routine | MAIN page on return |
+|---|---|
+| **_mnemo_init**, **_mnemo_finalize**, **_mnemo_flushAll** | restored to the user's segment |
+| **_mnemo_activateLogSeg** | the activated segment; undefined after a failure |
+| **_mnemo_releaseLogSeg**, **mnemo_releaseLogSegHL**, **_mnemo_releaseAll** | untouched |
+| **_mnemo_switchMainPage** | the segment of the handler |
+| **_mnemo_setStdPersistence**, **_mnemo_setPersistence**, the getters | untouched |
+
+A segment in **MAIN** is only valid until the next call that maps another
+segment there (**_mnemo_activateLogSeg** or **_mnemo_switchMainPage**).
+
 The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
 will define which page will be considered the **MAIN** and **AUX** pages
 by **MnemoSyne-X**. Please check [Configuration Section](#configuration)
@@ -470,9 +483,13 @@ to C projects (SDCCCALL(1) must be used).
     ;			primary mapper for the index segments
     ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
     ;			after the index segments
+    ;		  Nothing is allocated when init fails.
+    ;		  Calling it again before _mnemo_finalize is not supported (the
+    ;		  segments of the session are leaked)
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers; AUX and MAIN are restored. Interrupts may be
+    ;	  disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_init** initializes **MnemoSyne-X** subsystem and must be
@@ -496,6 +513,9 @@ segments and, with all mappers in use, the free segments of all mappers
 must leave at least one segment to manage. If it does not, **_mnemo_init**
 returns an error and has allocated nothing.
 
+**_mnemo_init** must not be called again before **_mnemo_finalize**: the
+segments of the first session would not be released.
+
 ### _mnemo_finalize
 
     ; ----------------------------------------------------------------
@@ -505,14 +525,24 @@ returns an error and has allocated nothing.
     ;	- None
     ;
     ; OUTPUTS:
-    ;   -None
+    ;   - A: 0 = Success
+    ;		  The error of the flush of the pending segments (see
+    ;		  _mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+    ;		  shutdown is always completed: the segments that were not
+    ;		  flushed are lost
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers; AUX and MAIN are restored. Interrupts may be
+    ;	  disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_finalize** finalizes **MnemoSyne-X** subsystem and releases
-mapper segments. It receives no parameters and returns nothing.
+mapper segments. It receives no parameters.
+
+The shutdown is always completed, even if the flush or the close fails:
+the mapper segments are released and a new session may start. In that
+case, **_mnemo_finalize** returns the error, and the logical segments
+that had not been flushed are lost.
 
 Before releasing the mapper segments, **_mnemo_finalize** releases and
 flushes all logical segments (see [_mnemo_flushAll](#_mnemo_flushAll))

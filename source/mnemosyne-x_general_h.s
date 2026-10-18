@@ -44,7 +44,7 @@ MNEMO_ERROR_SEGWRITEFAIL				= 0x8A
 MNEMO_ERROR_BADFILENAME					= 0x8B
 MNEMO_ERROR_BADBANK						= 0x8C
 MNEMO_ERROR_SEGALREADYACTIVE			= 0x8D
-MNEMO_ERROR_SEGINUSE					= 0x04
+MNEMO_WARN_SEGINUSE						= 0x07
 
 
 ; ----------------------------------------------------------------

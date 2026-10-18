@@ -303,7 +303,7 @@ mnemo_commonSave:
 	; check if segment is still in use
 	and		#MNEMO_ALLOC_MASK
 	cp		#MNEMO_ALLOC_INUSE
-	ld		a, #MNEMO_ERROR_SEGINUSE
+	ld		a, #MNEMO_WARN_SEGINUSE
 	ret z
 
 	; activate main segment
@@ -374,9 +374,12 @@ mnemo_commonSave_markFlushed:
 ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
 ;			after the index segments
 ;		  Nothing is allocated when init fails.
+;		  Calling it again before _mnemo_finalize is not supported (the
+;		  segments of the session are leaked)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 _mnemo_init::
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -664,10 +667,15 @@ _mnemo_init_end::
 ;	- None
 ;
 ; OUTPUTS:
-;   -None
+;   - A: 0 = Success
+;		  The error of the flush of the pending segments
+;		  (see _mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+;		  shutdown is always completed: the segments that were not
+;		  flushed are lost
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 _mnemo_finalize::
 	__MNEMOPRINT	finalizingMnemosynexMsg
@@ -680,10 +688,18 @@ _mnemo_finalize::
 
 	__MNEMOPRINT	flushingAllSegmentsMsg
 	call	_mnemo_flushAll
+	push	af						; flush result
 	__MNEMOPRINT	okMsg
 
 	; close the standard persistence's Databank file
 	call	_standardClose
+	ld		c, a
+	pop		af
+	or		a
+	jr nz,	_mnemo_finalize_result
+	ld		a, c					; flush ok: result is the close one
+_mnemo_finalize_result:
+	push	af
 
 	push	ix
 
@@ -739,7 +755,8 @@ _mnemo_finalize_freeIndexSegLoop:
 	call	mnemo_restorePageLayout
 	pop		ix
 
-	__MNEMOPRINT	mnemosynexShutDownMsg
+	__MNEMOPRINT	mnemosynexShutDownMsg	; the result is still on the stack
+	pop		af
 	ret
 
 
@@ -1401,7 +1418,7 @@ _mnemo_flushAll_loop:
 	push	hl
 	call	mnemo_commonSave
 	pop		hl
-	cp		#MNEMO_ERROR_SEGINUSE
+	cp		#MNEMO_WARN_SEGINUSE
 	jr z,	_mnemo_flush_next
 	bit		MNEMO_ERROR_BIT, a
 	jr nz,	_mnemo_flushAll_end

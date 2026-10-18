@@ -61,10 +61,14 @@ extern unsigned char mnemo_init(bool primaryMapperOnly, char* databankName) __sd
 ;	- None
 ;
 ; OUTPUTS:
-;   -None
+;   - unsigned char:  0 = Success
+;			The error of the flush of the pending segments (see
+;			mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+;			shutdown is always completed: the segments that were not
+;			flushed are lost
 ; ----------------------------------------------------------------
 */
-extern void mnemo_finalize(void) __sdcccall(1);
+extern unsigned char mnemo_finalize(void) __sdcccall(1);
 
 
 /*

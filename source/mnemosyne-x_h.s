@@ -32,9 +32,12 @@
 ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
 ;			after the index segments
 ;		  Nothing is allocated when init fails.
+;		  Calling it again before _mnemo_finalize is not supported (the
+;		  segments of the session are leaked)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_init
 
@@ -46,10 +49,15 @@
 ;	- None
 ;
 ; OUTPUTS:
-;   -None
+;   - A: 0 = Success
+;		  The error of the flush of the pending segments (see
+;		  _mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+;		  shutdown is always completed: the segments that were not
+;		  flushed are lost
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_finalize
 
