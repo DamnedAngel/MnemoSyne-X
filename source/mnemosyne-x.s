@@ -303,7 +303,7 @@ mnemo_commonSave:
 	; check if segment is still in use
 	and		#MNEMO_ALLOC_MASK
 	cp		#MNEMO_ALLOC_INUSE
-	ld		a, #MNEMO_ERROR_SEGINUSE
+	ld		a, #MNEMO_WARN_SEGINUSE
 	ret z
 
 	; activate main segment
@@ -374,11 +374,17 @@ mnemo_commonSave_markFlushed:
 ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
 ;			after the index segments
 ;		  Nothing is allocated when init fails.
+;		  Calling it again before _mnemo_finalize is not supported (the
+;		  segments of the session are leaked)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 _mnemo_init::
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	push	af						; A (mappers to use): the name check changes A
+.endif
 	; copy filename (8 bytes at most are read)
 	ld		hl, #fileName
 	ex		de, hl
@@ -403,14 +409,19 @@ _mnemo_init_nameLengthEnd:
 	ld		a, l
 	ld		(#fileNameLength), a
 	or		a
-	ld		a, #MNEMO_ERROR_BADFILENAME
-	ret z							; empty name: nothing was done yet
-
-	push	ix
-
+	jr nz,	_mnemo_init_nameOk
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	pop		af
+.endif
+	ld		a, #MNEMO_ERROR_BADFILENAME
+	ret								; empty name: nothing was done yet
+
+_mnemo_init_nameOk:
+.ifeq MNEMO_PRIMARY_MAPPER_ONLY
+	pop		af
 	ld		(#usePrimaryMapperOnly), a
 .endif
+	push	ix
 	ld hl,	#0
 	ld		(#_nPhysicalSegsInUse), hl
 .ifeq MNEMO_PRIMARY_MAPPER_ONLY
@@ -656,10 +667,15 @@ _mnemo_init_end::
 ;	- None
 ;
 ; OUTPUTS:
-;   -None
+;   - A: 0 = Success
+;		  The error of the flush of the pending segments
+;		  (see _mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+;		  shutdown is always completed: the segments that were not
+;		  flushed are lost
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 _mnemo_finalize::
 	__MNEMOPRINT	finalizingMnemosynexMsg
@@ -672,10 +688,18 @@ _mnemo_finalize::
 
 	__MNEMOPRINT	flushingAllSegmentsMsg
 	call	_mnemo_flushAll
+	push	af						; flush result
 	__MNEMOPRINT	okMsg
 
 	; close the standard persistence's Databank file
 	call	_standardClose
+	ld		c, a
+	pop		af
+	or		a
+	jr nz,	_mnemo_finalize_result
+	ld		a, c					; flush ok: result is the close one
+_mnemo_finalize_result:
+	push	af
 
 	push	ix
 
@@ -731,7 +755,8 @@ _mnemo_finalize_freeIndexSegLoop:
 	call	mnemo_restorePageLayout
 	pop		ix
 
-	__MNEMOPRINT	mnemosynexShutDownMsg
+	__MNEMOPRINT	mnemosynexShutDownMsg	; the result is still on the stack
+	pop		af
 	ret
 
 
@@ -742,7 +767,9 @@ _mnemo_finalize_freeIndexSegLoop:
 ;	- A: Bank number
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range (see
+;			_mnemo_setPersistence)
 ;
 ; CHANGES:
 ;   - All regs
@@ -762,17 +789,30 @@ _mnemo_setStdPersistence::
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;	- DE: pLoadSeg
 ;   - Stack: pSaveSeg
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range; nothing
+;			was changed (pSaveSeg is removed from the stack anyway)
 ;
 ; CHANGES:
 ;   - All regs
 ; ----------------------------------------------------------------
 _mnemo_setPersistence::
+.ifne	(MNEMO_INDEX_SEGMENTS - 8)
+	; with 8 index segments every bank number (0-255) is valid
+	cp		#MNEMO_NUM_BANKS
+	jr c,	_mnemo_setPersistence_bankOk
+	pop		hl						; return address
+	pop		de						; pSaveSeg: clean stack as per sdcccall 1
+	push	hl
+	ld		a, #MNEMO_ERROR_BADBANK
+	ret
+_mnemo_setPersistence_bankOk:
+.endif
 	; Set Segment Table segment in Aux Page
 	push	de
 	push	af
@@ -804,7 +844,9 @@ _mnemo_setPersistence::
 
 	; restore Aux Page
 	ld		hl, #auxSegHandlerTemp
-	jp		_mnemo_switchAuxPage
+	call	_mnemo_switchAuxPage
+	xor		a
+	ret
 	
 	
 ; ----------------------------------------------------------------
@@ -814,10 +856,16 @@ _mnemo_setPersistence::
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+;			and the handler is updated
+;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+;		  active), or an error of the segment save or load: nothing is
+;		  activated, the handler is not changed and MAIN is undefined
+;		  A < 0x80, A <> 0: warning, the segment is active
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored. Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_activateLogSeg::
 	push	ix
@@ -919,6 +967,15 @@ _mnemo_activateLogSeg::
 	sbc		hl, de
 	jr nz,	_mnemo_activateLogSeg_searchFreeSeg		; nope
 
+	; logSeg already in memory: it cannot be activated twice
+	ld		hl, (#pSegHandler)
+	inc		hl
+	ld		a, (hl)
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE
+	ld		a, #MNEMO_ERROR_SEGALREADYACTIVE
+	jp z,	_mnemo_activateLogSeg_restoreAuxSeg		; nothing was changed
+
 	; logSeg already loaded
 	ld		a, #1
 	ld		(#logSegLoaded), a
@@ -1004,7 +1061,7 @@ _mnemo_activateLogSeg_activateSegment:
 	xor		a					; dont check bank
 	call	mnemo_commonSave	; activate main seg and save if needed
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	_mnemo_activateLogSeg_restoreAuxSeg
+	jp nz,	_mnemo_activateLogSeg_restoreAuxSeg
 
 _mnemo_activateLogSeg_updateSegmentHeader:
 	ld		hl, (#logSegNumber)
@@ -1070,6 +1127,36 @@ _mnemo_activateLogSeg_checkReadMode:
 
 _mnemo_activateLogSeg_load:
 	call	MNEMO_SEGHDR_LOADHOOK
+	bit		MNEMO_ERROR_BIT, a
+	jr z,	_mnemo_activateLogSeg_restoreAuxSeg
+
+	; the load failed: undo the activation (the segment becomes free,
+	; with an invalid logSegNumber, and the logical segment is unmapped)
+	push	af
+	ld		hl, #segTableSegment
+	call	_mnemo_switchAuxPage
+	ld		hl, (#pSegHandler)
+	push	hl
+	call	_mnemo_switchMainPage
+	ld		hl, #0xffff
+	ld		(#MNEMO_SEGHDR_LOGSEGNUMBER), hl
+	pop		hl
+	inc		hl
+	ld		a, (hl)
+	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
+	or		#MNEMO_ALLOC_KEEPPRIORITY0
+	ld		(hl), a
+	ld		hl, (#_nPhysicalSegsInUse)
+	dec		hl
+	ld		(#_nPhysicalSegsInUse), hl
+	ld		hl, (#pLogSegTableSegment)
+	call	_mnemo_switchAuxPage
+	ld		hl, (#pLogSegTableItem)
+	ld		a, #0xff
+	ld		(hl), a
+	inc		hl
+	ld		(hl), a
+	pop		af
 
 _mnemo_activateLogSeg_restoreAuxSeg:
 	push	af
@@ -1100,6 +1187,26 @@ _mnemo_activateLogSeg_noFreePhysSegError:
 
 
 ; ----------------------------------------------------------------
+;	- Release priority: keeps its bits only and limits it to 2
+; ----------------------------------------------------------------
+; INPUTS:
+;	- A: Release priority
+;
+; OUTPUTS:
+;   - A: Release priority (MNEMO_ALLOC_KEEPPRIORITY0 - 2)
+;
+; CHANGES:
+;   - AF
+; ----------------------------------------------------------------
+mnemo_clampReleasePriority:
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE
+	ret nz
+	ld		a, #MNEMO_ALLOC_KEEPPRIORITY2
+	ret
+
+
+; ----------------------------------------------------------------
 ;	- Releases segment from a logSegHandler pointed by DE (SDCCCALL(1))
 ; ----------------------------------------------------------------
 ; INPUTS:
@@ -1107,10 +1214,15 @@ _mnemo_activateLogSeg_noFreePhysSegError:
 ;	- DE: pLogSegHandler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success: the segment is released and the handler is
+;			invalidated (its pSegHandler = 0xFFFF)
+;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+;		  active segment (invalidated, never activated, released by
+;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_releaseLogSeg::
 	ex		de, hl
@@ -1123,34 +1235,48 @@ _mnemo_releaseLogSeg::
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success; MNEMO_WARN_OUTDATEDPSEGHANDLER = the handler does
+;		  not hold an active segment: nothing was changed (see
+;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 mnemo_releaseLogSegHL::
 	push	ix
 
-	; assure priority <= 2
-	ld		b, a
-	and		#MNEMO_ALLOC_MASK
-	cp		#MNEMO_ALLOC_INUSE
-	ld		a, b
-	jr nz,	mnemo_releaseLogSegHL_cont
-	sub		#MNEMO_ALLOC_KEEPPRIORITY1		; priority from 3 to 2
-
-mnemo_releaseLogSegHL_cont:
+	call	mnemo_clampReleasePriority
 	call	mnemo_allocationInitialServices
 	
-	; assert segNumber
+	; assert pSegHandler: even and inside the segment table
 	ld		hl, #segTableSegment
 	call	_mnemo_switchAuxPage
+	ld		hl, (#pSegHandler)
+	bit		0, l
+	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
+	ld		de, #MNEMO_AUX_SWAP_PAGE_ADDR
+	or		a
+	sbc		hl, de
+	jr c,	mnemo_releaseLogSegHL_outdatedSegHandler
+	add		hl, de
+	ld		de, (#afterSegTable)
+	or		a
+	sbc		hl, de
+	jr nc,	mnemo_releaseLogSegHL_outdatedSegHandler
+
+	; assert segNumber
 	ld		hl, (#pSegHandler)
 	ld		a, (#segNumber)
 	cp		(hl)
 	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
 	inc		hl
 	ld		a, (hl)
+	ld		c, a
+	and		#MNEMO_ALLOC_MASK
+	cp		#MNEMO_ALLOC_INUSE						; the segment must be active
+	jr nz,	mnemo_releaseLogSegHL_outdatedSegHandler
+	ld		a, c
 	and		#~(MNEMO_ALLOC_MASK + MNEMO_FLUSH)
 	ld		e, a
 	ld		a, (#mapperSlot)
@@ -1171,12 +1297,17 @@ mnemo_releaseLogSegHL_cont:
 	dec		hl
 	ld		(#_nPhysicalSegsInUse), hl
 	
-	; update release priority
+	; update release priority and invalidate the handler
 	ld		hl, #auxSegHandlerTemp
 	call	_mnemo_switchAuxPage
 	ld		hl, (#pLogSegHandler)
 	inc		hl
 	ld		a, (#mapperSlot)
+	ld		(hl), a
+	inc		hl
+	ld		a, #0xFF
+	ld		(hl), a						; pSegHandler = 0xFFFF
+	inc		hl
 	ld		(hl), a
 	xor		a
 	pop		ix
@@ -1200,14 +1331,17 @@ mnemo_restoreAuxPageAndReturnStatus:
 ;	- A: Release priority (0 - 2)
 ;
 ; OUTPUTS:
-;   - None
+;   - None (A is undefined). The handlers of the released segments are
+;	  not invalidated: they must not be released afterwards
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 _mnemo_releaseAll::
 	push	ix
 
+	call	mnemo_clampReleasePriority
 	call	mnemo_allocationInitialServices2
 
 	ld		hl, #segTableSegment
@@ -1259,15 +1393,21 @@ _mnemo_releaseAll_next:
 ;	- None
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success
+;		  An error of the segment save: the flush stops there, the
+;		  segments after it are not flushed and the failed one is still
+;		  pending (the call can be repeated)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+;	  disabled
+;   - Active segments are not flushed: only the released ones
 ; ----------------------------------------------------------------
 _mnemo_flushAll::
 	push	ix
 
-	call	mnemo_allocationInitialServices3
+	ld		hl, #pageConfigTempBuffer
+	call	mnemo_savePageLayout
 
 	ld		hl, #segTableSegment
 	call	_mnemo_switchAuxPage
@@ -1278,10 +1418,10 @@ _mnemo_flushAll_loop:
 	push	hl
 	call	mnemo_commonSave
 	pop		hl
-	cp		#MNEMO_ERROR_SEGINUSE
+	cp		#MNEMO_WARN_SEGINUSE
 	jr z,	_mnemo_flush_next
 	bit		MNEMO_ERROR_BIT, a
-	jr nz,	mnemo_restoreAuxPageAndReturnStatus	; same ending
+	jr nz,	_mnemo_flushAll_end
 
 _mnemo_flush_next:
 	inc		hl
@@ -1295,7 +1435,14 @@ _mnemo_flush_next:
 	; Ensure last file buffers of the standard persistence are
 	; written to disk (custom persistence has not Ensure ATM).
 	call	_standardEnsure
-	jr		mnemo_restoreAuxPageAndReturnStatus		; same ending
+
+_mnemo_flushAll_end:
+	push	af
+	ld		hl, #pageConfigTempBuffer
+	call	mnemo_restorePageLayout
+	pop		af
+	pop		ix
+	ret
 
 
 ; ----------------------------------------------------------------

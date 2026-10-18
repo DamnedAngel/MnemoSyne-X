@@ -200,10 +200,10 @@ Configure both projects, as described below:
 
 	; --- MnemoSyneX ---
 	MDO_HOOK		unsigned char|mnemo_init|(bool, char*)
-	MDO_HOOK		void|mnemo_finalize|(void)
+	MDO_HOOK		unsigned char|mnemo_finalize|(void)
 
-	MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
-	MDO_HOOK		void|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
+	MDO_HOOK		unsigned char|mnemo_setStdPersistence|(unsigned char)
+	MDO_HOOK		unsigned char|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
 
 	MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
 	MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)
@@ -336,6 +336,19 @@ If should be safe to call **MnemoSyne-X**'s API from a user routine in
 **MAIN** page is where **MnemoSyne-X** will make segments available after
 allocating them.
 
+What each routine does with the **MAIN** page:
+
+| Routine | MAIN page on return |
+|---|---|
+| **_mnemo_init**, **_mnemo_finalize**, **_mnemo_flushAll** | restored to the user's segment |
+| **_mnemo_activateLogSeg** | the activated segment; undefined after a failure |
+| **_mnemo_releaseLogSeg**, **mnemo_releaseLogSegHL**, **_mnemo_releaseAll** | untouched |
+| **_mnemo_switchMainPage** | the segment of the handler |
+| **_mnemo_setStdPersistence**, **_mnemo_setPersistence**, the getters | untouched |
+
+A segment in **MAIN** is only valid until the next call that maps another
+segment there (**_mnemo_activateLogSeg** or **_mnemo_switchMainPage**).
+
 The configuration **MNEMO_MAIN_SWAP_PAGE** in **mnemosyne-x_config_h.s**
 will define which page will be considered the **MAIN** and **AUX** pages
 by **MnemoSyne-X**. Please check [Configuration Section](#configuration)
@@ -353,6 +366,12 @@ page by itself, it must select the previous slot back before calling
 **MnemoSyne-X** again. BIOS and BDOS calls that restore the slots
 before returning are safe.
 
+The remembered slot is not checked against the hardware, to keep the
+switch fast. If the slot of one of these pages was changed and not
+restored, no error is reported: the segment number is written to a
+mapper that is not visible, and the application reads and writes the
+wrong memory.
+
 ### Interrupts
 **MnemoSyne-X** does not preserve the interrupt state. Any API routine
 may return with interrupts disabled:
@@ -364,6 +383,15 @@ persistence routines disable interrupts.
 
 The application must enable interrupts again (EI) when it needs them,
 for instance before a HALT, which would otherwise hang the computer.
+
+ENASLT is called only when the segment's mapper is not the one already
+in that page, so with several mappers an API call may return with
+interrupts disabled while the same call leaves them enabled on a
+single-mapper machine (or with the primary mapper only). To have
+interrupts enabled, execute EI after any API call but the getters.
+
+**MnemoSyne-X** is not reentrant: do not call it from an interrupt
+routine.
 
 ### Logical Segments
 Logical Segments are identifiable and manage instances of standard MSX
@@ -455,9 +483,13 @@ to C projects (SDCCCALL(1) must be used).
     ;			primary mapper for the index segments
     ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
     ;			after the index segments
+    ;		  Nothing is allocated when init fails.
+    ;		  Calling it again before _mnemo_finalize is not supported (the
+    ;		  segments of the session are leaked)
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers; AUX and MAIN are restored. Interrupts may be
+    ;	  disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_init** initializes **MnemoSyne-X** subsystem and must be
@@ -481,6 +513,9 @@ segments and, with all mappers in use, the free segments of all mappers
 must leave at least one segment to manage. If it does not, **_mnemo_init**
 returns an error and has allocated nothing.
 
+**_mnemo_init** must not be called again before **_mnemo_finalize**: the
+segments of the first session would not be released.
+
 ### _mnemo_finalize
 
     ; ----------------------------------------------------------------
@@ -490,14 +525,24 @@ returns an error and has allocated nothing.
     ;	- None
     ;
     ; OUTPUTS:
-    ;   -None
+    ;   - A: 0 = Success
+    ;		  The error of the flush of the pending segments (see
+    ;		  _mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+    ;		  shutdown is always completed: the segments that were not
+    ;		  flushed are lost
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers; AUX and MAIN are restored. Interrupts may be
+    ;	  disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_finalize** finalizes **MnemoSyne-X** subsystem and releases
-mapper segments. It receives no parameters and returns nothing.
+mapper segments. It receives no parameters.
+
+The shutdown is always completed, even if the flush or the close fails:
+the mapper segments are released and a new session may start. In that
+case, **_mnemo_finalize** returns the error, and the logical segments
+that had not been flushed are lost.
 
 Before releasing the mapper segments, **_mnemo_finalize** releases and
 flushes all logical segments (see [_mnemo_flushAll](#_mnemo_flushAll))
@@ -514,10 +559,11 @@ MSX-DOS/Nextor.
     ;	- Set a bank to standard persistence
     ; ----------------------------------------------------------------
     ; INPUTS:
-    ;	- A: Bank number
+    ;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
     ;
     ; OUTPUTS:
-    ;	- None
+    ;	- A:  0 = Success
+    ;		  MNEMO_ERROR_BADBANK = The bank number is out of range
     ;
     ; CHANGES:
     ;   - All regs
@@ -525,8 +571,10 @@ MSX-DOS/Nextor.
 
 **_mnemo_setStdPersistence** associates **MnemoSyne-X**'s standard
 persistence routines (Load and Save) to a given Databank. Databank
-number (0-255) must be especified in register A before calling
-**_mnemo_setStdPersistence**.
+number must be especified in register A before calling
+**_mnemo_setStdPersistence**. The Databanks that can hold logical
+segments are 0 to 32 * MNEMO_INDEX_SEGMENTS - 1 (up to 255); a higher
+number fails with *MNEMO_ERROR_BADBANK*, without changing anything.
 
 The standard persistence routines are default for all Databanks.
 
@@ -536,12 +584,13 @@ The standard persistence routines are default for all Databanks.
     ;	- Set bank persistence
     ; ----------------------------------------------------------------
     ; INPUTS:
-    ;	- A: Bank number
+    ;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
     ;	- DE: pLoadSeg
     ;   - Stack: pSaveSeg
     ;
     ; OUTPUTS:
-    ;	- None
+    ;	- A:  0 = Success
+    ;		  MNEMO_ERROR_BADBANK = The bank number is out of range
     ;
     ; CHANGES:
     ;   - All regs
@@ -549,14 +598,18 @@ The standard persistence routines are default for all Databanks.
 
 **_mnemo_setPersistence** associates custom persistence routines
 (Load and Save) to a given Databank. Pior to calling
-**_mnemo_setPersistence**, Databank number (0-255) must be especified
+**_mnemo_setPersistence**, Databank number (0 to
+32 * MNEMO_INDEX_SEGMENTS - 1, up to 255) must be especified
 in register A, DE must point to the custom segment load routine 
 (pLoadSeg) and the address of the custom segment load routine
 (pSaveSeg) must be pushed to the stack.
 
 In order to comply to SSDCCCALL(1) standard, **_mnemo_setPersistence**
 will clean pSaveSeg from the stack. The callee doesn't need to bother
-with it.
+with it, not even when it fails.
+
+A Databank number out of range (no logical segment can be stored in
+it) fails with *MNEMO_ERROR_BADBANK*, without changing anything.
 
 Custom persistence routines are not needed in many cases. They are,
 however, interesting to provide way of having custom Databank formats
@@ -582,10 +635,16 @@ persistence only.
     ;	- HL: pointer to logical segment handler
     ;
     ; OUTPUTS:
-    ;   - A:  0 = Success
+    ;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+    ;			and the handler is updated
+    ;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+    ;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+    ;		  active), or an error of the segment save or load: nothing is
+    ;		  activated, the handler is not changed and MAIN is undefined
+    ;		  A < 0x80, A <> 0: warning, the segment is active
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX is restored. Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_activateLogSeg** allocates a logical segment, activating it 
@@ -670,6 +729,17 @@ made available for use in **MnemoSyne-X**'s **MAIN** page (see
 in register A indicates either failure (bit 7 set) or a warning (bit
 7 reset).
 
+A logical segment that is already active cannot be activated again:
+the call fails with *MNEMO_ERROR_SEGALREADYACTIVE*, without changing
+anything. If the segment cannot be saved (the segment it replaces) or
+loaded, the call fails and leaves no trace: the physical segment is
+free again and the logical segment is not mapped, so the call can be
+repeated. After a failure, MAIN is undefined.
+
+With *MNEMO_SEGMODE_TEMP*, a logical segment still in memory keeps its
+previous content (it is not cleared). A different *segMode* takes
+effect at once, but does not force a new load.
+
 
 ### _mnemo_releaseLogSeg
 
@@ -681,10 +751,15 @@ in register A indicates either failure (bit 7 set) or a warning (bit
     ;	- DE: pLogSegHandler
     ;
     ; OUTPUTS:
-    ;   - None
+    ;   - A: 0 = Success: the segment is released and the handler is
+    ;			invalidated (its pSegHandler = 0xFFFF)
+    ;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+    ;		  active segment (invalidated, never activated, released by
+    ;		  _mnemo_releaseAll, or reused): nothing was changed
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX is restored; MAIN is untouched.
+    ;     Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_releaseLogSeg** releases an allocated logical segment.
@@ -700,6 +775,18 @@ The release priority are the following:
 
 To learn more how the release priorities are used by **MnemoSyne-X** 
 please refer to [_mnemo_activateLogSeg](#_mnemo_activateLogSeg).
+
+Only these three values are valid: the other bits of A are ignored
+and a value that denotes an active segment (3) is taken as
+MNEMO_ALLOC_KEEPPRIORITY2.
+
+A successful release invalidates the Logical Segment Handler (its
+*pSegHandler* becomes 0xFFFF), so it cannot be released twice, nor
+release a physical segment that another Logical Segment is using
+meanwhile. Releasing a handler that does not hold an active segment
+(already released, never activated, or invalidated) changes nothing
+and returns *MNEMO_WARN_OUTDATEDPSEGHANDLER*. The handler is valid
+again after the next successful [_mnemo_activateLogSeg](#_mnemo_activateLogSeg).
 
 
 ### mnemo_releaseLogSegHL
@@ -729,15 +816,22 @@ Same as above, but the Logical Segment Handler is passed on HL.
     ;	- A: Release priority (0 - 2)
     ;
     ; OUTPUTS:
-    ;   - None
+    ;   - None (A is undefined)
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX is restored; MAIN is untouched.
+    ;     Interrupts may be disabled
     ; ----------------------------------------------------------------
 
 **_mnemo_releaseAll** will scan the physical segments pool and release
 every active logical segment it finds. The release priority for all
-these segments shall be passed on register A.
+these segments shall be passed on register A (see
+[_mnemo_releaseLogSeg](#_mnemo_releaseLogSeg) for the valid values).
+
+**_mnemo_releaseAll** does not know the Logical Segment Handlers, so
+it does not invalidate them: a handler must not be released after
+**_mnemo_releaseAll**, because its physical segment may be in use by
+another Logical Segment by then.
 
 
 ### _mnemo_flushAll
@@ -749,16 +843,30 @@ these segments shall be passed on register A.
     ;	- None
     ;
     ; OUTPUTS:
-    ;   - A: Error code
+    ;   - A: 0 = Success
+    ;		  An error of the segment save: the flush stops there, the
+    ;		  segments after it are not flushed and the failed one is still
+    ;		  pending (the call can be repeated)
     ;
     ; CHANGES:
-    ;   - All registers
+    ;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+    ;	  disabled
+    ;   - Active segments are not flushed: only the released ones
     ; ----------------------------------------------------------------
 
-**_mnemo_flushAll** will release and persist all non-persisted
-segments with mode **MNEMO_SEGMODE_READWRITE** to disk. If the flush
-process succeeds, register A is set to 0. Any other value denotes
-a failure.
+**_mnemo_flushAll** will persist all non-persisted, released segments
+with mode **MNEMO_SEGMODE_READWRITE** to disk. If the flush process
+succeeds, register A is set to 0. Any other value denotes a failure.
+
+Segments that are active (not released) are not flushed: release them
+first (see [_mnemo_releaseLogSeg](#_mnemo_releaseLogSeg) and
+[_mnemo_releaseAll](#_mnemo_releaseAll)). The segment that is in the
+**MAIN** page when **_mnemo_flushAll** is called is back in it when the
+call returns, with its content intact.
+
+On the first error the flush stops: the segments after the failed one
+are not flushed, and the failed one remains pending, so the call can
+be repeated.
 
 At the end, **_mnemo_flushAll** makes sure the buffers of the
 standard persistence's open Databank file are written to disk. There
@@ -788,7 +896,12 @@ the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 It selects a slot only if the segment's mapper is not the one already
 selected in that page, and then returns with interrupts disabled (see
 [Slot Selection Section](#slot-selection) and
-[Interrupts Section](#interrupts)).
+[Interrupts Section](#interrupts)). Execute EI afterwards if needed.
+
+The handler is not validated. A Logical Segment Handler can be passed
+(it starts with a Segment Handler), but only while its segment is
+active: after the release, it still maps the physical segment, which
+may hold other data by then.
 
 
 ### _mnemo_switchMainPage
@@ -813,7 +926,12 @@ the Logical Segment Handler passed on HL available on **MnemoSyne-X**'s
 It selects a slot only if the segment's mapper is not the one already
 selected in that page, and then returns with interrupts disabled (see
 [Slot Selection Section](#slot-selection) and
-[Interrupts Section](#interrupts)).
+[Interrupts Section](#interrupts)). Execute EI afterwards if needed.
+
+The handler is not validated. A Logical Segment Handler can be passed
+(it starts with a Segment Handler), but only while its segment is
+active: after the release, it still maps the physical segment, which
+may hold other data by then.
 
 
 ### _mnemo_getAuxPage
@@ -842,6 +960,10 @@ page holds a Logical Segment that is released and reused before the
 snapshot is mapped back, the new contents will be mapped. To come back
 to a Logical Segment later, keep its Logical Segment Handler instead.
 
+D holds the slot ID only (F000SSPP). The *mapperSlot* byte of a Logical
+Segment Handler also holds the release priority and flush flag (bits 4 to
+6), so mask it with MNEMO_SLOTID_MASK before comparing it with D.
+
 ### _mnemo_getMainPage
 
     ; ----------------------------------------------------------------
@@ -867,6 +989,10 @@ interrupt state. The value is a snapshot of the physical mapping: if the
 page holds a Logical Segment that is released and reused before the
 snapshot is mapped back, the new contents will be mapped. To come back
 to a Logical Segment later, keep its Logical Segment Handler instead.
+
+D holds the slot ID only (F000SSPP). The *mapperSlot* byte of a Logical
+Segment Handler also holds the release priority and flush flag (bits 4 to
+6), so mask it with MNEMO_SLOTID_MASK before comparing it with D.
 
 ### _mnemo_getManagedSegments
     ; ----------------------------------------------------------------

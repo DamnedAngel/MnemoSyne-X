@@ -32,9 +32,12 @@
 ;		  MNEMO_ERROR_NOFREEPHYSSEG = No free segment left to manage
 ;			after the index segments
 ;		  Nothing is allocated when init fails.
+;		  Calling it again before _mnemo_finalize is not supported (the
+;		  segments of the session are leaked)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_init
 
@@ -46,10 +49,15 @@
 ;	- None
 ;
 ; OUTPUTS:
-;   -None
+;   - A: 0 = Success
+;		  The error of the flush of the pending segments (see
+;		  _mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+;		  shutdown is always completed: the segments that were not
+;		  flushed are lost
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers; AUX and MAIN are restored. Interrupts may be
+;	  disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_finalize
 
@@ -58,10 +66,11 @@
 ;	- Set a bank to standard persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range
 ;
 ; CHANGES:
 ;   - All regs
@@ -73,12 +82,14 @@
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- A: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;	- DE: pLoadSeg
 ;   - Stack: pSaveSeg
 ;
 ; OUTPUTS:
-;	- None
+;	- A:  0 = Success
+;		  MNEMO_ERROR_BADBANK = The bank number is out of range; nothing
+;			was changed (pSaveSeg is removed from the stack anyway)
 ;
 ; CHANGES:
 ;   - All regs
@@ -92,10 +103,16 @@
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+;			and the handler is updated
+;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+;		  active), or an error of the segment save or load: nothing is
+;		  activated, the handler is not changed and MAIN is undefined
+;		  A < 0x80, A <> 0: warning, the segment is active
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored. Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_activateLogSeg
 
@@ -108,10 +125,15 @@
 ;	- DE: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success: the segment is released and the handler is
+;			invalidated (its pSegHandler = 0xFFFF)
+;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+;		  active segment (invalidated, never activated, released by
+;		  _mnemo_releaseAll, or reused): nothing was changed
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl _mnemo_releaseLogSeg
 
@@ -124,10 +146,13 @@
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success; MNEMO_WARN_OUTDATEDPSEGHANDLER = the handler does
+;		  not hold an active segment: nothing was changed (see
+;		  _mnemo_releaseLogSeg)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX is restored; MAIN is untouched.
+;   Interrupts may be disabled
 ; ----------------------------------------------------------------
 .globl mnemo_releaseLogSegHL
 
@@ -154,10 +179,15 @@
 ;	- None
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success
+;		  An error of the segment save: the flush stops there, the
+;		  segments after it are not flushed and the failed one is still
+;		  pending (the call can be repeated)
 ;
 ; CHANGES:
-;   - All registers
+;   - All registers but IX; AUX and MAIN are restored. Interrupts may be
+;	  disabled
+;   - Active segments are not flushed: only the released ones
 ; ----------------------------------------------------------------
 .globl _mnemo_flushAll
 

@@ -21,8 +21,8 @@ MDO_NAME						APPLICATION
 MDO_HOOK		unsigned char|mnemo_init|(bool, char*)
 MDO_HOOK		void|mnemo_finalize|(void)
 
-MDO_HOOK		void|mnemo_setStdPersistence|(unsigned char)
-MDO_HOOK		void|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
+MDO_HOOK		unsigned char|mnemo_setStdPersistence|(unsigned char)
+MDO_HOOK		unsigned char|mnemo_setPersistence|(unsigned char, unsigned int, unsigned int)
 
 MDO_HOOK		unsigned char|mnemo_activateLogSeg|(LOGSEGHANDLER*)
 MDO_HOOK		unsigned char|mnemo_releaseLogSeg|(unsigned char, LOGSEGHANDLER*)		; SDCCCALL(1)

@@ -61,10 +61,14 @@ extern unsigned char mnemo_init(bool primaryMapperOnly, char* databankName) __sd
 ;	- None
 ;
 ; OUTPUTS:
-;   -None
+;   - unsigned char:  0 = Success
+;			The error of the flush of the pending segments (see
+;			mnemo_flushAll), or else MNEMO_ERROR_FILECLOSEFAIL. The
+;			shutdown is always completed: the segments that were not
+;			flushed are lost
 ; ----------------------------------------------------------------
 */
-extern void mnemo_finalize(void) __sdcccall(1);
+extern unsigned char mnemo_finalize(void) __sdcccall(1);
 
 
 /*
@@ -72,13 +76,14 @@ extern void mnemo_finalize(void) __sdcccall(1);
 ;	- Set a bank to standard persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- A: Bank number
+;	- unsigned char bank: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;
 ; OUTPUTS:
-;	- None
+;	- unsigned char:  0 = Success
+;			MNEMO_ERROR_BADBANK = The bank number is out of range
 ; ----------------------------------------------------------------
 */
-extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
+extern unsigned char mnemo_setStdPersistence(unsigned char bank) __sdcccall(1);
 
 
 /*
@@ -86,12 +91,14 @@ extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
 ;	- Set bank persistence
 ; ----------------------------------------------------------------
 ; INPUTS:
-;	- unsigned char bank: Bank number
+;	- unsigned char bank: Bank number (0 to MNEMO_INDEX_SEGMENTS * 32 - 1)
 ;	- MNEMO_LOADSEG pLoadSeg: routine that loads a segment
 ;	- MNEMO_SAVESEG pSaveSeg: routine that saves a segment
 ;
 ; OUTPUTS:
-;	- None
+;	- unsigned char:  0 = Success
+;			MNEMO_ERROR_BADBANK = The bank number is out of range; nothing
+;			was changed
 ;
 ; CHANGES:
 ;   - All regs
@@ -99,7 +106,7 @@ extern void mnemo_setStdPersistence(unsigned char) __sdcccall(1);
 */
 typedef unsigned char (*MNEMO_LOADSEG)(void) __sdcccall(1);
 typedef unsigned char (*MNEMO_SAVESEG)(unsigned char checkBank) __sdcccall(1);
-extern void mnemo_setPersistence(unsigned char bank, MNEMO_LOADSEG pLoadSeg, MNEMO_SAVESEG pSaveSeg) __sdcccall(1);
+extern unsigned char mnemo_setPersistence(unsigned char bank, MNEMO_LOADSEG pLoadSeg, MNEMO_SAVESEG pSaveSeg) __sdcccall(1);
 
 
 /*
@@ -110,7 +117,13 @@ extern void mnemo_setPersistence(unsigned char bank, MNEMO_LOADSEG pLoadSeg, MNE
 ;	- HL: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the logical segment is active, mapped in MAIN,
+;			and the handler is updated
+;		  MNEMO_ERROR_SEGOUTOFRANGE, MNEMO_ERROR_NOFREEPHYSSEG,
+;		  MNEMO_ERROR_SEGALREADYACTIVE (the logical segment is already
+;		  active), or an error of the segment save or load: nothing is
+;		  activated, the handler is not changed and MAIN is undefined
+;		  A < 0x80, A <> 0: warning, the segment is active
 ; ----------------------------------------------------------------
 */
 extern unsigned char mnemo_activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcccall(1);
@@ -125,7 +138,11 @@ extern unsigned char mnemo_activateLogSeg (LOGSEGHANDLER* pLogSegHandler) __sdcc
 ;	- DE: pointer to logical segment handler
 ;
 ; OUTPUTS:
-;   - A:  0 = Success
+;   - A:  0 = Success: the segment is released and the handler is
+;			invalidated (its pSegHandler = 0xFFFF)
+;		  MNEMO_WARN_OUTDATEDPSEGHANDLER = The handler does not hold an
+;		  active segment (invalidated, never activated, released by
+;		  mnemo_releaseAll, or reused): nothing was changed
 ; ----------------------------------------------------------------
 */
 extern unsigned char mnemo_releaseLogSeg(unsigned char priority, LOGSEGHANDLER* pSegHandler) __sdcccall(1);
@@ -139,7 +156,8 @@ extern unsigned char mnemo_releaseLogSeg(unsigned char priority, LOGSEGHANDLER* 
 ;	- A: Release priority (0 - 2)
 ;
 ; OUTPUTS:
-;   - None
+;   - None. The handlers of the released segments are not invalidated:
+;	  they must not be released afterwards
 ; ----------------------------------------------------------------
 */
 extern void mnemo_releaseAll(unsigned char priority) __sdcccall(1);
@@ -153,7 +171,12 @@ extern void mnemo_releaseAll(unsigned char priority) __sdcccall(1);
 ;	- None
 ;
 ; OUTPUTS:
-;   - A: Error code
+;   - A: 0 = Success
+;		  An error of the segment save: the flush stops there, the
+;		  segments after it are not flushed and the failed one is still
+;		  pending (the call can be repeated)
+;   Active segments are not flushed: only the released ones. The AUX
+;   and MAIN pages are restored
 ; ----------------------------------------------------------------
 */
 extern unsigned char mnemo_flushAll(void) __sdcccall(1);
